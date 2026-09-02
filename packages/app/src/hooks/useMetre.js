@@ -18,18 +18,39 @@ export function useMetre() {
   } = useProjet();
 
   const metreParNiveau = useMemo(() => {
+    const toNumber = (val) => {
+      if (typeof val === 'string') {
+        if (val.trim() === '') return undefined;
+        const num = Number(val);
+        return !isNaN(num) ? num : val;
+      }
+      return val;
+    };
+
+    const sanitize = (arr) => arr.map(item => {
+      const sanitized = {};
+      for (const [key, value] of Object.entries(item)) {
+        if (Array.isArray(value)) {
+          sanitized[key] = sanitize(value);
+        } else {
+          sanitized[key] = toNumber(value);
+        }
+      }
+      return sanitized;
+    });
+
     return niveaux.map(niveau => {
       const stateNiveau = {
         niveaux: [niveau], // le moteur attend la config acierHyp dans l'objet niveau
-        fouilles: fouilles.filter(f => f.niveauId === niveau.id),
-        betonProprete: betonProprete.filter(bp => bp.niveauId === niveau.id),
-        semelles: semelles.filter(s => s.niveauId === niveau.id),
-        longrines: longrines.filter(l => l.niveauId === niveau.id),
-        colonnes: colonnes.filter(c => c.niveauId === niveau.id),
-        maconneries: maconneries.filter(m => m.niveauId === niveau.id),
-        soubassements: soubassements.filter(ms => ms.niveauId === niveau.id),
-        carrelages: carrelages.filter(c => c.niveauId === niveau.id),
-        autresOuvrages: autresOuvrages.filter(a => a.niveauId === niveau.id)
+        fouilles: sanitize(fouilles.filter(f => f.niveauId === niveau.id)),
+        betonProprete: sanitize(betonProprete.filter(bp => bp.niveauId === niveau.id)),
+        semelles: sanitize(semelles.filter(s => s.niveauId === niveau.id)),
+        longrines: sanitize(longrines.filter(l => l.niveauId === niveau.id)),
+        colonnes: sanitize(colonnes.filter(c => c.niveauId === niveau.id)),
+        maconneries: sanitize(maconneries.filter(m => m.niveauId === niveau.id)),
+        soubassements: sanitize(soubassements.filter(ms => ms.niveauId === niveau.id)),
+        carrelages: sanitize(carrelages.filter(c => c.niveauId === niveau.id)),
+        autresOuvrages: sanitize(autresOuvrages.filter(a => a.niveauId === niveau.id))
       };
 
       const result = calculerMetre(stateNiveau, reglesPersonnalisees);
