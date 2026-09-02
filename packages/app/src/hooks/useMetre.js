@@ -46,10 +46,10 @@ export function useMetre() {
         betonProprete: sanitize(betonProprete.filter(bp => bp.niveauId === niveau.id)),
         semelles: sanitize(semelles.filter(s => s.niveauId === niveau.id)),
         longrines: sanitize(longrines.filter(l => l.niveauId === niveau.id)),
-        colonnes: sanitize(colonnes.filter(c => c.niveauId === niveau.id)),
-        maconneries: sanitize(maconneries.filter(m => m.niveauId === niveau.id)),
-        soubassements: sanitize(soubassements.filter(ms => ms.niveauId === niveau.id)),
-        carrelages: sanitize(carrelages.filter(c => c.niveauId === niveau.id)),
+        poteaux: sanitize(colonnes.filter(c => c.niveauId === niveau.id)),
+        maconnerie: sanitize(maconneries.filter(m => m.niveauId === niveau.id)),
+        soubassement: sanitize(soubassements.filter(ms => ms.niveauId === niveau.id)),
+        carrelage: sanitize(carrelages.filter(c => c.niveauId === niveau.id)),
         autresOuvrages: sanitize(autresOuvrages.filter(a => a.niveauId === niveau.id))
       };
 

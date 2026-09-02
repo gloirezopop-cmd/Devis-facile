@@ -860,6 +860,19 @@ export function calculerMetre(saisie, regles) {
   const blocs = {};
   const avertissements = [];
 
+  const knownKeys = [...Object.keys(BLOCS), 'faience', 'peinture', 'autresOuvrages', 'niveaux'];
+  for (const key of Object.keys(saisie || {})) {
+    if (!knownKeys.includes(key) && Array.isArray(saisie[key]) && saisie[key].length > 0) {
+      avertissements.push({
+        bloc: key,
+        ligne: 0,
+        repere: 'GLOBAL',
+        type: 'saisie-ignoree',
+        message: `Saisie ignorée : ${key} — ce bloc n'existe pas dans le moteur.`
+      });
+    }
+  }
+
   // Blocs standard, pilotes par la table BLOCS.
   for (const [code, bloc] of Object.entries(BLOCS)) {
     const entree = Array.isArray(saisie[code]) ? saisie[code] : [];
