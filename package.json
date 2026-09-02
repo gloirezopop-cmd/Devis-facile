@@ -1,0 +1,18 @@
+{
+  "name": "devis-facile-btp",
+  "version": "0.1.0",
+  "description": "Logiciel de metre et de devis BTP — Cameroun.",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "node --test \"packages/*/test/*.test.js\"",
+    "verif": "npm run test"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}

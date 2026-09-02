@@ -1,0 +1,52 @@
+{
+  "name": "app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@devis-facile/moteur": "*",
+    "@univerjs/core": "^0.5.5",
+    "@univerjs/design": "^0.5.5",
+    "@univerjs/docs": "^0.5.5",
+    "@univerjs/docs-ui": "^0.5.5",
+    "@univerjs/drawing": "^0.5.5",
+    "@univerjs/drawing-ui": "^0.5.5",
+    "@univerjs/engine-formula": "^0.5.5",
+    "@univerjs/engine-numfmt": "^0.5.5",
+    "@univerjs/engine-render": "^0.5.5",
+    "@univerjs/facade": "^0.5.5",
+    "@univerjs/network": "^0.5.5",
+    "@univerjs/rpc": "^0.5.5",
+    "@univerjs/sheets": "^0.5.5",
+    "@univerjs/sheets-drawing": "^0.5.5",
+    "@univerjs/sheets-drawing-ui": "^0.5.5",
+    "@univerjs/sheets-formula": "^0.5.5",
+    "@univerjs/sheets-formula-ui": "^0.5.5",
+    "@univerjs/sheets-numfmt": "^0.5.5",
+    "@univerjs/sheets-ui": "^0.5.5",
+    "@univerjs/ui": "^0.5.5",
+    "clsx": "^2.1.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "rxjs": "^7.8.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.5.4",
+    "oxlint": "^1.79.0",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^3.4.19",
+    "vite": "^8.2.2"
+  }
+}
