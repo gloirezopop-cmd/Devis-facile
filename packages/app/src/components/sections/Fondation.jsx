@@ -104,7 +104,7 @@ export default function Fondation() {
 
       <CarteBloc
         titre="Longrines (Chaînage bas)"
-        onAdd={() => addRow(longrines, setLongrines, { niveauId: niveauActifId, longueur: '', largeur: '', hauteur: '', nombre: '1' }, 'L')}
+        onAdd={() => addRow(longrines, setLongrines, { niveauId: niveauActifId, perimetre: '', largeur: '', hauteur: '' }, 'L')}
         addLabel="Ajouter type de longrine"
         totalValeur={getBloc('longrines').total}
         totalUnite={getBloc('longrines').unite}
@@ -117,10 +117,9 @@ export default function Fondation() {
             avertissement={getAvertissementLocal('longrines', index)}
           >
             <div className="grid grid-cols-2 gap-4">
-              <InputSaisie label="Longueur totale" value={l.longueur} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'longueur', v)} unite="m" />
+              <InputSaisie label="Périmètre (m)" value={l.perimetre} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'perimetre', v)} unite="m" />
               <InputSaisie label="Largeur" value={l.largeur} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'largeur', v)} unite="m" />
               <InputSaisie label="Hauteur" value={l.hauteur} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'hauteur', v)} unite="m" />
-              <InputSaisie label="Nombre" value={l.nombre} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'nombre', v)} unite="u" />
             </div>
             <div className="mt-4 pt-4 border-t border-devis-border grid grid-cols-2 gap-4">
               <ValeurCalculee
