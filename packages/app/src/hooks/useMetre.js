@@ -1,72 +1,84 @@
-import { useMemo } from 'react';
+﻿import { useMemo } from 'react';
 import { calculerMetre } from '@devis-facile/moteur';
 import { useProjet } from '../context/ProjetContext.jsx';
+import { preparerSaisiePourMoteur } from '../utils/sanitize.js';
+
+/**
+ * Calcule l'unite d'affichage et le total lisible d'un bloc de metre,
+ * pour affichage dans la barre de navigation des etapes.
+ *
+ * Regles :
+ *   - semelles, longrines, poteaux, ceintures, dalles, escalier => m3
+ *   - maconnerie, enduits, carrelage, faience => m2
+ *   - fouilles, betonProprete => m3
+ *   - charpente, couverture, terrasse => surface en m2 (estimee)
+ */
+function resumeBlocs(blocs) {
+  if (!blocs) return null;
+  let volumeM3 = 0;
+  let surfaceM2 = 0;
+  const blocsM3 = ['semelles', 'longrines', 'poteaux', 'colonnes', 'ceintures', 'poutres', 'linteaux', 'dalles', 'plancherHourdis', 'escalier', 'acrotere', 'betonProprete', 'sousPavement', 'chapeEgalisation', 'fouilles', 'fouilleFilante', 'remblai', 'moellon', 'murSoubassement'];
+  const blocsM2 = ['maconnerie', 'enduits', 'carrelage', 'faience'];
+
+  for (const [key, val] of Object.entries(blocs)) {
+    const t = val && val.total ? val.total : 0;
+    if (blocsM3.includes(key)) volumeM3 += t;
+    else if (blocsM2.includes(key)) surfaceM2 += t;
+    else if (key === 'charpenteBois' || key === 'couvertureToles') surfaceM2 += t;
+  }
+
+  if (volumeM3 > 0 && surfaceM2 > 0) return { valeur: volumeM3, unite: 'm\u00B3', extra: `+ ${Math.round(surfaceM2)} m\u00B2` };
+  if (volumeM3 > 0) return { valeur: volumeM3, unite: 'm\u00B3' };
+  if (surfaceM2 > 0) return { valeur: surfaceM2, unite: 'm\u00B2' };
+  return null;
+}
 
 export function useMetre() {
   const {
     niveaux,
     fouilles,
+    fouilleFilante,
     betonProprete,
     semelles,
     longrines,
     colonnes,
+    escaliers,
     maconneries,
     soubassements,
+    moellons,
+    chapeEgalisations,
+    sousPavements,
+    nivellement,
     carrelages,
+    enduits,
+    peintures,
+    faiences,
     autresOuvrages,
+    dalles,
+    plancherHourdis12,
+    plancherHourdis16,
+    charpentes,
+    couverturesToles,
+    terrasses,
     reglesPersonnalisees
   } = useProjet();
 
   const metreParNiveau = useMemo(() => {
-    const toNumber = (val) => {
-      if (typeof val === 'string') {
-        if (val.trim() === '') return undefined;
-        const num = Number(val);
-        return !isNaN(num) ? num : val;
-      }
-      return val;
-    };
-
-    const sanitize = (arr) => arr.map(item => {
-      const sanitized = {};
-      for (const [key, value] of Object.entries(item)) {
-        if (Array.isArray(value)) {
-          sanitized[key] = sanitize(value);
-        } else {
-          sanitized[key] = toNumber(value);
-        }
-      }
-      return sanitized;
-    });
-
     return niveaux.map(niveau => {
-      const stateNiveau = {
-        niveaux: [niveau], // le moteur attend la config acierHyp dans l'objet niveau
-        fouilles: sanitize(fouilles.filter(f => f.niveauId === niveau.id)),
-        betonProprete: sanitize(betonProprete.filter(bp => bp.niveauId === niveau.id)),
-        semelles: sanitize(semelles.filter(s => s.niveauId === niveau.id)),
-        longrines: sanitize(longrines.filter(l => l.niveauId === niveau.id)),
-        poteaux: sanitize(colonnes.filter(c => c.niveauId === niveau.id)),
-        maconnerie: sanitize(maconneries.filter(m => m.niveauId === niveau.id)),
-        soubassement: sanitize(soubassements.filter(ms => ms.niveauId === niveau.id)),
-        carrelage: sanitize(carrelages.filter(c => c.niveauId === niveau.id)),
-        autresOuvrages: sanitize(autresOuvrages.filter(a => a.niveauId === niveau.id))
-      };
-
+      const stateNiveau = preparerSaisiePourMoteur(niveau, {
+        fouilles, fouilleFilante, betonProprete, semelles, longrines, colonnes, escaliers, maconneries, soubassements,
+        moellons, chapeEgalisations, sousPavements, nivellement, carrelages, enduits, peintures, faiences, autresOuvrages,
+        dalles, plancherHourdis12, plancherHourdis16, charpentes, couverturesToles, terrasses
+      });
       const result = calculerMetre(stateNiveau, reglesPersonnalisees);
-      return { niveauId: niveau.id, metre: result };
+      return { niveauId: niveau.id, niveau, saisie: stateNiveau, metre: result };
     });
   }, [
     niveaux,
-    fouilles,
-    betonProprete,
-    semelles,
-    longrines,
-    colonnes,
-    maconneries,
-    soubassements,
-    carrelages,
-    autresOuvrages,
+    fouilles, fouilleFilante, betonProprete, semelles, longrines, colonnes, escaliers,
+    maconneries, soubassements, moellons, chapeEgalisations, sousPavements, nivellement,
+    carrelages, enduits, peintures, faiences, autresOuvrages,
+    dalles, plancherHourdis12, plancherHourdis16, charpentes, couverturesToles, terrasses,
     reglesPersonnalisees
   ]);
 
@@ -80,8 +92,21 @@ export function useMetre() {
     return warns;
   }, [metreParNiveau]);
 
+  /**
+   * Resume (volume ou surface) par niveau, pour affichage dans la barre de navigation.
+   * Cle : niveauId, valeur : { valeur, unite } ou null si aucune donnee.
+   */
+  const resumeParNiveau = useMemo(() => {
+    const map = {};
+    for (const { niveauId, metre } of metreParNiveau) {
+      map[niveauId] = metre.blocs ? resumeBlocs(metre.blocs) : null;
+    }
+    return map;
+  }, [metreParNiveau]);
+
   return {
     metreParNiveau,
     avertissementsGlobaux,
+    resumeParNiveau,
   };
 }

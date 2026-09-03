@@ -94,7 +94,12 @@ export default function ValeurCalculee({ label, value, unite, trace, overrideVal
                 {trace.resultat === null ? (
                   <span className="text-amber-600">{trace.motif || 'Dimension manquante'}</span>
                 ) : (
-                  <span className="text-devis-calcule">{trace.resultat} {trace.unite}</span>
+                  <span className={trace.typeSurface?.includes('Ratio') ? 'text-amber-600' : 'text-devis-calcule'}>
+                    {trace.resultat} {trace.unite}
+                  </span>
+                )}
+                {trace.typeSurface && (
+                  <span className="text-gray-400 ml-2 text-xs font-normal">({trace.typeSurface})</span>
                 )}
               </div>
             </div>

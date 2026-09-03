@@ -6,12 +6,17 @@ import LigneOuvrage from '../ui/LigneOuvrage.jsx';
 import InputSaisie from '../ui/InputSaisie.jsx';
 import ValeurCalculee from '../ui/ValeurCalculee.jsx';
 
+import ResumeFondation from './ResumeFondation.jsx';
+
 export default function Fondation() {
   const {
     betonProprete, setBetonProprete,
     semelles, setSemelles,
     longrines, setLongrines,
     soubassements, setSoubassements,
+    moellons, setMoellons,
+    chapeEgalisations, setChapeEgalisations,
+    sousPavements, setSousPavements,
     addRow, removeRow, updateRow, niveauActifId
   } = useProjet();
   
@@ -29,6 +34,9 @@ export default function Fondation() {
   const currentSemelles = semelles.filter(x => x.niveauId === niveauActifId);
   const currentLongrines = longrines.filter(x => x.niveauId === niveauActifId);
   const currentSoubassements = soubassements.filter(x => x.niveauId === niveauActifId);
+  const currentMoellons = moellons.filter(x => x.niveauId === niveauActifId);
+  const currentChapes = chapeEgalisations.filter(x => x.niveauId === niveauActifId);
+  const currentSousPavements = sousPavements.filter(x => x.niveauId === niveauActifId);
 
   return (
     <section>
@@ -69,25 +77,72 @@ export default function Fondation() {
       </CarteBloc>
 
       <CarteBloc
-        titre="Semelles Isolées"
-        onAdd={() => addRow(semelles, setSemelles, { niveauId: niveauActifId, longueur: '', largeur: '', hauteur: '', nombre: '1', diametrePrin: 10, espacement: 0.15 }, 'S')}
-        addLabel="Ajouter type de semelle"
+        titre="Socle Armé (Semelle + Amorce)"
+        onAdd={() => addRow(semelles, setSemelles, { 
+          niveauId: niveauActifId, 
+          longueur: '', largeur: '', hauteur: '', nombre: '1', 
+          amorceSectionA: '', amorceSectionB: '', amorceHauteur: '',
+          diametrePrin: 10, espacement: 0.15,
+          amorceDiametrePrin: 10, amorceNbreBarresPrin: 4,
+          amorceDiametreCadre: 8, amorceEspacementCadre: 0.15
+        }, 'S')}
+        addLabel="Ajouter un socle armé"
         totalValeur={getBloc('semelles').total}
         totalUnite={getBloc('semelles').unite}
-        totalLabel="Volume total semelles"
+        totalLabel="Volume total socle"
       >
         {currentSemelles.map((s, index) => (
           <LigneOuvrage
-            key={s.id} repere={s.repere} titre="Semelle Isolée (B.A)"
+            key={s.id} repere={s.repere} titre="Socle Armé"
             onRemove={currentSemelles.length > 1 ? () => removeRow(semelles, setSemelles, s.id) : null}
             avertissement={getAvertissementLocal('semelles', index)}
           >
-            <div className="grid grid-cols-2 gap-4">
-              <InputSaisie label="Longueur (A)" value={s.longueur} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'longueur', v)} unite="m" />
-              <InputSaisie label="Largeur (B)" value={s.largeur} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'largeur', v)} unite="m" />
-              <InputSaisie label="Hauteur (H)" value={s.hauteur} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'hauteur', v)} unite="m" />
+            {/* Dimensions Semelle */}
+            <h4 className="text-sm font-bold text-devis-calcule mb-2 border-b border-devis-border pb-1">Dimensions Semelle</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <InputSaisie label="Longueur (m)" value={s.longueur} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'longueur', v)} unite="m" />
+              <InputSaisie label="Largeur (m)" value={s.largeur} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'largeur', v)} unite="m" />
+              <InputSaisie label="Hauteur (m)" value={s.hauteur} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'hauteur', v)} unite="m" />
               <InputSaisie label="Nombre" value={s.nombre} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'nombre', v)} unite="u" />
             </div>
+
+            {/* Dimensions Amorce */}
+            <h4 className="text-sm font-bold text-devis-calcule mb-2 border-b border-devis-border pb-1">Dimensions Amorce (Optionnelles)</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+              <InputSaisie label="Section A (cm)" value={s.amorceSectionA} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'amorceSectionA', v)} unite="cm" />
+              <InputSaisie label="Section B (cm)" value={s.amorceSectionB} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'amorceSectionB', v)} unite="cm" />
+              <InputSaisie label="Hauteur (m)" value={s.amorceHauteur} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'amorceHauteur', v)} unite="m" />
+            </div>
+
+            {/* Hypothèses Armatures */}
+            <div className="bg-amber-50 p-3 rounded border border-amber-200 mb-4">
+              <h4 className="text-xs font-bold text-amber-800 mb-2 uppercase">Hypothèses d'Armature</h4>
+              
+              <div className="mb-3">
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Maillage Semelle</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <InputSaisie label="Diam. Principal" value={s.diametrePrin} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'diametrePrin', v)} unite="mm" styleClass="!bg-white" />
+                  <InputSaisie label="Espacement" value={s.espacement} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'espacement', v)} unite="m" styleClass="!bg-white" />
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Amorce Principale</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <InputSaisie label="Diamètre" value={s.amorceDiametrePrin} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'amorceDiametrePrin', v)} unite="mm" styleClass="!bg-white" />
+                  <InputSaisie label="Nombre de barres" value={s.amorceNbreBarresPrin} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'amorceNbreBarresPrin', v)} unite="u" styleClass="!bg-white" />
+                </div>
+              </div>
+
+              <div>
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Cadres Amorce</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <InputSaisie label="Diamètre" value={s.amorceDiametreCadre} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'amorceDiametreCadre', v)} unite="mm" styleClass="!bg-white" />
+                  <InputSaisie label="Espacement" value={s.amorceEspacementCadre} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'amorceEspacementCadre', v)} unite="m" styleClass="!bg-white" />
+                </div>
+              </div>
+            </div>
+
             <div className="mt-4 pt-4 border-t border-devis-border grid grid-cols-2 gap-4">
               <ValeurCalculee
                 label="Volume ligne"
@@ -104,7 +159,7 @@ export default function Fondation() {
 
       <CarteBloc
         titre="Longrines (Chaînage bas)"
-        onAdd={() => addRow(longrines, setLongrines, { niveauId: niveauActifId, perimetre: '', largeur: '', hauteur: '' }, 'L')}
+        onAdd={() => addRow(longrines, setLongrines, { niveauId: niveauActifId, perimetre: '', largeur: '', hauteur: '', nombre: '1', diametrePrin: 12, diametreCadre: 6, nbreBarresPrin: 4, espacementCadre: 0.20 }, 'L')}
         addLabel="Ajouter type de longrine"
         totalValeur={getBloc('longrines').total}
         totalUnite={getBloc('longrines').unite}
@@ -116,11 +171,32 @@ export default function Fondation() {
             onRemove={currentLongrines.length > 1 ? () => removeRow(longrines, setLongrines, l.id) : null}
             avertissement={getAvertissementLocal('longrines', index)}
           >
-            <div className="grid grid-cols-2 gap-4">
+            <h4 className="text-sm font-bold text-devis-calcule mb-2 border-b border-devis-border pb-1">Dimensions Longrine</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <InputSaisie label="Périmètre (m)" value={l.perimetre} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'perimetre', v)} unite="m" />
-              <InputSaisie label="Largeur" value={l.largeur} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'largeur', v)} unite="m" />
-              <InputSaisie label="Hauteur" value={l.hauteur} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'hauteur', v)} unite="m" />
+              <InputSaisie label="Largeur (m)" value={l.largeur} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'largeur', v)} unite="m" />
+              <InputSaisie label="Hauteur (m)" value={l.hauteur} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'hauteur', v)} unite="m" />
+              <InputSaisie label="Nombre" value={l.nombre} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'nombre', v)} unite="u" />
             </div>
+
+            <div className="bg-amber-50 p-3 rounded border border-amber-200 mb-4">
+              <h4 className="text-xs font-bold text-amber-800 mb-2 uppercase">Hypothèses d'Armature</h4>
+              <div className="mb-3">
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Armature Principale</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <InputSaisie label="Diamètre" value={l.diametrePrin} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'diametrePrin', v)} unite="mm" styleClass="!bg-white" />
+                  <InputSaisie label="Nombre de barres" value={l.nbreBarresPrin} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'nbreBarresPrin', v)} unite="u" styleClass="!bg-white" />
+                </div>
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Cadres</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <InputSaisie label="Diamètre" value={l.diametreCadre} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'diametreCadre', v)} unite="mm" styleClass="!bg-white" />
+                  <InputSaisie label="Espacement" value={l.espacementCadre} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'espacementCadre', v)} unite="m" styleClass="!bg-white" />
+                </div>
+              </div>
+            </div>
+
             <div className="mt-4 pt-4 border-t border-devis-border grid grid-cols-2 gap-4">
               <ValeurCalculee
                 label="Volume ligne"
@@ -137,21 +213,22 @@ export default function Fondation() {
 
       <CarteBloc
         titre="Murs de Soubassement"
-        onAdd={() => addRow(soubassements, setSoubassements, { niveauId: niveauActifId, longueur: '', hauteur: '', nombre: '1', ouvertures: [] }, 'MS')}
+        onAdd={() => addRow(soubassements, setSoubassements, { niveauId: niveauActifId, perimetre: '', hauteur: '', epaisseur: '', nombre: '1', ouvertures: [] }, 'MS')}
         addLabel="Ajouter section de mur"
-        totalValeur={getBloc('soubassement').total}
-        totalUnite={getBloc('soubassement').unite}
+        totalValeur={getBloc('murSoubassement').total}
+        totalUnite={getBloc('murSoubassement').unite}
         totalLabel="Surface nette totale"
       >
         {currentSoubassements.map((m, index) => (
           <LigneOuvrage
             key={m.id} repere={m.repere} titre="Mur"
             onRemove={currentSoubassements.length > 1 ? () => removeRow(soubassements, setSoubassements, m.id) : null}
-            avertissement={getAvertissementLocal('soubassement', index)}
+            avertissement={getAvertissementLocal('murSoubassement', index)}
           >
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <InputSaisie label="Longueur" value={m.longueur} onChange={(v) => updateRow(soubassements, setSoubassements, m.id, 'longueur', v)} unite="m" />
+              <InputSaisie label="Périmètre (m)" value={m.perimetre} onChange={(v) => updateRow(soubassements, setSoubassements, m.id, 'perimetre', v)} unite="m" />
               <InputSaisie label="Hauteur" value={m.hauteur} onChange={(v) => updateRow(soubassements, setSoubassements, m.id, 'hauteur', v)} unite="m" />
+              <InputSaisie label="Épaisseur" value={m.epaisseur} onChange={(v) => updateRow(soubassements, setSoubassements, m.id, 'epaisseur', v)} unite="m" placeholder="0.15" />
               <InputSaisie label="Nombre" value={m.nombre} onChange={(v) => updateRow(soubassements, setSoubassements, m.id, 'nombre', v)} unite="u" />
             </div>
 
@@ -191,9 +268,9 @@ export default function Fondation() {
             <div className="mt-4">
               <ValeurCalculee
                 label="Surface nette"
-                value={getBloc('soubassement').lignes[index]?.valeur}
+                value={getBloc('murSoubassement').lignes[index]?.valeur}
                 unite="m2"
-                trace={getBloc('soubassement').lignes[index]?.trace}
+                trace={getBloc('murSoubassement').lignes[index]?.trace}
                 overrideValue={m.override_surface}
                 onOverrideChange={(v) => updateRow(soubassements, setSoubassements, m.id, 'override_surface', v)}
               />
@@ -201,6 +278,109 @@ export default function Fondation() {
           </LigneOuvrage>
         ))}
       </CarteBloc>
+      <CarteBloc
+        titre="Fondation en Moellon"
+        onAdd={() => addRow(moellons, setMoellons, { niveauId: niveauActifId, perimetre: '', largeurBase: '', hauteur: '', nombre: '1' }, 'MO')}
+        addLabel="Ajouter moellon"
+        totalValeur={getBloc('moellon').total}
+        totalUnite={getBloc('moellon').unite}
+        totalLabel="Volume total moellon"
+      >
+        {currentMoellons.map((mo, index) => (
+          <LigneOuvrage
+            key={mo.id} repere={mo.repere} titre="Moellon"
+            onRemove={currentMoellons.length > 1 ? () => removeRow(moellons, setMoellons, mo.id) : null}
+            avertissement={getAvertissementLocal('moellon', index)}
+          >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <InputSaisie label="Périmètre (m)" value={mo.perimetre} onChange={(v) => updateRow(moellons, setMoellons, mo.id, 'perimetre', v)} unite="m" />
+              <InputSaisie label="Base (m)" value={mo.largeurBase} onChange={(v) => updateRow(moellons, setMoellons, mo.id, 'largeurBase', v)} unite="m" />
+              <InputSaisie label="Hauteur (m)" value={mo.hauteur} onChange={(v) => updateRow(moellons, setMoellons, mo.id, 'hauteur', v)} unite="m" />
+              <InputSaisie label="Nombre" value={mo.nombre} onChange={(v) => updateRow(moellons, setMoellons, mo.id, 'nombre', v)} unite="u" />
+            </div>
+            <div className="mt-4 pt-4 border-t border-devis-border grid grid-cols-2 gap-4">
+              <ValeurCalculee
+                label="Volume ligne"
+                value={getBloc('moellon').lignes[index]?.valeur}
+                unite="m3"
+                trace={getBloc('moellon').lignes[index]?.trace}
+                overrideValue={mo.override_volume}
+                onOverrideChange={(v) => updateRow(moellons, setMoellons, mo.id, 'override_volume', v)}
+              />
+            </div>
+          </LigneOuvrage>
+        ))}
+      </CarteBloc>
+
+      <CarteBloc
+        titre="Chape d'égalisation"
+        onAdd={() => addRow(chapeEgalisations, setChapeEgalisations, { niveauId: niveauActifId, perimetre: '', largeur: '', epaisseur: '', nombre: '1' }, 'CH')}
+        addLabel="Ajouter chape"
+        totalValeur={getBloc('chapeEgalisation').total}
+        totalUnite={getBloc('chapeEgalisation').unite}
+        totalLabel="Volume total chape"
+      >
+        {currentChapes.map((ch, index) => (
+          <LigneOuvrage
+            key={ch.id} repere={ch.repere} titre="Chape"
+            onRemove={currentChapes.length > 1 ? () => removeRow(chapeEgalisations, setChapeEgalisations, ch.id) : null}
+            avertissement={getAvertissementLocal('chapeEgalisation', index)}
+          >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <InputSaisie label="Périmètre (m)" value={ch.perimetre} onChange={(v) => updateRow(chapeEgalisations, setChapeEgalisations, ch.id, 'perimetre', v)} unite="m" />
+              <InputSaisie label="Largeur (m)" value={ch.largeur} onChange={(v) => updateRow(chapeEgalisations, setChapeEgalisations, ch.id, 'largeur', v)} unite="m" />
+              <InputSaisie label="Épaisseur (m)" value={ch.epaisseur} onChange={(v) => updateRow(chapeEgalisations, setChapeEgalisations, ch.id, 'epaisseur', v)} unite="m" />
+              <InputSaisie label="Nombre" value={ch.nombre} onChange={(v) => updateRow(chapeEgalisations, setChapeEgalisations, ch.id, 'nombre', v)} unite="u" />
+            </div>
+            <div className="mt-4 pt-4 border-t border-devis-border grid grid-cols-2 gap-4">
+              <ValeurCalculee
+                label="Volume ligne"
+                value={getBloc('chapeEgalisation').lignes[index]?.valeur}
+                unite="m3"
+                trace={getBloc('chapeEgalisation').lignes[index]?.trace}
+                overrideValue={ch.override_volume}
+                onOverrideChange={(v) => updateRow(chapeEgalisations, setChapeEgalisations, ch.id, 'override_volume', v)}
+              />
+            </div>
+          </LigneOuvrage>
+        ))}
+      </CarteBloc>
+
+      <CarteBloc
+        titre="Béton de sous-pavement"
+        onAdd={() => addRow(sousPavements, setSousPavements, { niveauId: niveauActifId, longueur: '', largeur: '', epaisseur: '', nombre: '1' }, 'SP')}
+        addLabel="Ajouter sous-pavement"
+        totalValeur={getBloc('sousPavement').total}
+        totalUnite={getBloc('sousPavement').unite}
+        totalLabel="Volume total"
+      >
+        {currentSousPavements.map((sp, index) => (
+          <LigneOuvrage
+            key={sp.id} repere={sp.repere} titre="Sous-pavement"
+            onRemove={currentSousPavements.length > 1 ? () => removeRow(sousPavements, setSousPavements, sp.id) : null}
+            avertissement={getAvertissementLocal('sousPavement', index)}
+          >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <InputSaisie label="Longueur (m)" value={sp.longueur} onChange={(v) => updateRow(sousPavements, setSousPavements, sp.id, 'longueur', v)} unite="m" />
+              <InputSaisie label="Largeur (m)" value={sp.largeur} onChange={(v) => updateRow(sousPavements, setSousPavements, sp.id, 'largeur', v)} unite="m" />
+              <InputSaisie label="Épaisseur (m)" value={sp.epaisseur} onChange={(v) => updateRow(sousPavements, setSousPavements, sp.id, 'epaisseur', v)} unite="m" />
+              <InputSaisie label="Nombre" value={sp.nombre} onChange={(v) => updateRow(sousPavements, setSousPavements, sp.id, 'nombre', v)} unite="u" />
+            </div>
+            <div className="mt-4 pt-4 border-t border-devis-border grid grid-cols-2 gap-4">
+              <ValeurCalculee
+                label="Volume ligne"
+                value={getBloc('sousPavement').lignes[index]?.valeur}
+                unite="m3"
+                trace={getBloc('sousPavement').lignes[index]?.trace}
+                overrideValue={sp.override_volume}
+                onOverrideChange={(v) => updateRow(sousPavements, setSousPavements, sp.id, 'override_volume', v)}
+              />
+            </div>
+          </LigneOuvrage>
+        ))}
+      </CarteBloc>
+
+      <ResumeFondation />
     </section>
   );
 }

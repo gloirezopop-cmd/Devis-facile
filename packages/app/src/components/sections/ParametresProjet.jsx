@@ -6,6 +6,7 @@ import { useExport } from '../../hooks/useExport.js';
 export default function ParametresProjet() {
   const {
     taux, setTaux,
+    majorations, setMajorations,
     parametresProjet, setParametresProjet,
     bibliothequePrix, setBibliothequePrix,
     labelsPrix, setLabelsPrix,
@@ -50,12 +51,38 @@ export default function ParametresProjet() {
       <div className="flex justify-between items-end mb-4 border-b border-devis-border pb-2">
         <h2 className="font-sans text-2xl font-bold text-devis-calcule">Paramètres du Projet</h2>
         <div className="flex gap-2">
-          <button 
+          <button
             onClick={handleExportJSON}
             className="bg-gray-100 hover:bg-gray-200 text-devis-calcule px-3 py-2 rounded font-bold text-sm min-h-[44px] flex items-center gap-2"
           >
             💾 Sauvegarder Projet (JSON)
           </button>
+        </div>
+      </div>
+
+      {/* ── Identification du projet (en-tête PDF) ── */}
+      <div className="bg-white rounded-lg shadow-sm border border-devis-border p-5 mb-6">
+        <h3 className="font-sans font-bold text-devis-calcule mb-4 border-b border-devis-border pb-2">
+          Identification du projet
+          <span className="ml-3 text-xs font-normal text-gray-400">Apparaît dans l'en-tête du PDF exporté</span>
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            ['maitreOuvrage', "Maître d'ouvrage", 'Ex : M. Koné Emmanuel'],
+            ['localisation',  'Localisation',      'Ex : Abidjan, Yopougon'],
+            ['reference',     'Référence',          'Ex : DF-2026-001'],
+          ].map(([key, label, placeholder]) => (
+            <div key={key} className="flex flex-col gap-1">
+              <label className="text-xs text-devis-saisie font-bold uppercase tracking-wider">{label}</label>
+              <input
+                type="text"
+                value={parametresProjet[key] || ''}
+                placeholder={placeholder}
+                onChange={(e) => setParametresProjet({ ...parametresProjet, [key]: e.target.value })}
+                className="border border-devis-saisie rounded p-2 text-devis-saisie w-full min-h-[44px] focus:outline-none focus:ring-2 focus:ring-devis-saisie bg-white font-sans text-sm"
+              />
+            </div>
+          ))}
         </div>
       </div>
 
@@ -100,6 +127,30 @@ export default function ParametresProjet() {
             onChange={(v) => setParametresProjet({ ...parametresProjet, dosageBA: Number(v) })}
             unite="kg/m³"
           />
+          <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
+            <label className="text-xs text-devis-saisie font-bold uppercase tracking-wider">Inclure l'eau dans le devis</label>
+            <div className="flex items-center h-[44px]">
+              <input
+                type="checkbox"
+                checked={parametresProjet.inclureEau}
+                onChange={(e) => setParametresProjet({ ...parametresProjet, inclureEau: e.target.checked })}
+                className="w-5 h-5 text-devis-saisie rounded focus:ring-devis-saisie border-gray-300"
+              />
+              <span className="ml-2 text-sm text-gray-700">Facturer l'eau (option)</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
+            <label className="text-xs text-devis-saisie font-bold uppercase tracking-wider">Coefficient de vente (Entreprise)</label>
+            <div className="flex items-center h-[44px]">
+              <input
+                type="checkbox"
+                checked={parametresProjet.appliquerCoefVente}
+                onChange={(e) => setParametresProjet({ ...parametresProjet, appliquerCoefVente: e.target.checked })}
+                className="w-5 h-5 text-devis-saisie rounded focus:ring-devis-saisie border-gray-300"
+              />
+              <span className="ml-2 text-sm text-gray-700">Appliquer marge + frais</span>
+            </div>
+          </div>
         </div>
 
         <div className="mt-4 flex items-center gap-2">
@@ -113,6 +164,30 @@ export default function ParametresProjet() {
           <label htmlFor="coffrageTerre" className="text-sm font-bold text-devis-calcule cursor-pointer">
             Couler les fondations en pleine fouille (sans coffrage latéral)
           </label>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-devis-border p-5 mb-6">
+        <h3 className="font-sans font-bold text-devis-calcule mb-4 flex items-center justify-between border-b border-devis-border pb-2">
+          Majorations (Pertes)
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">Ces pourcentages sont appliqués pour prendre en compte les pertes lors de l'achat des matériaux.</p>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Object.entries(majorations).map(([key, value]) => (
+            <InputSaisie
+              key={key}
+              label={key.charAt(0).toUpperCase() + key.slice(1)}
+              value={((value - 1) * 100).toFixed(0)}
+              onChange={(v) => {
+                const num = Number(v);
+                if (!isNaN(num)) {
+                  setMajorations({ ...majorations, [key]: 1 + (num / 100) });
+                }
+              }}
+              unite="%"
+            />
+          ))}
         </div>
       </div>
 

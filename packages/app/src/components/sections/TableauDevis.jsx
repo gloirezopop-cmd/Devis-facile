@@ -1,74 +1,104 @@
 import React, { Fragment } from 'react';
+import { TITRES_LOTS_PARTICULIER, TITRES_LOTS_ENTREPRISE } from '@devis-facile/moteur';
 import { formaterNombre } from '../../utils/format.js';
 
-export default function TableauDevis({ devis, type }) {
-  if (!devis || !devis.blocs) return <div className="p-4 text-gray-500">Aucune donnée disponible.</div>;
+/**
+ * Devis quantitatif et estimatif.
+ *
+ * L'ordre des lots vient des titres du moteur, pas d'une liste recopiee ici :
+ * c'est lui qui porte l'ordre chronologique du classeur (terrassement,
+ * fondation, elevation, plancher, charpente, couverture, finition), et une
+ * seconde liste finirait par diverger de la premiere.
+ */
+export default function TableauDevis({ devis, type = 'particulier' }) {
+  const estEntreprise = type === 'entreprise';
+  const groupes = (estEntreprise ? devis?.niveaux : devis?.lots) || {};
+  const titres = estEntreprise ? TITRES_LOTS_ENTREPRISE : TITRES_LOTS_PARTICULIER;
 
-  const titresLots = {
-    installation: "1. Installation de chantier",
-    terrassement: "2. Terrassements",
-    fondation: "3. Fondations",
-    elevation: "4. Élévations",
-    plancher: "5. Planchers",
-    toiture: "6. Toiture et Charpente",
-    finition: "7. Finitions"
-  };
+  // Les lots connus d'abord, dans l'ordre du classeur ; les niveaux ajoutes par
+  // l'utilisateur (etage 2, 3...) ensuite, dans leur ordre de creation.
+  const ordre = [
+    ...Object.keys(titres).filter((id) => groupes[id]),
+    ...Object.keys(groupes).filter((id) => !(id in titres)),
+  ];
+
+  const lignesTotales = ordre.reduce((n, id) => n + (groupes[id]?.lignes?.length || 0), 0);
+
+  if (lignesTotales === 0) {
+    return (
+      <div className="bg-white rounded-lg border border-dashed border-devis-border p-8 text-center">
+        <p className="text-gray-500">
+          Le devis se remplit tout seul au fur et à mesure du métré.
+        </p>
+        <p className="text-gray-400 text-sm mt-1">
+          Saisissez un premier ouvrage pour voir apparaître sa ligne ici.
+        </p>
+      </div>
+    );
+  }
+
+  const cellule = 'p-2 border border-devis-border';
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-black overflow-hidden mb-8">
+    <div className="bg-white rounded-lg shadow-sm border border-devis-border overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[800px]">
+        <table className="w-full text-left border-collapse min-w-[760px]">
           <thead>
             <tr className="bg-gray-100 text-black border-b-2 border-black">
-              <th className="p-3 text-sm font-bold uppercase tracking-wider w-12 text-center border-r border-black">N°</th>
-              <th className="p-3 text-sm font-bold uppercase tracking-wider border-r border-black">Désignation des ouvrages</th>
-              <th className="p-3 text-sm font-bold uppercase tracking-wider w-20 text-center border-r border-black">U</th>
-              <th className="p-3 text-sm font-bold uppercase tracking-wider w-32 text-right border-r border-black">Qte</th>
-              <th className="p-3 text-sm font-bold uppercase tracking-wider w-40 text-right border-r border-black">P.U. (FCFA)</th>
-              <th className="p-3 text-sm font-bold uppercase tracking-wider w-48 text-right">Montant (FCFA)</th>
+              <th className={`${cellule} text-xs font-bold uppercase w-12 text-center`}>N°</th>
+              <th className={`${cellule} text-xs font-bold uppercase`}>Désignation des ouvrages</th>
+              <th className={`${cellule} text-xs font-bold uppercase w-20 text-center`}>U</th>
+              <th className={`${cellule} text-xs font-bold uppercase w-24 text-right`}>Qté</th>
+              <th className={`${cellule} text-xs font-bold uppercase w-32 text-right`}>P.U.</th>
+              <th className={`${cellule} text-xs font-bold uppercase w-36 text-right`}>Montant</th>
             </tr>
           </thead>
           <tbody>
-            {Object.keys(devis.blocs).map((lotId, index) => {
-              const lotData = devis.blocs[lotId];
-              if (!lotData.lignes || lotData.lignes.length === 0) return null;
+            {ordre.map((lotId, index) => {
+              const lot = groupes[lotId];
+              if (!lot?.lignes?.length) return null;
+              const titre = titres[lotId] || lot.nom || lotId;
 
               return (
                 <Fragment key={lotId}>
                   <tr className="bg-blue-50 border-y border-black">
-                    <td className="p-3 font-bold text-center border-r border-black">{index + 1}</td>
-                    <td colSpan="5" className="p-3 font-bold uppercase text-blue-900 tracking-wider">
-                      {titresLots[lotId] || lotId}
+                    <td className={`${cellule} font-bold text-center`}>{index + 1}</td>
+                    <td colSpan="5" className={`${cellule} font-bold uppercase text-blue-900 tracking-wide`}>
+                      {titre}
                     </td>
                   </tr>
-                  {lotData.lignes.map((ligne, i) => (
-                    <tr key={i} className="hover:bg-gray-50 transition-colors group">
-                      <td className="p-3 text-sm text-center text-gray-500 border border-black border-t-0 border-l-0">{index + 1}.{i + 1}</td>
-                      <td className="p-3 text-sm border border-black border-t-0 font-sans">{ligne.designation}</td>
-                      <td className="p-3 text-sm text-center text-gray-600 border border-black border-t-0">{ligne.unite}</td>
-                      <td className="p-3 text-sm text-right tabular-nums border border-black border-t-0">
-                        {formaterNombre(ligne.quantite)}
-                      </td>
-                      <td className="p-3 text-sm text-right tabular-nums border border-black border-t-0">
-                        {/* P.U. est Hérité dans certains cas, Calculé dans d'autres. 
-                            Le devis Entreprise contient un P.U. calculé (avec marge), on le met en noir.
-                            Le devis Particulier contient un P.U. issu de la bibliothèque, on peut le mettre en vert. */}
-                        <span className={type === 'particulier' ? 'text-devis-herite' : 'text-devis-calcule'}>
+
+                  {lot.lignes.map((ligne, i) => {
+                    const sansPrix = !ligne.pu;
+                    return (
+                      <tr key={`${lotId}-${i}`} className={sansPrix ? 'bg-amber-50' : 'hover:bg-gray-50'}>
+                        <td className={`${cellule} text-xs text-center text-gray-500`}>{index + 1}.{i + 1}</td>
+                        <td className={`${cellule} text-sm`}>
+                          {ligne.designation}
+                          {sansPrix && (
+                            <span className="ml-2 text-xs font-bold text-amber-700" title="Prix unitaire absent de la bibliothèque">
+                              prix à saisir
+                            </span>
+                          )}
+                        </td>
+                        <td className={`${cellule} text-xs text-center text-gray-600`}>{ligne.unite}</td>
+                        <td className={`${cellule} text-sm text-right tabular-nums`}>{formaterNombre(ligne.quantite)}</td>
+                        <td className={`${cellule} text-sm text-right tabular-nums ${estEntreprise ? 'text-devis-calcule' : 'text-devis-herite'}`}>
                           {formaterNombre(ligne.pu, true)}
-                        </span>
-                      </td>
-                      <td className="p-3 text-sm text-right font-bold tabular-nums text-devis-calcule border border-black border-t-0 border-r-0">
-                        {formaterNombre(ligne.pt, true)}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className={`${cellule} text-sm text-right font-bold tabular-nums text-devis-calcule`}>
+                          {formaterNombre(ligne.pt, true)}
+                        </td>
+                      </tr>
+                    );
+                  })}
 
                   <tr className="bg-gray-100 border-b-2 border-black">
-                    <td colSpan="5" className="p-3 text-sm font-bold text-right uppercase text-black border border-black border-l-0">
-                      Sous-total {titresLots[lotId] || lotId}
+                    <td colSpan="5" className={`${cellule} text-xs font-bold text-right uppercase`}>
+                      Sous-total — {titre}
                     </td>
-                    <td className="p-3 text-sm text-right font-bold tabular-nums text-black border-b border-black">
-                      {formaterNombre(lotData.sousTotal, true)}
+                    <td className={`${cellule} text-sm text-right font-bold tabular-nums`}>
+                      {formaterNombre(lot.sousTotal, true)}
                     </td>
                   </tr>
                 </Fragment>
@@ -77,6 +107,48 @@ export default function TableauDevis({ devis, type }) {
           </tbody>
         </table>
       </div>
+
+      {devis?.cascade && <Cascade cascade={devis.cascade} total={devis.total} />}
+    </div>
+  );
+}
+
+/** Le pied de devis : la suite des majorations jusqu'au total a payer. */
+function Cascade({ cascade, total }) {
+  const libelles = {
+    totalMateriaux: 'Total fournitures',
+    imprevus: 'Imprévus',
+    transport: 'Transport',
+    mainOeuvre: "Main d'œuvre",
+    totalTravaux: 'Total travaux',
+    honorairesArchi: 'Honoraires architecte',
+    honorairesInge: 'Honoraires ingénieur',
+    totalGrosOeuvre: 'Total gros œuvre',
+    totalSecondOeuvre: 'Total second œuvre',
+    totalHT: 'Total HT',
+    tva: 'TVA',
+    netAPayer: 'Net à payer',
+  };
+  const intermediaires = ['totalTravaux', 'totalHT', 'totalGrosOeuvre', 'totalSecondOeuvre'];
+
+  return (
+    <div className="border-t-2 border-black bg-gray-50 p-4">
+      <table className="w-full max-w-md ml-auto text-sm">
+        <tbody>
+          {Object.entries(cascade)
+            .filter(([cle]) => cle !== 'totalGeneral' && cle !== 'netAPayer')
+            .map(([cle, valeur]) => (
+              <tr key={cle} className={intermediaires.includes(cle) ? 'font-bold border-t border-devis-border' : ''}>
+                <td className="py-1 pr-4">{libelles[cle] || cle}</td>
+                <td className="py-1 text-right tabular-nums">{formaterNombre(valeur, true)}</td>
+              </tr>
+            ))}
+          <tr className="border-t-2 border-black text-base font-bold">
+            <td className="pt-2 pr-4">TOTAL (FCFA)</td>
+            <td className="pt-2 text-right tabular-nums text-devis-calcule">{formaterNombre(total, true)}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }

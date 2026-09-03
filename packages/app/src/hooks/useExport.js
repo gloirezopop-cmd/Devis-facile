@@ -1,143 +1,313 @@
-import jsPDF from 'jspdf';
+﻿import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { formaterNombre } from '../utils/format.js';
 
-const titresLots = {
-  installation: "1. Installation de chantier",
-  terrassement: "2. Terrassements",
-  fondation: "3. Fondations",
-  elevation: "4. Élévations",
-  plancher: "5. Planchers",
-  toiture: "6. Toiture et Charpente",
-  finition: "7. Finitions"
-};
+// ─── Utilitaire interne ────────────────────────────────────────────────────────
 
-export function useExport() {
-  
-  const exportPDF = (devis, type = 'entreprise') => {
-    if (!devis || !devis.blocs) return;
-    
-    const doc = new jsPDF();
-    const isEntreprise = type === 'entreprise';
-    
-    // Titre
-    doc.setFontSize(18);
-    doc.text(`Devis - Modèle ${isEntreprise ? 'Entreprise' : 'Particulier'}`, 14, 22);
-    
-    // Total
-    doc.setFontSize(12);
-    doc.text(`Total : ${formaterNombre(devis.total, true)} FCFA`, 14, 32);
+/**
+ * Extrait la liste { lotId, titre, lignes, sousTotal } depuis un devis,
+ * quelle que soit sa structure (lots = Particulier, niveaux = Entreprise).
+ */
+function extraireSections(devis, type) {
+  const estEntreprise = type === 'entreprise';
+  const groupes = estEntreprise ? (devis?.niveaux || {}) : (devis?.lots || {});
+  return Object.entries(groupes)
+    .filter(([, lot]) => lot?.lignes?.length > 0)
+    .map(([id, lot]) => ({
+      id,
+      titre: lot.titre || lot.nom || id,
+      lignes: lot.lignes,
+      sousTotal: lot.sousTotal
+    }));
+}
 
-    // Préparation des données pour autoTable
-    const tableColumn = isEntreprise 
-      ? ["N°", "Ouvrage", "Unité", "Quantité", "PU (FCFA)", "Total (FCFA)"]
-      : ["N°", "Matériau", "Unité", "Quantité", "PU (FCFA)", "Total (FCFA)"];
-      
-    const tableRows = [];
+// ─── Export PDF ────────────────────────────────────────────────────────────────
 
-    Object.keys(devis.blocs).forEach((lotId, index) => {
-      const lotData = devis.blocs[lotId];
-      if (!lotData.lignes || lotData.lignes.length === 0) return;
+/**
+ * Exporte un devis au format PDF, mise en page bordereau BTP.
+ *
+ * En-tete : titre du projet, maitre d ouvrage, localisation, date, reference.
+ * Corps    : N° / Designation / Unite / Qte / P.U. / P.T., sous-total par section.
+ * Pied     : cascade des taux, total general, montant en toutes lettres, pagination.
+ */
+export function exporterDevisPDF(devis, type = 'particulier', infoProjet = {}) {
+  if (!devis) return;
 
-      // Header du lot
-      tableRows.push([
-        { content: (index + 1).toString(), styles: { fontStyle: 'bold', halign: 'center', fillColor: [240, 245, 255] } },
-        { content: titresLots[lotId] || lotId, colSpan: 5, styles: { fontStyle: 'bold', textColor: [20, 71, 155], fillColor: [240, 245, 255] } }
-      ]);
+  const estEntreprise = type === 'entreprise';
+  const sections = extraireSections(devis, type);
+  if (sections.length === 0) return;
 
-      lotData.lignes.forEach((ligne, i) => {
-        tableRows.push([
-          `${index + 1}.${i + 1}`,
-          ligne.designation,
-          ligne.unite,
-          formaterNombre(ligne.quantite),
-          formaterNombre(ligne.pu, true),
-          formaterNombre(ligne.pt, true)
-        ]);
-      });
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const MARGE = 14;
+  const LARGEUR = 210 - 2 * MARGE;
 
-      // Sous-total du lot
-      tableRows.push([
-        { content: `Sous-total ${titresLots[lotId] || lotId}`, colSpan: 5, styles: { fontStyle: 'bold', halign: 'right', fillColor: [243, 244, 246] } },
-        { content: formaterNombre(lotData.sousTotal, true), styles: { fontStyle: 'bold', halign: 'right', fillColor: [243, 244, 246] } }
+  // ── En-tete ──────────────────────────────────────────────────────────────────
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('DEVIS FACILE BTP', MARGE, 18);
+
+  doc.setFontSize(11);
+  doc.text(
+    estEntreprise ? 'DEVIS ENTREPRISE (Prix tout compris, TVA comprise)' : 'DEVIS PARTICULIER (Bordereau quantitatif et estimatif)',
+    MARGE, 26
+  );
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  const date = new Date().toLocaleDateString('fr-FR');
+  const infoLeft  = [
+    `Maître d'ouvrage : ${infoProjet.maitreOuvrage  || '—'}`,
+    `Localisation : ${infoProjet.localisation || '—'}`,
+  ];
+  const infoRight = [
+    `Référence : ${infoProjet.reference || '—'}`,
+    `Date : ${date}`,
+  ];
+  infoLeft.forEach((line, i)  => doc.text(line, MARGE,          34 + i * 5));
+  infoRight.forEach((line, i) => doc.text(line, MARGE + LARGEUR / 2, 34 + i * 5));
+
+  doc.setDrawColor(195, 204, 214);
+  doc.line(MARGE, 47, MARGE + LARGEUR, 47);
+
+  // ── Corps ─────────────────────────────────────────────────────────────────────
+  const colWidths = [12, 0, 14, 20, 28, 28]; // 0 = auto pour Designation
+  const cols = ['N°', 'Désignation des ouvrages', 'U.', 'Quantité', 'P.U. FCFA', 'P.T. FCFA'];
+
+  const rows = [];
+  sections.forEach((section, si) => {
+    // Ligne de titre de section
+    rows.push([
+      { content: (si + 1).toString(), styles: { halign: 'center', fontStyle: 'bold', fillColor: [220, 230, 245], textColor: [20, 71, 155] } },
+      { content: section.titre.toUpperCase(), colSpan: 5, styles: { fontStyle: 'bold', fillColor: [220, 230, 245], textColor: [20, 71, 155] } }
+    ]);
+    section.lignes.forEach((ligne, li) => {
+      const sansPrix = !ligne.pu;
+      rows.push([
+        { content: `${si + 1}.${li + 1}`, styles: { halign: 'center', fontSize: 8 } },
+        {
+          content: ligne.designation + (sansPrix ? ' ⚠' : ''),
+          styles: { fontSize: 8, textColor: sansPrix ? [138, 93, 0] : [15, 21, 27] }
+        },
+        { content: ligne.unite || '', styles: { halign: 'center', fontSize: 8 } },
+        { content: formaterNombre(ligne.quantite),   styles: { halign: 'right', fontSize: 8, font: 'courier' } },
+        { content: formaterNombre(ligne.pu, true),   styles: { halign: 'right', fontSize: 8, font: 'courier', textColor: estEntreprise ? [20, 71, 155] : [20, 99, 74] } },
+        { content: formaterNombre(ligne.pt, true),   styles: { halign: 'right', fontSize: 8, font: 'courier', fontStyle: 'bold' } }
       ]);
     });
+    // Sous-total section
+    rows.push([
+      '',
+      { content: `Sous-total — ${section.titre}`, colSpan: 4, styles: { halign: 'right', fontStyle: 'bold', fillColor: [243, 244, 246] } },
+      { content: formaterNombre(section.sousTotal, true), styles: { halign: 'right', fontStyle: 'bold', fillColor: [243, 244, 246], font: 'courier' } }
+    ]);
+  });
 
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 40,
-      theme: 'grid',
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [20, 71, 155] },
-      columnStyles: {
-        0: { halign: 'center', cellWidth: 15 },
-        2: { halign: 'center', cellWidth: 20 },
-        3: { halign: 'right', cellWidth: 25 },
-        4: { halign: 'right', cellWidth: 30 },
-        5: { halign: 'right', cellWidth: 30, fontStyle: 'bold' }
+  doc.autoTable({
+    head: [cols],
+    body: rows,
+    startY: 52,
+    margin: { left: MARGE, right: MARGE },
+    theme: 'grid',
+    styles: { fontSize: 9, cellPadding: { top: 1.5, right: 2, bottom: 1.5, left: 2 }, overflow: 'linebreak' },
+    headStyles: { fillColor: [20, 71, 155], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+    columnStyles: {
+      0: { cellWidth: colWidths[0], halign: 'center' },
+      2: { cellWidth: colWidths[2], halign: 'center' },
+      3: { cellWidth: colWidths[3], halign: 'right' },
+      4: { cellWidth: colWidths[4], halign: 'right' },
+      5: { cellWidth: colWidths[5], halign: 'right' }
+    },
+    didDrawPage: (data) => {
+      // Pied de page : numero de page
+      const pageCount = doc.internal.getNumberOfPages();
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(
+        `Page ${doc.internal.getCurrentPageInfo().pageNumber} / ${pageCount} — Devis Facile BTP — ${date}`,
+        MARGE,
+        doc.internal.pageSize.getHeight() - 8
+      );
+    }
+  });
+
+  // ── Cascade finale ─────────────────────────────────────────────────────────
+  if (devis.cascade) {
+    let y = doc.lastAutoTable.finalY + 6;
+    if (y > 240) { doc.addPage(); y = 20; }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setFillColor(240, 245, 255);
+    doc.rect(MARGE + LARGEUR / 2, y - 4, LARGEUR / 2, 6, 'F');
+    doc.text('RECAPITULATIF', MARGE + LARGEUR / 2 + 2, y);
+    y += 6;
+
+    const libelles = {
+      totalMateriaux: 'Total fournitures',
+      imprevus:       'Imprévus',
+      transport:      'Transport',
+      mainOeuvre:     "Main d'oeuvre",
+      totalTravaux:   'Total travaux',
+      honorairesArchi:'Honoraires architecte',
+      honorairesInge: 'Honoraires ingénieur',
+      totalGrosOeuvre:'Total gros oeuvre',
+      totalSecondOeuvre:'Total second oeuvre',
+      totalHT:        'Total HT',
+      tva:            'TVA',
+      netAPayer:      'Net à payer',
+      totalGeneral:   'TOTAL GÉNÉRAL'
+    };
+    const intermeds = ['totalTravaux','totalHT','totalGrosOeuvre','totalSecondOeuvre'];
+    const finals    = ['netAPayer','totalGeneral'];
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    for (const [cle, valeur] of Object.entries(devis.cascade)) {
+      if (typeof valeur !== 'number' || valeur === 0) continue;
+      const libelle = libelles[cle] || cle;
+      const isFinal = finals.includes(cle);
+      const isInter = intermeds.includes(cle);
+      doc.setFont('helvetica', isFinal || isInter ? 'bold' : 'normal');
+      doc.setFontSize(isFinal ? 9.5 : 8.5);
+      doc.text(libelle, MARGE + LARGEUR / 2 + 2, y);
+      doc.text(formaterNombre(valeur, true) + ' FCFA', MARGE + LARGEUR - 2, y, { align: 'right' });
+      if (isFinal) {
+        doc.setDrawColor(15, 21, 27);
+        doc.line(MARGE + LARGEUR / 2, y + 1.5, MARGE + LARGEUR, y + 1.5);
       }
+      y += isFinal ? 7 : 5;
+    }
+
+    // Montant en toutes lettres
+    if (devis.enToutesLettres) {
+      y += 3;
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8);
+      doc.text(devis.enToutesLettres, MARGE, y, { maxWidth: LARGEUR });
+    }
+  }
+
+  const nomFichier = `Devis_${estEntreprise ? 'Entreprise' : 'Particulier'}_${(infoProjet.reference || 'DF').replace(/\s/g, '_')}.pdf`;
+  doc.save(nomFichier);
+}
+
+// ─── Export Excel ────────────────────────────────────────────────────────────
+
+/**
+ * Exporte le devis en Excel, une feuille par section (lot/niveau).
+ * Les formules P.T. = Quantite x P.U. sont generees en syntaxe Excel :
+ * le confrere peut verifier et modifier independamment.
+ */
+export function exporterDevisExcel(devis, type = 'particulier', infoProjet = {}) {
+  if (!devis) return;
+  const sections = extraireSections(devis, type);
+  if (sections.length === 0) return;
+
+  const wb = XLSX.utils.book_new();
+
+  // ── Feuille Synthese ──────────────────────────────────────────────────────
+  const rowsSynth = [
+    ['DEVIS FACILE BTP'],
+    [type === 'entreprise' ? 'Modele Entreprise' : 'Modele Particulier'],
+    [],
+    ["Maitre d'ouvrage", infoProjet.maitreOuvrage || ''],
+    ['Localisation',     infoProjet.localisation   || ''],
+    ['Reference',        infoProjet.reference      || ''],
+    ['Date',             new Date().toLocaleDateString('fr-FR')],
+    [],
+    ['Section', 'Sous-total (FCFA)'],
+    ...sections.map(s => [s.titre, s.sousTotal]),
+    [],
+  ];
+  if (devis.cascade) {
+    const libelles = {
+      totalMateriaux: 'Total fournitures', imprevus: 'Imprevus', transport: 'Transport',
+      mainOeuvre: "Main d oeuvre", totalTravaux: 'Total travaux',
+      honorairesArchi: 'Honoraires architecte', honorairesInge: 'Honoraires ingenieur',
+      totalGrosOeuvre: 'Total gros oeuvre', totalSecondOeuvre: 'Total second oeuvre',
+      totalHT: 'Total HT', tva: 'TVA', netAPayer: 'Net a payer', totalGeneral: 'TOTAL GENERAL'
+    };
+    for (const [cle, valeur] of Object.entries(devis.cascade)) {
+      if (typeof valeur === 'number') rowsSynth.push([libelles[cle] || cle, valeur]);
+    }
+    if (devis.enToutesLettres) rowsSynth.push([], [devis.enToutesLettres]);
+  }
+  const wsSynth = XLSX.utils.aoa_to_sheet(rowsSynth);
+  wsSynth['!cols'] = [{ wch: 40 }, { wch: 20 }];
+  XLSX.utils.book_append_sheet(wb, wsSynth, 'Synthese');
+
+  // ── Une feuille par section ───────────────────────────────────────────────
+  sections.forEach((section, si) => {
+    const nomFeuille = `${si + 1}_${section.titre.substring(0, 25).replace(/[:\\/?*\[\]]/g, '_')}`;
+    const rows = [
+      [section.titre],
+      [],
+      ['N°', 'Designation', 'Unite', 'Quantite', 'P.U. (FCFA)', 'P.T. (FCFA)', 'Note'],
+    ];
+
+    section.lignes.forEach((ligne, li) => {
+      // Ligne avec formule =D{row}*E{row} pour que le confrere puisse verifier
+      const rowNum = rows.length + 1;
+      rows.push([
+        `${si + 1}.${li + 1}`,
+        ligne.designation,
+        ligne.unite || '',
+        ligne.quantite !== null && ligne.quantite !== undefined ? ligne.quantite : '',
+        ligne.pu || '',
+        ligne.pu && ligne.quantite ? { f: `D${rowNum}*E${rowNum}` } : '',
+        ligne.avertissements?.length ? ligne.avertissements.join(' | ') : ''
+      ]);
     });
 
-    doc.save(`Devis_${isEntreprise ? 'Entreprise' : 'Particulier'}.pdf`);
-  };
-
-  const exportExcel = (devis, type = 'entreprise') => {
-    if (!devis || !devis.blocs) return;
-    const isEntreprise = type === 'entreprise';
-    const wb = XLSX.utils.book_new();
-    const rows = [];
-
-    rows.push([`Devis - Modèle ${isEntreprise ? 'Entreprise' : 'Particulier'}`]);
-    rows.push([`Total Général`, '', '', '', '', formaterNombre(devis.total, true)]);
-    rows.push([]);
-    
-    rows.push(isEntreprise 
-      ? ["N°", "Ouvrage", "Unité", "Quantité", "PU (FCFA)", "Total (FCFA)"]
-      : ["N°", "Matériau", "Unité", "Quantité", "PU (FCFA)", "Total (FCFA)"]
-    );
-
-    Object.keys(devis.blocs).forEach((lotId, index) => {
-      const lotData = devis.blocs[lotId];
-      if (!lotData.lignes || lotData.lignes.length === 0) return;
-
-      rows.push([index + 1, titresLots[lotId] || lotId]);
-
-      lotData.lignes.forEach((ligne, i) => {
-        rows.push([
-          `${index + 1}.${i + 1}`,
-          ligne.designation,
-          ligne.unite,
-          ligne.quantite,
-          ligne.pu,
-          ligne.pt
-        ]);
-      });
-
-      rows.push(['', `Sous-total ${titresLots[lotId] || lotId}`, '', '', '', lotData.sousTotal]);
-      rows.push([]);
-    });
+    // Sous-total
+    const firstDataRow = 4;
+    const lastDataRow  = rows.length;
+    rows.push([
+      '', 'Sous-total', '', '', '',
+      { f: `SUM(F${firstDataRow}:F${lastDataRow})` },
+      ''
+    ]);
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    XLSX.utils.book_append_sheet(wb, ws, "Devis");
-    XLSX.writeFile(wb, `Devis_${isEntreprise ? 'Entreprise' : 'Particulier'}.xlsx`);
-  };
+    ws['!cols'] = [
+      { wch: 8 }, { wch: 45 }, { wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 35 }
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, nomFeuille);
+  });
 
-  const exportJSON = (projetData) => {
-    const dataStr = JSON.stringify(projetData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = 'projet_export.json';
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  };
+  const nomFichier = `Devis_${type === 'entreprise' ? 'Entreprise' : 'Particulier'}_${(infoProjet.reference || 'DF').replace(/\s/g, '_')}.xlsx`;
+  XLSX.writeFile(wb, nomFichier);
+}
 
+// ─── Export JSON (jeu de parametres + devis) ─────────────────────────────────
+
+/**
+ * Exporte le jeu de donnees complet : saisie, parametres, regles et les deux devis.
+ * Un devis reste reproductible deux ans plus tard, meme si les prix ont change.
+ */
+export function exporterProjetJSON(projetData) {
+  const snapshot = {
+    _version: '2026.08',
+    _exportDate: new Date().toISOString(),
+    _description: 'Instantane reproductible du projet. Reimporter dans Devis Facile BTP pour retrouver les memes chiffres.',
+    ...projetData
+  };
+  const dataStr = JSON.stringify(snapshot, null, 2);
+  const blob    = new Blob([dataStr], { type: 'application/json' });
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement('a');
+  a.href        = url;
+  a.download    = `Projet_${(projetData.infoProjet?.reference || 'DF').replace(/\s/g, '_')}_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── Hook (retrocompatibilite) ────────────────────────────────────────────────
+export function useExport() {
   return {
-    exportPDF,
-    exportExcel,
-    exportJSON
+    exportPDF:  exporterDevisPDF,
+    exportExcel: exporterDevisExcel,
+    exportJSON:  exporterProjetJSON,
   };
 }
