@@ -8,6 +8,7 @@ import TableauDevis from '../sections/TableauDevis.jsx';
 import { ErrorBoundary } from '../ui/ErrorBoundary.jsx';
 import { formaterNombre } from '../../utils/format.js';
 import Icone from '../ui/Icone.jsx';
+import MenuExport from '../ui/MenuExport.jsx';
 
 /**
  * Étape 5 — le devis final, prix tout compris (modèle Entreprise : c'est lui
@@ -72,36 +73,30 @@ export default function EtapeDevis() {
           <Icone nom="check-square" size={15} />
           Enregistré
         </button>
+        {/* « Modifier » emmene vers l'editeur Excel (formules, edition ligne a
+            ligne) : c'est l'action « je corrige mon devis », distincte de
+            « je repasse par le metre » que le Stepper permet deja en un clic. */}
         <Link
-          to="/metre?etape=3"
+          to="/devis/avance"
           className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-brand-primary/15 px-3 text-[13px] font-bold text-brand-text/70 hover:bg-black/[0.03]"
         >
           <Icone nom="edit" size={15} />
-          Modifier le métré
+          Modifier le devis
         </Link>
-        <div className="ml-auto flex flex-wrap gap-2">
-          <button
-            onClick={() => {
-              if (!devisEntreprise?.total) return toast('Aucun ouvrage à exporter pour le moment.', 'erreur');
-              exportExcel(devisEntreprise, 'entreprise', infoProjet);
-              toast('Fichier Excel généré.');
-            }}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-brand-primary/15 px-3 text-[13px] font-bold text-brand-text/70 hover:bg-black/[0.03]"
-          >
-            <Icone nom="file-text" size={15} />
-            Exporter Excel
-          </button>
-          <button
-            onClick={() => {
+        <div className="ml-auto">
+          <MenuExport
+            disabled={!devisEntreprise?.total}
+            onExporterPDF={() => {
               if (!devisEntreprise?.total) return toast('Aucun ouvrage à exporter pour le moment.', 'erreur');
               exportPDF(devisEntreprise, 'entreprise', infoProjet);
               toast('Fichier PDF généré.');
             }}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-brand-primary px-4 text-[13px] font-bold text-white hover:bg-brand-primary-dark"
-          >
-            <Icone nom="file-text" size={15} />
-            Exporter PDF
-          </button>
+            onExporterExcel={() => {
+              if (!devisEntreprise?.total) return toast('Aucun ouvrage à exporter pour le moment.', 'erreur');
+              exportExcel(devisEntreprise, 'entreprise', infoProjet);
+              toast('Fichier Excel généré.');
+            }}
+          />
         </div>
       </div>
 
@@ -131,13 +126,6 @@ export default function EtapeDevis() {
           </table>
         </div>
       )}
-
-      <p className="mt-6 text-center text-[12.5px] text-brand-text/40">
-        Besoin de formules Excel et de modifications libres ?{' '}
-        <Link to="/devis/avance" className="font-bold text-brand-interactive hover:underline">
-          Ouvrir l'éditeur avancé
-        </Link>
-      </p>
     </div>
   );
 }
