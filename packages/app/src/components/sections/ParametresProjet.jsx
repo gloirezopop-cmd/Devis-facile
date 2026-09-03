@@ -1,7 +1,18 @@
 import React from 'react';
 import { useProjet } from '../../context/ProjetContext.jsx';
-import InputSaisie from '../ui/InputSaisie.jsx';
+import SelectAvecAutre from '../ui/SelectAvecAutre.jsx';
 import { useExport } from '../../hooks/useExport.js';
+
+// Dosages courants du BTP (kg de ciment / m³) — betonProprete: 150,
+// maconnerieCourante/mortier: 250, mortierRenforce: 300, betonArme: 350,
+// memoire [400,450,500] dans packages/moteur/src/parametres.js.
+const DOSAGES_BETON = [150, 200, 250, 300, 350, 400, 450, 500].map((v) => ({ value: v, label: `${v} kg/m³` }));
+
+// Pourcentages de perte usuels ; « Autre » reste disponible pour un cas particulier.
+const POURCENTAGES_PERTE = [0, 3, 5, 8, 10, 15, 20].map((v) => ({ value: v, label: `${v} %` }));
+
+// Taux de frais/marge du devis Entreprise — plage usuelle observee.
+const POURCENTAGES_TAUX = [0, 5, 8, 10, 15, 20, 25, 28, 30].map((v) => ({ value: v, label: `${v} %` }));
 
 export default function ParametresProjet() {
   const {
@@ -115,17 +126,19 @@ export default function ParametresProjet() {
               <option value="32.5">CPJ 32.5</option>
             </select>
           </div>
-          <InputSaisie
+          <SelectAvecAutre
             label="Dosage Béton Propreté"
             value={parametresProjet.dosageBP}
             onChange={(v) => setParametresProjet({ ...parametresProjet, dosageBP: Number(v) })}
             unite="kg/m³"
+            options={DOSAGES_BETON}
           />
-          <InputSaisie
+          <SelectAvecAutre
             label="Dosage Béton Armé"
             value={parametresProjet.dosageBA}
             onChange={(v) => setParametresProjet({ ...parametresProjet, dosageBA: Number(v) })}
             unite="kg/m³"
+            options={DOSAGES_BETON}
           />
           <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
             <label className="text-xs text-devis-saisie font-bold uppercase tracking-wider">Inclure l'eau dans le devis</label>
@@ -175,10 +188,10 @@ export default function ParametresProjet() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {Object.entries(majorations).map(([key, value]) => (
-            <InputSaisie
+            <SelectAvecAutre
               key={key}
               label={key.charAt(0).toUpperCase() + key.slice(1)}
-              value={((value - 1) * 100).toFixed(0)}
+              value={Math.round((value - 1) * 100)}
               onChange={(v) => {
                 const num = Number(v);
                 if (!isNaN(num)) {
@@ -186,6 +199,7 @@ export default function ParametresProjet() {
                 }
               }}
               unite="%"
+              options={POURCENTAGES_PERTE}
             />
           ))}
         </div>
@@ -198,29 +212,33 @@ export default function ParametresProjet() {
         <p className="text-sm text-gray-600 mb-4">Ces taux calculent le coefficient de majoration utilisé pour le <strong>Devis Entreprise</strong>.</p>
 
         <div className="grid grid-cols-2 gap-4">
-          <InputSaisie
+          <SelectAvecAutre
             label="Frais de Chantier (%)"
-            value={taux.fraisChantier * 100}
+            value={Math.round(taux.fraisChantier * 100)}
             onChange={(v) => setTaux({ ...taux, fraisChantier: Number(v) / 100 })}
             unite="%"
+            options={POURCENTAGES_TAUX}
           />
-          <InputSaisie
+          <SelectAvecAutre
             label="Frais Généraux (%)"
-            value={taux.fraisGeneraux * 100}
+            value={Math.round(taux.fraisGeneraux * 100)}
             onChange={(v) => setTaux({ ...taux, fraisGeneraux: Number(v) / 100 })}
             unite="%"
+            options={POURCENTAGES_TAUX}
           />
-          <InputSaisie
+          <SelectAvecAutre
             label="Frais d'Opération (%)"
-            value={taux.fraisOperation * 100}
+            value={Math.round(taux.fraisOperation * 100)}
             onChange={(v) => setTaux({ ...taux, fraisOperation: Number(v) / 100 })}
             unite="%"
+            options={POURCENTAGES_TAUX}
           />
-          <InputSaisie
+          <SelectAvecAutre
             label="Bénéfice & Aléas (%)"
-            value={taux.aleasEtBenefice * 100}
+            value={Math.round(taux.aleasEtBenefice * 100)}
             onChange={(v) => setTaux({ ...taux, aleasEtBenefice: Number(v) / 100 })}
             unite="%"
+            options={POURCENTAGES_TAUX}
           />
         </div>
       </div>
