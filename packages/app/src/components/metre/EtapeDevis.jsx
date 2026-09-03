@@ -9,6 +9,7 @@ import { ErrorBoundary } from '../ui/ErrorBoundary.jsx';
 import { formaterNombre } from '../../utils/format.js';
 import Icone from '../ui/Icone.jsx';
 import MenuExport from '../ui/MenuExport.jsx';
+import LogoProjet from '../ui/LogoProjet.jsx';
 
 /**
  * Étape 5 — le devis final, prix tout compris (modèle Entreprise : c'est lui
@@ -25,6 +26,8 @@ export default function EtapeDevis() {
     maitreOuvrage: parametresProjet?.maitreOuvrage || '',
     localisation: parametresProjet?.localisation || '',
     reference: parametresProjet?.reference || 'DF-2026',
+    nomEntreprise: parametresProjet?.nomEntreprise || '',
+    logo: parametresProjet?.logo || null,
   };
   const numero = parametresProjet?.reference || 'DF-2026';
   const dateJour = new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -41,21 +44,24 @@ export default function EtapeDevis() {
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4 rounded-lg border border-brand-primary/10 bg-white p-5">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-brand-text/40">Devis N°</p>
-          {champ('reference')}
-          <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-brand-text/40">Client</p>
-              {champ('maitreOuvrage')}
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-brand-text/40">Localisation</p>
-              {champ('localisation')}
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-brand-text/40">Entreprise</p>
-              {champ('nomEntreprise')}
+        <div className="flex items-start gap-4">
+          <LogoProjet />
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-brand-text/40">Devis N°</p>
+            {champ('reference')}
+            <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-brand-text/40">Client</p>
+                {champ('maitreOuvrage')}
+              </div>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-brand-text/40">Localisation</p>
+                {champ('localisation')}
+              </div>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-brand-text/40">Entreprise</p>
+                {champ('nomEntreprise')}
+              </div>
             </div>
           </div>
         </div>

@@ -43,14 +43,27 @@ export function exporterDevisPDF(devis, type = 'particulier', infoProjet = {}) {
   const LARGEUR = 210 - 2 * MARGE;
 
   // ── En-tete ──────────────────────────────────────────────────────────────────
+  // Le logo, s'il existe, decale le texte du titre pour ne pas le chevaucher.
+  let decalageTitre = MARGE;
+  if (infoProjet.logo) {
+    try {
+      const format = /^data:image\/png/i.test(infoProjet.logo) ? 'PNG' : 'JPEG';
+      doc.addImage(infoProjet.logo, format, MARGE, 10, 18, 18, undefined, 'FAST');
+      decalageTitre = MARGE + 22;
+    } catch {
+      // Une image corrompue ou d'un format non supporte par jsPDF ne doit pas
+      // empecher l'export du devis : on continue simplement sans le logo.
+    }
+  }
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  doc.text('DEVIS FACILE BTP', MARGE, 18);
+  doc.text(infoProjet.nomEntreprise || 'DEVIS FACILE BTP', decalageTitre, 18);
 
   doc.setFontSize(11);
   doc.text(
     estEntreprise ? 'DEVIS ENTREPRISE (Prix tout compris, TVA comprise)' : 'DEVIS PARTICULIER (Bordereau quantitatif et estimatif)',
-    MARGE, 26
+    decalageTitre, 26
   );
 
   doc.setFont('helvetica', 'normal');
