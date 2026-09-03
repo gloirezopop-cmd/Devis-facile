@@ -8,7 +8,7 @@ const { net } = moteurInternes;
  * Ajoute une quantité à un dictionnaire de matériaux. 
  * Les clés sont construites par type de matériau.
  */
-function ajouterMateriau(recettes, categorie, materiau, unite, quantiteNette) {
+function ajouterMateriau(recettes, categorie, materiau, unite, quantiteNette, regles = {}) {
   if (!quantiteNette) return;
   
   if (!recettes[materiau]) {
@@ -17,34 +17,46 @@ function ajouterMateriau(recettes, categorie, materiau, unite, quantiteNette) {
   recettes[materiau].quantiteNette = net(recettes[materiau].quantiteNette + quantiteNette);
   
   // Majoration (achat uniquement)
-  const majoration = PARAMETRES.majorations?.[materiau] || 1.0;
+  const majoration = regles?.majorations?.[materiau] || PARAMETRES.majorations?.[materiau] || 1.0;
   recettes[materiau].quantite = net(recettes[materiau].quantiteNette * majoration);
 }
 
 /** Calcule les recettes de béton pour un bloc donné. */
-function calculerRecetteBeton(recettes, blocId, bloc, dosage) {
+function calculerRecetteBeton(recettes, blocId, bloc, dosage, regles = {}) {
   if (!bloc || !bloc.total) return;
   
-  // Ciment en sacs (arrondi global par bloc)
-  let sacsCiment = Math.ceil((bloc.total * dosage) / PARAMETRES.beton.poidsSacCiment);
-  
-  ajouterMateriau(recettes, 'ciment', 'ciment', 'sac', sacsCiment);
+  // Ciment en sacs : arrondi au sac supérieur PAR OUVRAGE (= par ligne), puis
+  // somme. C'est la règle du classeur Excel. Un arrondi sur le total du bloc
+  // sous-estime la commande de ciment.
+  let sacsCiment = 0;
+  if (bloc.lignes && bloc.lignes.length > 0) {
+    for (const l of bloc.lignes) {
+      if (l.valeur > 0) {
+        sacsCiment += Math.ceil((l.valeur * dosage) / PARAMETRES.beton.poidsSacCiment);
+      }
+    }
+  } else {
+    // Fallback si pas de lignes (blocs synthétiques)
+    sacsCiment = Math.ceil((bloc.total * dosage) / PARAMETRES.beton.poidsSacCiment);
+  }
+
+  ajouterMateriau(recettes, 'ciment', 'ciment', 'sac', sacsCiment, regles);
   
   const volume = bloc.total;
 
   // Sable en tonnes
   const volumeSable = volume * PARAMETRES.beton.sableParM3;
   const tonnesSable = volumeSable * PARAMETRES.beton.densiteSable;
-  ajouterMateriau(recettes, 'sable', 'sable', 't', tonnesSable);
+  ajouterMateriau(recettes, 'sable', 'sable', 't', tonnesSable, regles);
   
   // Gravier en tonnes
   const volumeGravier = volume * PARAMETRES.beton.gravierParM3;
   const tonnesGravier = volumeGravier * PARAMETRES.beton.densiteGravier;
-  ajouterMateriau(recettes, 'gravier', 'gravier', 't', tonnesGravier);
+  ajouterMateriau(recettes, 'gravier', 'gravier', 't', tonnesGravier, regles);
 
   // Eau en litres (kg ciment / 2) -> Le classeur indique Volume x dosage / 2
   const litresEau = (volume * dosage) / PARAMETRES.beton.eauParDosage;
-  ajouterMateriau(recettes, 'eau', 'eau', 'L', litresEau);
+  ajouterMateriau(recettes, 'eau', 'eau', 'L', litresEau, regles);
 }
 
 /** Calcule le coffrage pour un bloc. */
@@ -67,37 +79,6 @@ function calculerCoffrage(recettes, blocId, bloc) {
     }
   }
 
-  // Fallback si pas de lignes (ex. total global, ou dalles s'il y a un ratio)
-  if (planches === 0 && bloc.totalCoffrage > 0) {
-     const c = computeCoffrage({ surface: bloc.totalCoffrage, typeSurface: 'Global' });
-     if (c) {
-       planchesNet = c.planchesNet;
-       planches = c.planches;
-       chevrons = c.chevrons;
-       clous = c.clous;
-     }
-  }
-
-  if (planches === 0) {
-    // Si toujours pas de coffrage géométrique, on tente le ratio
-    const ratioId = blocId === 'longrines' ? 'longrine' :
-                    blocId === 'poteaux' ? 'colonne' :
-                    blocId === 'poutres' ? 'poutre' :
-                    blocId === 'dalles' ? 'dalle' : null;
-                    
-    const ratio = PARAMETRES.ratiosCoffrage[ratioId];
-    if (ratio && bloc.total) {
-      const surfaceCoffrage = bloc.total * ratio;
-      const c = computeCoffrage({ surface: surfaceCoffrage, typeSurface: 'Hypothèse (Ratio)' });
-      if (c) {
-        planchesNet = c.planchesNet;
-        planches = c.planches;
-        chevrons = c.chevrons;
-        clous = c.clous;
-      }
-    }
-  }
-
   if (planches > 0) {
     // On met à jour directement pour ne pas subir la majoration standard de ajouterMateriau
     if (!recettes['planches']) recettes['planches'] = { categorie: 'bois', quantiteNette: 0, quantite: 0, unite: 'u' };
@@ -115,49 +96,63 @@ function calculerCoffrage(recettes, blocId, bloc) {
 }
 
 /** Calcule l'acier pour un bloc (rétrocompatibilité si ratios fixes utilisés, mais on utilise le métré analytique normalement). */
-function calculerAcier(recettes, blocId, volume) {
-  if (!volume) return;
-  // S'il n'y a pas de ratio fixe dans parametres.js pour l'acier, on skip (l'acier analytique est calculé dans metre.js).
+function calculerAcier(recettes, blocId, bloc) {
+  if (!bloc || !bloc.total) return;
+  
+  let poidsAcierTotal = 0;
+  if (bloc.lignes) {
+    for (const l of bloc.lignes) {
+      if (l.poidsAcier) poidsAcierTotal += l.poidsAcier;
+    }
+  }
+  
+  if (poidsAcierTotal > 0) {
+    // 5% du poids d'acier de CET ouvrage pour le fil de ligature
+    // PARAMETRES.armatures.filLigaturePct
+    const filLigature = net(poidsAcierTotal * 0.05);
+    ajouterMateriau(recettes, 'acier', 'filLigature', 'kg', filLigature, null);
+  }
 }
 
 /**
  * Calcule toutes les recettes de matériaux à partir d'un métré.
  * 
  * @param {object} blocs  Les blocs issus de calculerMetre()
+ * @param {object} regles  Les règles et majorations personnalisées
  * @returns {object} Un dictionnaire des quantités par matériau
  */
-export function calculerRecettes(blocs) {
+export function calculerRecettes(blocs, regles = {}) {
   const recettes = {};
 
   // 1. Béton de propreté
   if (blocs.betonProprete?.total) {
-    calculerRecetteBeton(recettes, 'betonProprete', blocs.betonProprete, PARAMETRES.dosages.betonProprete);
+    calculerRecetteBeton(recettes, 'betonProprete', blocs.betonProprete, PARAMETRES.dosages.betonProprete, regles);
   }
 
   // 2. Béton armé (semelles, longrines, colonnes, ceintures, linteaux, escalier, poteaux, poutres, dalles, acrotere)
   const blocsBA = ['semelles', 'longrines', 'colonnes', 'ceintures', 'linteaux', 'escalier', 'poteaux', 'poutres', 'dalles', 'acrotere'];
   for (const blocId of blocsBA) {
     if (blocs[blocId]?.total) {
-      calculerRecetteBeton(recettes, blocId, blocs[blocId], PARAMETRES.dosages.betonArme);
-      calculerAcier(recettes, blocId, blocs[blocId].total);
+      calculerRecetteBeton(recettes, blocId, blocs[blocId], PARAMETRES.dosages.betonArme, regles);
+      calculerAcier(recettes, blocId, blocs[blocId]);
       calculerCoffrage(recettes, blocId, blocs[blocId]);
     }
   }
 
   // 2b. Autres bétons
   if (blocs.chapeEgalisation?.total) {
-    calculerRecetteBeton(recettes, 'chapeEgalisation', blocs.chapeEgalisation, 250);
+    calculerRecetteBeton(recettes, 'chapeEgalisation', blocs.chapeEgalisation, 250, regles);
     calculerCoffrage(recettes, 'chapeEgalisation', blocs.chapeEgalisation);
   }
   if (blocs.sousPavement?.total) {
-    calculerRecetteBeton(recettes, 'sousPavement', blocs.sousPavement, 250);
+    calculerRecetteBeton(recettes, 'sousPavement', blocs.sousPavement, 250, regles);
   }
 
   // 2c. Moellon
   if (blocs.moellon?.total) {
     const volume = blocs.moellon.total;
     const tonnesMoellon = volume * 0.70 * 1.60;
-    ajouterMateriau(recettes, 'pierre', 'moellon', 't', tonnesMoellon);
+    ajouterMateriau(recettes, 'pierre', 'moellon', 't', tonnesMoellon, regles);
     
     // Mortier
     let sacsCiment = 0;
@@ -174,13 +169,13 @@ export function calculerRecettes(blocs) {
       volumeMortier = volume * 0.30;
       sacsCiment = (volumeMortier * 250) / 50;
     }
-    ajouterMateriau(recettes, 'ciment', 'ciment', 'sac', sacsCiment);
+    ajouterMateriau(recettes, 'ciment', 'ciment', 'sac', sacsCiment, regles);
     
     const sableMortier = volumeMortier * 1.0 * 1.50;
-    ajouterMateriau(recettes, 'sable', 'sable', 't', sableMortier);
+    ajouterMateriau(recettes, 'sable', 'sable', 't', sableMortier, regles);
     
     const eauMortier = sacsCiment * 50 * 0.5;
-    ajouterMateriau(recettes, 'eau', 'eau', 'L', eauMortier);
+    ajouterMateriau(recettes, 'eau', 'eau', 'L', eauMortier, regles);
   }
   
   // 3. Maçonnerie (agglos creux)
@@ -190,71 +185,85 @@ export function calculerRecettes(blocs) {
     let sacsCimentMortier = 0;
     
     for (const l of blocs.maconnerie.lignes) {
-       if (l.nombreBlocs) nbAgglosNet += (l.nombreBlocs / (PARAMETRES.majorations?.blocs || 1.10));
+       if (l.nombreBlocsNet) nbAgglosNet += l.nombreBlocsNet;
        if (l.volumeMortier) {
          volumeMortier += l.volumeMortier;
-         sacsCimentMortier += Math.ceil((l.volumeMortier * PARAMETRES.mortier.dosageMortierMaconnerie) / PARAMETRES.beton.poidsSacCiment);
+         sacsCimentMortier += Math.ceil((l.volumeMortier * 300) / 50); // Exactement la formule : ROUNDUP(Volume mortier x 300 / 50)
        }
     }
     
-    ajouterMateriau(recettes, 'agglos', 'blocs', 'u', nbAgglosNet);
-    ajouterMateriau(recettes, 'ciment', 'ciment', 'sac', sacsCimentMortier);
+    ajouterMateriau(recettes, 'agglos', 'blocs', 'u', nbAgglosNet, regles);
+    ajouterMateriau(recettes, 'ciment', 'ciment', 'sac', sacsCimentMortier, regles);
     
-    const tonnesSableMortier = volumeMortier * PARAMETRES.mortier.sableParM3Mortier * PARAMETRES.beton.densiteSable;
-    ajouterMateriau(recettes, 'sable', 'sable', 't', tonnesSableMortier);
+    const tonnesSableMortier = volumeMortier * 1.0 * 1.50; // Sable(t) = Volume mortier x 1.0 x 1.50
+    ajouterMateriau(recettes, 'sable', 'sable', 't', tonnesSableMortier, regles);
     
-    ajouterMateriau(recettes, 'eau', 'eau', 'L', sacsCimentMortier * PARAMETRES.beton.poidsSacCiment * PARAMETRES.mortier.ratioEauCimentMortier);
+    const eauMortierL = sacsCimentMortier * 50 * 0.5; // Eau(L) = Ciment(kg) x 0.5
+    ajouterMateriau(recettes, 'eau', 'eau', 'L', eauMortierL, regles);
   }
 
-  // 3b. Murs de Soubassement (agglos pleins)
+  // 3b. Murs de soubassement (agglos pleins). Meme mecanique que la maconnerie,
+  // mais sur une ligne de materiau distincte : un agglo plein n'a ni le meme
+  // prix ni le meme fournisseur qu'un agglo creux.
   if (blocs.soubassement?.lignes) {
     let nbAgglosNet = 0;
     let volumeMortier = 0;
     let sacsCimentMortier = 0;
-    
+
     for (const l of blocs.soubassement.lignes) {
-       if (l.nombreBlocs) nbAgglosNet += (l.nombreBlocs / (PARAMETRES.majorations?.blocs || 1.10));
+       if (l.nombreBlocsNet) nbAgglosNet += l.nombreBlocsNet;
        if (l.volumeMortier) {
          volumeMortier += l.volumeMortier;
-         sacsCimentMortier += Math.ceil((l.volumeMortier * PARAMETRES.mortier.dosageMortierMaconnerie) / PARAMETRES.beton.poidsSacCiment);
+         sacsCimentMortier += Math.ceil((l.volumeMortier * 300) / 50);
        }
     }
-    
-    ajouterMateriau(recettes, 'agglos_pleins', 'blocs_pleins', 'u', nbAgglosNet);
-    ajouterMateriau(recettes, 'ciment', 'ciment', 'sac', sacsCimentMortier);
-    
-    const tonnesSableMortier = volumeMortier * PARAMETRES.mortier.sableParM3Mortier * PARAMETRES.beton.densiteSable;
-    ajouterMateriau(recettes, 'sable', 'sable', 't', tonnesSableMortier);
-    
-    ajouterMateriau(recettes, 'eau', 'eau', 'L', sacsCimentMortier * PARAMETRES.beton.poidsSacCiment * PARAMETRES.mortier.ratioEauCimentMortier);
+
+    ajouterMateriau(recettes, 'agglos_pleins', 'blocs_pleins', 'u', nbAgglosNet, regles);
+    ajouterMateriau(recettes, 'ciment', 'ciment', 'sac', sacsCimentMortier, regles);
+
+    const tonnesSableMortier = volumeMortier * 1.0 * 1.50;
+    ajouterMateriau(recettes, 'sable', 'sable', 't', tonnesSableMortier, regles);
+
+    const eauMortierL = sacsCimentMortier * 50 * 0.5;
+    ajouterMateriau(recettes, 'eau', 'eau', 'L', eauMortierL, regles);
   }
-  
+
   // 4. Enduits
-  if (blocs.enduits?.total) {
-    const surface = blocs.enduits.total;
-    const kgCimentEnduit = surface * PARAMETRES.finitions.enduitCimentKgM2;
-    const sacsCimentEnduit = Math.ceil(kgCimentEnduit / PARAMETRES.beton.poidsSacCiment);
+  if (blocs.enduits) {
+    let sacsCimentEnduit = 0;
+    if (blocs.enduits.lignes && blocs.enduits.lignes.length > 0) {
+      for (const l of blocs.enduits.lignes) {
+        if (l.valeur) sacsCimentEnduit += Math.ceil((l.valeur * 8) / 50);
+      }
+    } else if (blocs.enduits.total > 0) {
+      sacsCimentEnduit = Math.ceil((blocs.enduits.total * 8) / 50);
+    }
     
-    ajouterMateriau(recettes, 'ciment', 'ciment', 'sac', sacsCimentEnduit);
-    
-    const cimentReelKg = sacsCimentEnduit * PARAMETRES.beton.poidsSacCiment;
-    const tonnesSableEnduit = (cimentReelKg / 300) * PARAMETRES.mortier.sableParM3Mortier * PARAMETRES.beton.densiteSable;
-    ajouterMateriau(recettes, 'sable', 'sable', 't', tonnesSableEnduit);
-    
-    ajouterMateriau(recettes, 'eau', 'eau', 'L', cimentReelKg * PARAMETRES.mortier.ratioEauCimentMortier);
+    if (sacsCimentEnduit > 0) {
+      ajouterMateriau(recettes, 'ciment', 'ciment', 'sac', sacsCimentEnduit, regles);
+      
+      const cimentReelKg = sacsCimentEnduit * 50;
+      // Sable(t) = (Ciment(kg) / 300) x 1.0 x 1.50
+      const tonnesSableEnduit = (cimentReelKg / 300) * 1.0 * 1.50;
+      ajouterMateriau(recettes, 'sable', 'sable', 't', tonnesSableEnduit, regles);
+      
+      // Eau(L) = Ciment(kg) x 0.5
+      const eauEnduitL = cimentReelKg * 0.5;
+      ajouterMateriau(recettes, 'eau', 'eau', 'L', eauEnduitL, regles);
+    }
   }
   
-  // Peinture
+  // Peinture (la UI ou metre.js stocke typePeinture)
   if (blocs.peinture?.lignes) {
     for (const p of blocs.peinture.lignes) {
        if (!p.valeur) continue;
        const surface = p.valeur;
        if (p.typePeinture === 'classique') {
-          ajouterMateriau(recettes, 'peinture', 'peinture_classique', 'L', (surface / PARAMETRES.finitions.rendementPeintureClassique) * PARAMETRES.finitions.nbCouchesPeinture);
+          ajouterMateriau(recettes, 'peinture', 'peinture_classique', 'L', (surface / 10) * 2, regles);
        } else if (p.typePeinture === 'chaux') {
-          ajouterMateriau(recettes, 'peinture', 'peinture_chaux', 'kg', (surface / PARAMETRES.finitions.rendementChaux) * PARAMETRES.finitions.nbCouchesPeinture);
+          ajouterMateriau(recettes, 'peinture', 'peinture_chaux', 'kg', (surface / 6) * 2, regles);
        } else { // latex
-          ajouterMateriau(recettes, 'peinture', 'peinture_latex', 'kg', (surface / PARAMETRES.finitions.rendementLatex));
+          ajouterMateriau(recettes, 'peinture', 'peinture_latex', 'kg', surface / 4, regles);
        }
     }
   }
@@ -264,80 +273,83 @@ export function calculerRecettes(blocs) {
     const surface = blocs.carrelage.total;
     const epaisseur = blocs.carrelage.epaisseurCarrelage || 0.03;
     
-    const nbCarreauxNet = surface / PARAMETRES.finitions.surfaceCarreau;
-    ajouterMateriau(recettes, 'carrelage', 'carreaux', 'u', nbCarreauxNet); // La majoration (1.1) se fera via PARAMETRES.majorations
-    // Notons que les cartons seront calculés sur la quantité majorée plus loin, ou gérés via le P.U par carreau.
+    // Carreaux = ROUNDUP(Surface / 0.09) (net)
+    const nbCarreauxNet = Math.ceil(surface / 0.09);
+    ajouterMateriau(recettes, 'carrelage', 'carreaux', 'u', nbCarreauxNet, regles);
     
-    // Ciment colle
-    const kgCimentColle = surface * PARAMETRES.finitions.cimentColleKgM2;
-    ajouterMateriau(recettes, 'cimentColle', 'cimentColle', 'kg', kgCimentColle);
+    // Ciment colle(kg) = Surface x 8
+    ajouterMateriau(recettes, 'cimentColle', 'cimentColle', 'kg', surface * 8, regles);
     
-    // Sable mortier de pose
-    const tonnesSable = surface * (epaisseur * 100) * PARAMETRES.finitions.sableMortierPoseLitresM2ParCm * PARAMETRES.beton.densiteSable / 1000;
-    ajouterMateriau(recettes, 'sable', 'sable', 't', tonnesSable);
-    
-    // Ciment mortier de pose
-    const sacsCimentMortier = Math.ceil(surface * epaisseur * 300 / PARAMETRES.beton.poidsSacCiment);
-    ajouterMateriau(recettes, 'ciment', 'ciment', 'sac', sacsCimentMortier);
+    // Sable du mortier de pose(t) = Surface x epaisseur_m x 100 * 10 * 1.50 / 1000 = Surface * epaisseur * 1.50
+    const ep_cm = epaisseur * 100;
+    const sableMortierPose = (surface * ep_cm * 10 * 1.50) / 1000;
+    ajouterMateriau(recettes, 'sable', 'sable', 't', sableMortierPose, regles);
+
+    // Ciment du mortier de pose(sacs) = ROUNDUP(Surface x epaisseur_m x 300 / 50)
+    const cimentMortierPose = Math.ceil((surface * epaisseur * 300) / 50);
+    ajouterMateriau(recettes, 'ciment', 'ciment', 'sac', cimentMortierPose, regles);
   }
   
   if (blocs.carrelage?.perimetreTotal) {
     const piecesPlinthe = blocs.carrelage.perimetreTotal / 0.4; // 0.4m par plinthe
-    ajouterMateriau(recettes, 'plinthe', 'plinthe', 'u', piecesPlinthe);
+    ajouterMateriau(recettes, 'plinthe', 'plinthe', 'u', piecesPlinthe, regles);
   }
   
   if (blocs.faience?.total) {
     const surface = blocs.faience.total;
     
-    const nbFaienceNet = surface / PARAMETRES.finitions.surfaceFaience;
-    ajouterMateriau(recettes, 'carrelage', 'faience', 'u', nbFaienceNet);
+    // Faïences = ROUNDUP(Surface / 0.10) net
+    const nbFaiencesNet = Math.ceil(surface / 0.10);
+    ajouterMateriau(recettes, 'carrelage', 'faience', 'u', nbFaiencesNet, regles);
     
-    const kgCimentColle = surface * PARAMETRES.finitions.cimentColleKgM2;
-    ajouterMateriau(recettes, 'cimentColle', 'cimentColle', 'kg', kgCimentColle);
+    // Ciment colle(kg) = Surface x 8
+    ajouterMateriau(recettes, 'cimentColle', 'cimentColle', 'kg', surface * 8, regles);
   }
 
   // Ajout des armatures calculées (qui viennent de metre.js)
   if (blocs.armatures?.lignes) {
     for (const ligne of blocs.armatures.lignes) {
-      ajouterMateriau(recettes, 'acier', ligne.id, ligne.unite, ligne.quantite);
+      ajouterMateriau(recettes, 'acier', ligne.id, ligne.unite, ligne.quantite, regles);
     }
   }
-
-
 
   // 6. Charpente Bois
   if (blocs.charpenteBois?.total) {
     const volumeBois = blocs.charpenteBois.total;
-    ajouterMateriau(recettes, 'bois', 'bois_charpente', 'm3', volumeBois);
+    ajouterMateriau(recettes, 'bois', 'bois_charpente', 'm3', volumeBois, regles);
     
     const clousCharpente = volumeBois * PARAMETRES.clous.charpente;
-    ajouterMateriau(recettes, 'clous', 'clous_charpente', 'kg', clousCharpente);
+    ajouterMateriau(recettes, 'clous', 'clous_charpente', 'kg', clousCharpente, regles);
   }
 
-  // 7. Couverture en Tôles
-  if (blocs.couvertureToles?.total) {
-    const surfaceToles = blocs.couvertureToles.total;
+  // 7. Toiture et Plafond
+  if (blocs.couvertureToles?.lignes) {
+    let surfaceToles = 0;
+    for (const l of blocs.couvertureToles.lignes) {
+      if (l.valeur) surfaceToles += l.valeur;
+    }
     
     // Tôles
     const nbreTolesBase = surfaceToles / (PARAMETRES.couverture.largeurUtileTole * PARAMETRES.couverture.longueurTole);
-    ajouterMateriau(recettes, 'toles', 'toles', 'u', nbreTolesBase * 2);
+    ajouterMateriau(recettes, 'toles', 'toles', 'u', nbreTolesBase * 2, regles);
     
     // Faîtières
     if (blocs.couvertureToles.lignes && blocs.couvertureToles.lignes.length > 0) {
       let faitieres = 0;
       for (const l of blocs.couvertureToles.lignes) {
-        if (l.longueur) {
-          faitieres += Math.ceil(l.longueur / PARAMETRES.couverture.longueurFaitiere) + 1;
+        const longueur = l.trace?.entrees?.longueur;
+        if (longueur) {
+          faitieres += Math.ceil(longueur / PARAMETRES.couverture.longueurFaitiere) + 1;
         }
       }
       if (faitieres > 0) {
-        ajouterMateriau(recettes, 'toles', 'faitieres', 'u', faitieres);
+        ajouterMateriau(recettes, 'toles', 'faitieres', 'u', faitieres, regles);
       }
     }
     
     // Clous
     const clousToiture = surfaceToles * 2 * PARAMETRES.clous.couverture;
-    ajouterMateriau(recettes, 'clous', 'clous_toiture', 'kg', clousToiture);
+    ajouterMateriau(recettes, 'clous', 'clous_toiture', 'kg', clousToiture, regles);
   }
 
   // 8. Maçonnerie d'Acrotère

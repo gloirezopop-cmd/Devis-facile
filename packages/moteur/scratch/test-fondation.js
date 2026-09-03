@@ -29,9 +29,15 @@ const projet = [{
 
 const part = genererDevisParticulier(projet, REGLES_DEFAUT, {});
 console.log("Devis Particulier - Total:", part.total);
-if (part.lots['fondation']) console.log("Devis Particulier - Fondation:", part.lots['fondation'].sousTotal, "(cible 2 035 617)");
+if (part.lots['fondation']) {
+    console.log("Devis Particulier - Fondation:", part.lots['fondation'].sousTotal, "(cible 2 035 617)");
+    console.log(part.lots['fondation'].lignes.map(l => `${l.designation}: ${l.quantite} ${l.unite} @ ${l.pu} = ${l.pt}`).join("\n"));
+}
 
 const ent = genererDevisEntreprise(projet, REGLES_DEFAUT, {});
-console.log("Devis Entreprise - Total:", ent.total);
-if (ent.niveaux['fondation']) console.log("Devis Entreprise - Fondation:", ent.niveaux['fondation'].sousTotal, "(cible 2 651 436)");
+console.log("\nDevis Entreprise - Total:", ent.total);
+if (ent.niveaux['fondation']) {
+    console.log("Devis Entreprise - Fondation:", ent.niveaux['fondation'].sousTotal, "(cible 2 651 436)");
+    console.log(ent.niveaux['fondation'].lignes.map(l => `${l.designation}: ${l.quantite} ${l.unite} @ ${l.pu} = ${l.pt}`).join("\n"));
+}
 

@@ -46,7 +46,10 @@ describe('Terrassement et Résumé Fondation', () => {
     // Résumé Matériaux
     assert.equal(resume.materiaux.ciment, 45); // Calculé : 45 sacs (arrondi par ligne)
     assert.equal(resume.materiaux.gravier.toFixed(5), '7.07968');
-    assert.equal(resume.materiaux.sable.toFixed(6), '4.451957');
+    // 4.453275 et non 4.451957 : le mortier se calcule desormais sur le nombre
+    // entier de blocs reellement poses (410), et non sur la fraction
+    // ceil(410 x 1,05) / 1,05 = 409,52 qui n'a pas de sens physique.
+    assert.equal(resume.materiaux.sable.toFixed(6), '4.453275');
     assert.equal(resume.materiaux.eau.toFixed(6), '1074.775000');
 
     // Aciers

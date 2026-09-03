@@ -19,7 +19,15 @@ export const REGLES_DEFAUT = {
       semelles: { diametrePrin: 10, espacement: 0.15 }, // Nappe croisée
       longrines: { diametrePrin: 12, nbreBarresPrin: 4, diametreCadre: 6, espacementCadre: 0.20 },
       chainages: { diametrePrin: 10, nbreBarresPrin: 4, diametreCadre: 6, espacementCadre: 0.20 },
-      dallePleine: { diametrePrin: 8, espacement: 0.15 } // Quadrillage
+      dallePleine: { diametrePrin: 10, espacement: 0.15 }, // Quadrillage
+      // Les principales et la repartition viennent des formules de reference
+      // (Ø12/15 et Ø8/20). Les chapeaux d'appui n'y figuraient pas : leur
+      // diametre est donc pose ici explicitement, et non herite des principales.
+      escalier: {
+        diametrePrin: 12, espacement: 0.15,
+        diametreRepartition: 8, espacementRepartition: 0.20,
+        diametreChapeaux: 10, espacementChapeaux: 0.15
+      }
     }
   },
 

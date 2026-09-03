@@ -41,6 +41,40 @@ function nombre(v) {
   return renseigne(v) ? v : 1;
 }
 
+/** Les cinq cotes sans lesquelles une volee d'escalier n'est pas calculable. */
+const CHAMPS_VOLEE = ['hauteurAMonter', 'nombreContremarches', 'giron', 'largeur', 'epaisseurPaillasse'];
+
+/** Cotes manquantes d'une volee. Vide = volee complete. */
+function coteseManquantesVolee(v) {
+  return CHAMPS_VOLEE.filter((c) => !renseigne(Number(v?.[c])));
+}
+
+/**
+ * Geometrie d'une volee d'escalier — source unique.
+ *
+ * Le volume, le coffrage et le ferraillage lisaient chacun leur propre copie de
+ * ces quatre lignes : une correction sur l'une ne suivait pas sur les autres.
+ *
+ *   h  = H / N                  hauteur d'une marche
+ *   Ng = N - 1                  girons (la derniere contremarche debouche sur le palier)
+ *   Lp = Ng x g                 projection horizontale
+ *   L  = racine(H^2 + Lp^2)     longueur inclinee de la paillasse
+ *
+ * L'epaisseur cotee verticalement se ramene a la perpendiculaire par cos(alpha) = Lp / L.
+ */
+function geometrieVolee(v) {
+  const N = Number(v.nombreContremarches);
+  const H = Number(v.hauteurAMonter);
+  const g = Number(v.giron);
+  const h = H / N;
+  const Ng = v.convention === 'marche_terminale' ? N : N - 1;
+  const Lp = Ng * g;
+  const L = Math.sqrt(H ** 2 + Lp ** 2);
+  const eSaisie = Number(v.epaisseurPaillasse);
+  const ePerp = v.typeEpaisseur === 'verticale' ? eSaisie * (Lp / L) : eSaisie;
+  return { N, H, g, h, Ng, Lp, L, ePerp };
+}
+
 /**
  * Definition declarative des blocs de metre.
  * `requis` liste les champs sans lesquels la ligne n'est pas calculable.
@@ -69,6 +103,14 @@ const BLOCS = {
     requis: ['longueur', 'largeur', 'profondeur'],
     formule: 'L x l x h',
     calcul: (l) => l.longueur * l.largeur * l.profondeur,
+  },
+
+  nivellement: {
+    libelle: 'Nivellement de l\'emprise',
+    unite: 'm3',
+    requis: ['longueur', 'largeur', 'epaisseur'],
+    formule: 'L x l x Ep',
+    calcul: (l) => l.longueur * l.largeur * l.epaisseur,
   },
 
   semelles: {
@@ -145,9 +187,166 @@ const BLOCS = {
   escalier: {
     libelle: 'Escalier',
     unite: 'm3',
-    requis: ['volume'],
-    formule: 'Volume x N',
-    calcul: (l) => l.volume * nombre(l.nombre)
+    requis: [], // now conditionnel
+    formule: 'Σ Volées + Σ Paliers + Σ Blocs',
+    calcul: (l) => {
+      if (!l.mode || l.mode === 'volume') {
+        return (l.volume || 0) * nombre(l.nombre);
+      }
+      
+      let volTotal = 0;
+
+      if (l.volees) {
+        l.volees.forEach(v => {
+          if (coteseManquantesVolee(v).length > 0) return;
+          const { h, Ng, L, ePerp } = geometrieVolee(v);
+
+          const v_paillasse = v.largeur * ePerp * L;
+          const v_marches = 0.5 * Number(v.giron) * h * v.largeur * Ng;
+
+          volTotal += v_paillasse + v_marches;
+        });
+      }
+
+      if (l.paliers) {
+        l.paliers.forEach(p => {
+          if (!p.longueur || !p.largeur || !p.epaisseur) return;
+          volTotal += p.longueur * p.largeur * p.epaisseur * nombre(p.nombre);
+        });
+      }
+
+      if (l.blocs) {
+        l.blocs.forEach(b => {
+          if (!b.longueur || !b.largeur || !b.epaisseur) return;
+          volTotal += b.longueur * b.largeur * b.epaisseur * nombre(b.nombre);
+        });
+      }
+
+      return volTotal * nombre(l.nombre);
+    },
+    calculCoffrage: (l) => {
+      if (!l.mode || l.mode === 'volume') {
+        // Mode historique
+        const ratioDefaut = 12; // 12 m2 / m3
+        return (l.volume || 0) * (l.ratioCoffrage || ratioDefaut) * nombre(l.nombre);
+      }
+      
+      let surfTotal = 0;
+      
+      if (l.volees) {
+        l.volees.forEach(v => {
+          if (coteseManquantesVolee(v).length > 0) return;
+          const { h, Ng, L, ePerp } = geometrieVolee(v);
+
+          // Fond + deux joues + les contremarches. On coffre Ng contremarches et
+          // non N : la derniere debouche sur le palier et se coffre avec lui.
+          // Compter N ici alors que le volume compte Ng marches faisait diverger
+          // le coffrage du beton d'une planche de contremarche par volee.
+          const fond = v.largeur * L;
+          const joues = 2 * (L * ePerp);
+          const contremarches = Ng * (v.largeur * h);
+          surfTotal += fond + joues + contremarches;
+        });
+      }
+
+      if (l.paliers) {
+        l.paliers.forEach(p => {
+          if (!p.longueur || !p.largeur || !p.epaisseur) return;
+          // S_palier = Longueur × Largeur (fond) + 2 × (Longueur + Largeur) × e (joues)
+          const fond = p.longueur * p.largeur;
+          const joues = 2 * (p.longueur + p.largeur) * p.epaisseur;
+          surfTotal += (fond + joues) * nombre(p.nombre);
+        });
+      }
+
+      if (l.blocs) {
+        l.blocs.forEach(b => {
+          if (!b.longueur || !b.largeur || !b.epaisseur) return;
+          // Meme formule simplifiee que le palier
+          const fond = b.longueur * b.largeur;
+          const joues = 2 * (b.longueur + b.largeur) * b.epaisseur;
+          surfTotal += (fond + joues) * nombre(b.nombre);
+        });
+      }
+      
+      return surfTotal * nombre(l.nombre);
+    },
+
+    /**
+     * Un escalier mal proportionne se monte quand meme : on avertit, on ne bloque pas.
+     * Un plan cote en pouces (marche 6" = 0,152 m, giron 10" = 0,254 m) donne
+     * 2h + g = 0,558 m et declenchera Blondel a juste titre.
+     */
+    valider: (l, regles) => {
+      if (!l.mode || l.mode === 'volume') return [];
+      const alertes = [];
+      const arrondi = (x) => Math.round(x * 1000) / 1000;
+
+      (l.volees || []).forEach((v, i) => {
+        const repere = v.id || `Volée ${i + 1}`;
+        const manquantes = coteseManquantesVolee(v);
+
+        // Une volee incomplete etait ecartee du total sans un mot : le devis
+        // sortait plus leger que le plan, et rien ne le disait.
+        if (manquantes.length > 0) {
+          if (Object.values(v || {}).some((x) => renseigne(Number(x)))) {
+            alertes.push({
+              type: 'dimension-manquante',
+              message: `${repere} n'est pas comptée : ${manquantes.join(', ')} manquant(e).`,
+            });
+          }
+          return;
+        }
+
+        const { h, g, L, ePerp } = geometrieVolee(v);
+        const blondel = 2 * h + g;
+
+        if (blondel < 0.60 || blondel > 0.65) {
+          alertes.push({
+            type: 'escalier-inconfortable',
+            message: `${repere} : 2h + g = ${arrondi(blondel)} m, hors de la plage de Blondel 0,60–0,65 m.`,
+          });
+        }
+        if (h < 0.16 || h > 0.19) {
+          alertes.push({
+            type: 'escalier-hors-usage',
+            message: `${repere} : hauteur de marche de ${arrondi(h)} m, inhabituelle (0,16–0,19 m).`,
+          });
+        }
+        if (g < 0.25 || g > 0.32) {
+          alertes.push({
+            type: 'escalier-hors-usage',
+            message: `${repere} : giron de ${arrondi(g)} m, inhabituel (0,25–0,32 m).`,
+          });
+        }
+        if (ePerp < L / 30) {
+          alertes.push({
+            type: 'escalier-elancement',
+            message: `${repere} : paillasse de ${arrondi(ePerp)} m pour ${arrondi(L)} m de portée — probablement trop mince, à faire vérifier.`,
+          });
+        }
+      });
+
+      // Recoupement du ferraillage par le ratio historique de 100 kg/m3.
+      // L'ancien forfait ne sert plus a calculer, il sert a controler : un ratio
+      // trop bas revele en general des chapeaux d'appui oublies.
+      const volume = BLOCS.escalier.calcul(l);
+      if (volume > 0) {
+        const poids = extractionsArmatures.escalier(l, regles)
+          .reduce((somme, a) => somme + (a.poids || 0), 0);
+        const ratio = poids / volume;
+        if (ratio < 70 || ratio > 130) {
+          alertes.push({
+            type: 'escalier-ratio-acier',
+            message:
+              `ferraillage à ${Math.round(ratio)} kg/m³, hors de la plage usuelle 70–130 kg/m³ ` +
+              `(${arrondi(poids)} kg pour ${arrondi(volume)} m³).`,
+          });
+        }
+      }
+
+      return alertes;
+    }
   },
   poteaux: { // Legacy pour rétrocompatibilité
     libelle: 'Colonnes (legacy)',
@@ -238,7 +437,10 @@ const BLOCS = {
     requis: ['perimetre', 'largeur', 'hauteur'],
     formule: 'Perimetre x l x H',
     calcul: (l) => l.perimetre * l.largeur * l.hauteur * nombre(l.nombre),
-    calculSurfaceMac: (l) => l.perimetre * l.hauteur * nombre(l.nombre)
+    // La maconnerie de l'acrotere monte sur sa propre hauteur, pas sur celle
+    // du chainage : les confondre sous-estimait la surface d'un facteur 4.
+    calculSurfaceMac: (l) =>
+      l.perimetre * (renseigne(l.hauteurAcrotere) ? l.hauteurAcrotere : l.hauteur) * nombre(l.nombre)
   },
 
   formePente: {
@@ -252,9 +454,15 @@ const BLOCS = {
   enduits: {
     libelle: 'Enduits',
     unite: 'm2',
-    requis: ['longueur', 'hauteur'],
-    formule: 'L x H x N',
-    calcul: (l) => l.longueur * l.hauteur * nombre(l.nombre),
+    requis: ['surface'],
+    requisAlternatifs: [['longueur', 'hauteur']],
+    // NB : les ouvertures ne sont pas deduites, conformement au classeur.
+    // Les deduire est defendable, mais c'est une decision de metre, pas une correction.
+    formule: 'Surface x N, ou L x H x N',
+    calcul: (l) =>
+      renseigne(l.surface)
+        ? Number(l.surface) * nombre(l.nombre)
+        : l.longueur * l.hauteur * nombre(l.nombre),
   },
 
   nivellement: {
@@ -288,7 +496,7 @@ const CHAMPS_DIMENSION = [
  * @returns {{valeur: number|null, unite: string, trace: object, manquants: string[]}}
  */
 function calculerLigne(bloc, ligne, regles, saisie) {
-  const manquants = bloc.requis.filter((champ) => !renseigne(ligne[champ]));
+  const manquants = champsRequisEffectifs(bloc, ligne).filter((champ) => !renseigne(ligne[champ]));
 
   if (manquants.length > 0) {
     return {
@@ -576,40 +784,183 @@ const extractionsArmatures = {
       // Pas de cadres sur les linteaux selon le guide
     ];
   },
+  dalles: (l, regles) => {
+    if (!l.longueur || !l.largeur) {
+       return null; // Will trigger a warning inside calculerMetre if we want, but let's just return empty and the main calc warns
+    }
+    const h = acierHyp(regles, 'dallePleine') || {};
+    const dPrin = l.diametrePrin || h.diametrePrin || 10;
+    const espacement = l.espacement || h.espacement || 0.15;
+    const enrobage = PARAMETRES.armatures.enrobage;
+    
+    // Nappe suivant L
+    const filesNappeL = Math.ceil(l.largeur / espacement + 1);
+    const ldNappeL = l.longueur - 2 * enrobage;
+    
+    // Nappe suivant l
+    const filesNappel = Math.ceil(l.longueur / espacement + 1);
+    const ldNappel = l.largeur - 2 * enrobage;
+    
+    if (ldNappeL <= 0 || ldNappel <= 0) return null;
+
+    const n = nombre(l.nombre);
+
+    return [
+      calculerBlocArmature({
+        designation: 'Nappe suivant L',
+        diametre: dPrin,
+        nuance: PARAMETRES.nuancePrincipaleParDefaut,
+        nombreDeFilesTotal: filesNappeL * n,
+        longueurDeveloppee: ldNappeL,
+        espacement,
+        overrides: { Ls: 0, ...l.overrides_nappeL }
+      }),
+      calculerBlocArmature({
+        designation: 'Nappe suivant l',
+        diametre: dPrin,
+        nuance: PARAMETRES.nuancePrincipaleParDefaut,
+        nombreDeFilesTotal: filesNappel * n,
+        longueurDeveloppee: ldNappel,
+        espacement,
+        overrides: { Ls: 0, ...l.overrides_nappel }
+      })
+    ];
+  },
   escalier: (l, regles) => {
-    // Calcul de l'escalier via ratio de poids
-    if (!l.volume) return [];
-    const ratio = l.ratioAcier || 100; // 100 kg/m3 par defaut
-    const poidsTotal = l.volume * ratio;
-    
-    // Convertir ce poids en nombre de barres d'un diamètre représentatif
-    const dPrin = l.diametrePrin || 10;
-    const nuance = PARAMETRES.nuancePrincipaleParDefaut;
-    const pdsL = poidsAuMetre(dPrin);
-    if (!pdsL) return []; // Si diamètre inconnu
-    
-    const longueurCommerciale = 12;
-    const nbBarresEquivalentes = Math.ceil(poidsTotal / (longueurCommerciale * pdsL));
-    
-    return [{
-      repere: l.repere || l.id || 'Escalier',
-      designation: 'Acier Paillasse (Ratio)',
-      diametre: dPrin,
-      nuance: nuance,
-      espacement: null,
-      nombreDeFiles: nbBarresEquivalentes, // files représentatives
-      longueurDeveloppee: longueurCommerciale,
-      recouvrement: 0,
-      nombreBarres12m: nbBarresEquivalentes,
-      poids: poidsTotal,
-      trace: {
-        formule: "Poids = Volume * Ratio ; Barres = Poids / (12 * pdsAuMetre)",
-        entrees: { volume: l.volume, ratio, dPrin },
-        resultat: poidsTotal,
-        unite: 'kg'
-      },
-      overrides: {}
-    }];
+    // Mode ratio historique
+    if (!l.mode || l.mode === 'volume') {
+      if (!l.volume) return [];
+      const ratio = l.ratioAcier || 100; // 100 kg/m3 par defaut
+      const poidsTotal = l.volume * ratio;
+      const dPrin = l.diametrePrin || 10;
+      const nuance = PARAMETRES.nuancePrincipaleParDefaut;
+      const pdsL = poidsAuMetre(dPrin);
+      if (!pdsL) return []; 
+      const longueurCommerciale = 12;
+      const nbBarresEquivalentes = Math.ceil(poidsTotal / (longueurCommerciale * pdsL));
+      return [{
+        repere: l.repere || l.id || 'Escalier',
+        designation: 'Acier Paillasse (Ratio)',
+        diametre: dPrin,
+        nuance: nuance,
+        espacement: null,
+        nombreDeFiles: nbBarresEquivalentes,
+        longueurDeveloppee: longueurCommerciale,
+        recouvrement: 0,
+        nombreBarres12m: nbBarresEquivalentes,
+        poids: poidsTotal,
+        trace: {
+          formule: "Poids = Volume * Ratio ; Barres = Poids / (12 * pdsAuMetre)",
+          entrees: { volume: l.volume, ratio, dPrin },
+          resultat: poidsTotal,
+          unite: 'kg'
+        },
+        overrides: {}
+      }];
+    }
+
+    // Mode géométrie complet
+    const h = acierHyp(regles, 'escalier');
+    const enrobage = PARAMETRES.armatures.enrobage;
+    const crochet = PARAMETRES.armatures.crochet;
+    // Escaliers identiques : le beton et le coffrage etaient multiplies par ce
+    // nombre, l'acier ne l'etait pas. Deux escaliers sortaient avec deux fois
+    // le beton et une seule fois le ferraillage.
+    const n = nombre(l.nombre);
+
+    let aciers = [];
+
+    if (l.volees) {
+      l.volees.forEach((v, i) => {
+        if (coteseManquantesVolee(v).length > 0) return;
+        const { L: L_inclinee } = geometrieVolee(v);
+
+        // Les defauts se completent, ils ne se remplacent pas : un ferraillage
+        // saisi partiellement (« Ø14 » sans espacement) doit garder l'espacement
+        // par defaut, et non repartir sans valeur.
+        const f = v.ferraillage || {};
+        const p_prin = { diametre: h.diametrePrin || 12, espacement: h.espacement || 0.15, ...f.principales };
+        const p_rep = { diametre: h.diametreRepartition || 8, espacement: h.espacementRepartition || 0.20, ...f.repartition };
+        // Chapeaux : diametre propre, jamais celui des principales. Les heriter
+        // faisait sortir du Ø12 la ou le ferraillage de reference pose du Ø10,
+        // soit 6,3 kg de trop par escalier.
+        const p_chap = { actif: true, diametre: h.diametreChapeaux || 10, espacement: h.espacementChapeaux || 0.15, longueurAppui: null, ...f.chapeaux };
+        const p_repsup = { actif: true, diametre: h.diametreRepartition || 8, espacement: h.espacementRepartition || 0.20, ...f.repartitionSup };
+
+        const prefix = v.id || `V${i+1}`;
+
+        // 1. Principales (inférieures) : sens L, compte sur largeur
+        aciers.push(calculerBlocArmature({
+          designation: `${prefix} - Principales inf.`,
+          diametre: p_prin.diametre,
+          nuance: PARAMETRES.nuancePrincipaleParDefaut,
+          nombreDeFilesTotal: (Math.ceil(v.largeur / p_prin.espacement) + 1) * n,
+          longueurDeveloppee: L_inclinee - 2 * enrobage + 2 * crochet,
+          espacement: p_prin.espacement,
+          overrides: v.overrides_prin || {}
+        }));
+
+        // 2. Répartition (inférieure) : sens largeur, compte sur L
+        aciers.push(calculerBlocArmature({
+          designation: `${prefix} - Répartition inf.`,
+          diametre: p_rep.diametre,
+          nuance: PARAMETRES.nuancePrincipaleParDefaut,
+          nombreDeFilesTotal: (Math.ceil(L_inclinee / p_rep.espacement) + 1) * n,
+          longueurDeveloppee: v.largeur - 2 * enrobage + 2 * crochet,
+          espacement: p_rep.espacement,
+          overrides: v.overrides_rep || {}
+        }));
+
+        // 3. Chapeaux
+        if (p_chap.actif !== false) {
+          const l_chapeau = (p_chap.longueurAppui !== null && p_chap.longueurAppui !== undefined) ? p_chap.longueurAppui : (L_inclinee / 5 + 0.40);
+          aciers.push(calculerBlocArmature({
+            designation: `${prefix} - Chapeaux appuis`,
+            diametre: p_chap.diametre,
+            nuance: PARAMETRES.nuancePrincipaleParDefaut,
+            nombreDeFilesTotal: (Math.ceil(v.largeur / p_chap.espacement) + 1) * 2 * n, // 2 appuis (haut et bas)
+            longueurDeveloppee: l_chapeau,
+            espacement: p_chap.espacement,
+            overrides: v.overrides_chapeaux || {}
+          }));
+
+          // 4. Répartition Supérieure (liée aux chapeaux)
+          if (p_repsup.actif !== false) {
+            aciers.push(calculerBlocArmature({
+              designation: `${prefix} - Répartition sup.`,
+              diametre: p_repsup.diametre,
+              nuance: PARAMETRES.nuancePrincipaleParDefaut,
+              nombreDeFilesTotal: (Math.ceil(2 * l_chapeau / p_repsup.espacement) + 1) * n,
+              longueurDeveloppee: v.largeur - 2 * enrobage + 2 * crochet,
+              espacement: p_repsup.espacement,
+              overrides: v.overrides_repsup || {}
+            }));
+          }
+        }
+      });
+    }
+
+    if (l.paliers) {
+      l.paliers.forEach((p, i) => {
+        if (!p.longueur || !p.largeur) return;
+        const f = p.ferraillage || { diametre: h.diametrePrin || 10, espacement: h.espacement || 0.15 };
+        const prefix = p.id || `P${i+1}`;
+        const nappes = extractionsArmatures._nappeCroisee({
+          longueur: p.longueur,
+          largeur: p.largeur,
+          diametre: f.diametre,
+          espacement: f.espacement,
+          nombre: n * nombre(p.nombre),
+          enrobage,
+          repere: prefix,
+          designationL: `${prefix} - Nappe sens L`,
+          designationl: `${prefix} - Nappe sens l`
+        });
+        aciers = aciers.concat(nappes);
+      });
+    }
+
+    return aciers;
   },
   poutres: (l, regles) => extractionsArmatures._poutre(l, regles, 'chainages'),
   _poutre: (l, regles, hypName) => {
@@ -652,33 +1003,49 @@ const extractionsArmatures = {
     const espacement = h.espacement || 0.15;
     const diametre = h.diametrePrin || 10;
 
-    let ldSensL = l.longueur - 2 * enrobage;
-    let ldSensl = l.largeur - 2 * enrobage;
+    return extractionsArmatures._nappeCroisee({
+      longueur: l.longueur,
+      largeur: l.largeur,
+      diametre,
+      espacement,
+      nombre: n,
+      enrobage,
+      repere: l.repere,
+      avertissements,
+      overridesL: l.overrides_nappeL,
+      overridesl: l.overrides_nappel,
+      designationL: 'Nappe suivant L',
+      designationl: 'Nappe suivant l'
+    });
+  },
+  _nappeCroisee: ({ longueur, largeur, diametre, espacement, nombre, enrobage, repere, avertissements, overridesL, overridesl, designationL, designationl }) => {
+    let ldSensL = longueur - 2 * enrobage;
+    let ldSensl = largeur - 2 * enrobage;
 
     if (ldSensL < 0 || ldSensl < 0) {
-      const nom = l.repere ? `(Repère ${l.repere})` : '';
+      const nom = repere ? `(Repère ${repere})` : '';
       if (avertissements) avertissements.push(`Attention ${nom} : La dimension de la dalle est plus petite que l'enrobage requis.`);
       return [];
     }
 
     return [
       calculerBlocArmature({
-        designation: 'Nappe suivant L',
+        designation: designationL || 'Nappe suivant L',
         diametre,
         nuance: PARAMETRES.nuancePrincipaleParDefaut,
-        nombreDeFilesTotal: (Math.ceil(l.largeur / espacement) + 1) * n,
+        nombreDeFilesTotal: (Math.ceil(largeur / espacement) + 1) * (nombre || 1),
         longueurDeveloppee: ldSensL,
         espacement,
-        overrides: l.overrides_nappeL
+        overrides: overridesL || {}
       }),
       calculerBlocArmature({
-        designation: 'Nappe suivant l',
+        designation: designationl || 'Nappe suivant l',
         diametre,
         nuance: PARAMETRES.nuancePrincipaleParDefaut,
-        nombreDeFilesTotal: (Math.ceil(l.longueur / espacement) + 1) * n,
+        nombreDeFilesTotal: (Math.ceil(longueur / espacement) + 1) * (nombre || 1),
         longueurDeveloppee: ldSensl,
         espacement,
-        overrides: l.overrides_nappel
+        overrides: overridesl || {}
       })
     ];
   },
@@ -695,6 +1062,7 @@ function acierHyp(regles, key) {
   if (key === 'ceintures' || key === 'longrines' || key === 'chainages') return { diametrePrin: 12, nbreBarresPrin: 4, diametreCadre: 6, espacementCadre: 0.20 };
   if (key === 'linteaux') return { diametrePrin: 10, nbreBarresPrin: 2 };
   if (key === 'dallePleine') return { diametrePrin: 10, espacement: 0.15 };
+  if (key === 'escalier') return { diametrePrin: 12, espacement: 0.15, diametreRepartition: 8, espacementRepartition: 0.20, diametreChapeaux: 10, espacementChapeaux: 0.15 };
   return {};
 }
 
@@ -705,7 +1073,7 @@ function acierHyp(regles, key) {
  * sur les dix saisissables. On deduit ici fenetres, portes, impostes et
  * poteaux noyes dans le mur, sur autant de murs que l'utilisateur en saisit.
  */
-function calculerMur(mur) {
+function calculerMur(mur, regles = {}) {
   if (!renseigne(mur.longueur) || !renseigne(mur.hauteur)) {
     return {
       valeur: null,
@@ -757,11 +1125,12 @@ function calculerMur(mur) {
   const lBloc = mur.longueurBloc || 0.40;
   const hBloc = mur.hauteurBloc || 0.20;
   const joint = PARAMETRES.mortier.jointMaconnerie || 0.015;
-  const majoration = PARAMETRES.majorations?.blocs || 1.10;
+  const majoration = regles?.majorations?.blocs || PARAMETRES.majorations?.blocs || 1.10;
 
   const sp = (lBloc + joint) * (hBloc + joint);
-  const nombreBlocs = Math.ceil((valeur / sp) * majoration);
-  const volumeMortier = (nombreBlocs / majoration) * (sp - (lBloc * hBloc)) * epaisseurMur;
+  const nombreBlocsNet = Math.ceil(valeur / sp);
+  const nombreBlocs = Math.ceil(nombreBlocsNet * majoration);
+  const volumeMortier = nombreBlocsNet * (sp - (lBloc * hBloc)) * epaisseurMur;
 
   return {
     valeur,
@@ -771,6 +1140,7 @@ function calculerMur(mur) {
     deductions,
     detailDeductions,
     nombreBlocs,
+    nombreBlocsNet,
     volumeMortier: net(volumeMortier),
     trace: {
       formule: '(L x H x N) - deductions',
@@ -782,6 +1152,7 @@ function calculerMur(mur) {
       unite: 'm2',
       blocsCalcul: `CEIL(${valeur.toFixed(2)} / ${sp.toFixed(4)} * ${majoration})`,
       nombreBlocs,
+      nombreBlocsNet,
       volumeMortier: net(volumeMortier),
     },
   };
@@ -856,7 +1227,36 @@ function totaliser(lignes, cle = 'valeur') {
  * @param {object} regles   Jeu de regles (voir regles.js).
  * @returns {{blocs: object, avertissements: Array}}
  */
-export function calculerMetre(saisie, regles) {
+export function calculerMetre(saisie = {}, regles = {}) {
+  // Aliases pour uniformiser
+  if (saisie.soubassement && !saisie.murSoubassement) saisie.murSoubassement = saisie.soubassement;
+  if (saisie.murSoubassement && !saisie.soubassement) saisie.soubassement = saisie.murSoubassement;
+  if (saisie.poteaux && !saisie.colonnes) saisie.colonnes = saisie.poteaux;
+
+  // Le meme mur alimente deux blocs : `murSoubassement` porte sa surface pour
+  // le devis, `soubassement` en tire les agglos pleins et le mortier. Le premier
+  // se saisit par un perimetre, le second attend une longueur — sans cette
+  // equivalence, les agglos pleins n'apparaissent jamais dans le devis.
+  if (Array.isArray(saisie.soubassement)) {
+    saisie.soubassement = saisie.soubassement.map((m) =>
+      m && !renseigne(m.longueur) && renseigne(m.perimetre) ? { ...m, longueur: m.perimetre } : m,
+    );
+  }
+
+  // L'acrotere porte deux hauteurs distinctes : celle de son chainage (le beton)
+  // et la sienne propre (la maconnerie au-dessus). On ramene les noms explicites
+  // aux champs standards pour que le calcul d'armatures, commun aux ceintures,
+  // continue de lire largeur et hauteur.
+  if (Array.isArray(saisie.acrotere)) {
+    saisie.acrotere = saisie.acrotere.map((l) => {
+      if (!l) return l;
+      const norm = { ...l };
+      if (!renseigne(norm.largeur) && renseigne(norm.largeurChainage)) norm.largeur = norm.largeurChainage;
+      if (!renseigne(norm.hauteur) && renseigne(norm.hauteurChainage)) norm.hauteur = norm.hauteurChainage;
+      return norm;
+    });
+  }
+
   const blocs = {};
   const avertissements = [];
 
@@ -897,6 +1297,21 @@ export function calculerMetre(saisie, regles) {
           type: 'saisie-inutilisee',
           message: `${bloc.libelle} — « ${orpheline} » est saisi mais n'entre pas dans la formule ${bloc.formule}.`,
         });
+      }
+
+      // Controles propres au bloc : regles de l'art, coherences internes.
+      // Ce sont des avertissements, jamais des blocages : on informe le
+      // chiffreur, on ne l'empeche pas de saisir ce qu'il a sur son plan.
+      if (bloc.valider) {
+        for (const alerte of bloc.valider(ligne, regles, resultat)) {
+          avertissements.push({
+            bloc: code,
+            ligne: index,
+            repere: ligne.repere ?? `${code} ${index + 1}`,
+            type: alerte.type,
+            message: `${bloc.libelle} — ${alerte.message}`,
+          });
+        }
       }
 
       for (const invalide of champsInvalides(ligne)) {
@@ -959,11 +1374,13 @@ export function calculerMetre(saisie, regles) {
       entree.forEach((ligne, index) => {
         if (!aUneSaisie(ligne)) return;
         const arms = extractionsArmatures[code](ligne, regles, avertissements);
+        let poidsAcierLigne = 0;
         arms.forEach(a => {
           toutesArmatures.push({
             repereSource: ligne.repere || `${bloc.libelle} ${index + 1}`,
             ...a
           });
+          poidsAcierLigne += (a.poids || 0);
           if (a.trace && Array.isArray(a.trace.avertissements)) {
             a.trace.avertissements.forEach(msg => {
               avertissements.push({
@@ -976,6 +1393,11 @@ export function calculerMetre(saisie, regles) {
             });
           }
         });
+        
+        // Save the total steel weight on the calculated line so it can be used for tie wire
+        if (blocs[code] && blocs[code].lignes && blocs[code].lignes[index]) {
+          blocs[code].lignes[index].poidsAcier = net(poidsAcierLigne);
+        }
       });
     }
   }
@@ -1016,7 +1438,7 @@ export function calculerMetre(saisie, regles) {
 
   // Maconnerie.
   const murs = (Array.isArray(saisie.maconnerie) ? saisie.maconnerie : []).map(
-    calculerMur,
+    (mur) => calculerMur(mur, regles),
   );
   blocs.maconnerie = {
     libelle: 'Maconnerie en agglos',
@@ -1028,9 +1450,11 @@ export function calculerMetre(saisie, regles) {
     total: totaliser(murs),
   };
 
-  // Murs de soubassement
+  // Murs de soubassement, en agglos pleins. Bloc distinct de `murSoubassement`,
+  // qui n'en porte que la surface pour le devis : celui-ci porte le detail
+  // (blocs et mortier) et sert a deduire le volume de l'ouvrage filant du remblai.
   const mursSoubassement = (Array.isArray(saisie.soubassement) ? saisie.soubassement : []).map(
-    calculerMur,
+    (m) => calculerMur(m, regles),
   );
   blocs.soubassement = {
     libelle: 'Murs de soubassement (Agglos pleins)',
@@ -1041,7 +1465,8 @@ export function calculerMetre(saisie, regles) {
     deductions: totaliser(mursSoubassement, 'deductions'),
     total: totaliser(mursSoubassement),
   };
-  
+
+
 
 
   // Carrelage et plinthes.
@@ -1105,13 +1530,31 @@ export function calculerMetre(saisie, regles) {
     unite: '-',
     formule: 'Quantité Libre',
     lignes: autresLignes,
-    total: totaliser(autresLignes, 'quantite') || 0
+    total: 0
   };
 
-  // Valeur par défaut pour l'enduit (2x surface maçonnerie) si non saisi explicitement
+  // Valeur par défaut pour l'enduit (2x surface maçonnerie) si non saisi explicitement.
+  // Le total derive doit exister aussi comme ligne : recettes, resume et devis
+  // parcourent les lignes, et un total sans ligne se traduit par un zero muet.
   if ((!blocs.enduits || !blocs.enduits.total) && blocs.maconnerie && blocs.maconnerie.total > 0) {
-    if (!blocs.enduits) blocs.enduits = { lignes: [] };
-    blocs.enduits.total = net(blocs.maconnerie.total * 2);
+    if (!blocs.enduits) blocs.enduits = { libelle: 'Enduits', unite: 'm2', lignes: [] };
+    const surfaceDeduite = net(blocs.maconnerie.total * 2);
+    blocs.enduits.total = surfaceDeduite;
+    blocs.enduits.lignes = [
+      {
+        valeur: surfaceDeduite,
+        unite: 'm2',
+        manquants: [],
+        repere: 'Enduit (deduit)',
+        trace: {
+          formule: '2 x surface de maconnerie',
+          entrees: { surfaceMaconnerie: blocs.maconnerie.total },
+          resultat: surfaceDeduite,
+          unite: 'm2',
+          motif: 'Surface non saisie : deduite des deux faces de la maconnerie.',
+        },
+      },
+    ];
   }
 
   // Vérification des variantes exclusives
@@ -1126,6 +1569,27 @@ export function calculerMetre(saisie, regles) {
       message: 'Dalle pleine et Plancher Hourdis sont saisis simultanément. Une seule variante doit être utilisée.'
     });
   }
+  
+  if (blocs.peinture?.lignes?.length > 0) {
+    const typesSaisis = new Set();
+    blocs.peinture.lignes.forEach(p => {
+      if (p.valeur > 0) typesSaisis.add(p.typePeinture);
+    });
+    
+    if (typesSaisis.size > 1) {
+      avertissements.push({
+        bloc: 'peinture',
+        ligne: 0,
+        repere: 'GLOBAL',
+        type: 'exclusion-mutuelle',
+        message: 'Plusieurs types de peinture saisis (Latex, Classique, Chaux). Le devis ne doit utiliser qu\'un seul type. Seul le premier type sera retenu pour les matériaux.'
+      });
+      
+      const premierType = Array.from(typesSaisis)[0];
+      blocs.peinture.lignes = blocs.peinture.lignes.filter(p => !p.valeur || p.typePeinture === premierType);
+      blocs.peinture.total = totaliser(blocs.peinture.lignes, 'valeur');
+    }
+  }
 
   const hasCharpente = blocs.charpenteBois && blocs.charpenteBois.total > 0;
   const hasAcrotere = blocs.acrotere && blocs.acrotere.total > 0;
@@ -1136,6 +1600,14 @@ export function calculerMetre(saisie, regles) {
       repere: 'Variantes',
       type: 'variante-exclusive',
       message: 'Charpente et Toiture-Terrasse (Acrotère) sont saisis simultanément. Une seule variante doit être utilisée.'
+    });
+  } else if (hasCharpente) {
+    avertissements.push({
+      bloc: 'toiture',
+      ligne: 0,
+      repere: 'Hypothèse',
+      type: 'hypothese', // to trigger amber color
+      message: 'Le calcul de charpente inclut une majoration forfaitaire de 15% pour couvrir poinçon, fiches, contre-fiches et assemblages.'
     });
   }
 
@@ -1149,9 +1621,22 @@ function aUneSaisie(ligne) {
 
 /** Dimensions saisies que la formule du bloc n'utilise pas. */
 function champsOrphelins(bloc, ligne) {
+  const requis = champsRequisEffectifs(bloc, ligne);
   return CHAMPS_DIMENSION.filter(
-    (champ) => renseigne(ligne[champ]) && !bloc.requis.includes(champ),
+    (champ) => renseigne(ligne[champ]) && !requis.includes(champ),
   );
+}
+
+/**
+ * Certains ouvrages se decrivent de plusieurs facons : un enduit se saisit par
+ * une surface libre ou par ses dimensions. `requisAlternatifs` liste ces jeux
+ * de champs equivalents ; on retient le premier entierement renseigne, et a
+ * defaut le jeu principal, pour que le message « champ manquant » reste juste.
+ */
+function champsRequisEffectifs(bloc, ligne) {
+  if (!bloc.requisAlternatifs) return bloc.requis;
+  const jeux = [bloc.requis, ...bloc.requisAlternatifs];
+  return jeux.find((jeu) => jeu.length > 0 && jeu.every((c) => renseigne(ligne[c]))) || bloc.requis;
 }
 
 export const _internes = { net, renseigne, nombre, BLOCS, extractionsArmatures };

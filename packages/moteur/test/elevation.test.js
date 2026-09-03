@@ -97,7 +97,12 @@ test('Bloc 4 - Élévation', async (t) => {
     const resume = genererResumeElevation(blocs, regles);
     
     assert.ok(resume.aciers.totalPoids > 500, 'Acier total RDC > 500kg');
-    assert.strictEqual(resume.materiaux.filLigature, resume.aciers.totalPoids * 0.05, 'Fil 5% du poids');
+    // Le fil de ligature passe par filDeLigature(), qui arrondit a 6 decimales
+    // comme tout le moteur : on compare donc a la tolerance, pas au bit pres.
+    assert.ok(
+      Math.abs(resume.materiaux.filLigature - resume.aciers.totalPoids * 0.05) < 1e-6,
+      'Fil 5% du poids',
+    );
   });
 
 });

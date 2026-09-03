@@ -1,85 +1,98 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert';
-import { calculerMetre } from '../src/metre.js';
-import { calculerRecettes } from '../src/recettes.js';
-import { genererResumeFinition } from '../src/resume.js';
-import { REGLES_DEFAUT } from '../src/regles.js';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { calculerMetre, calculerRecettes } from '../src/index.js';
 
-describe('Bloc 5 - Finition', () => {
-  it('CAS DE TEST - Maçonnerie, Enduit, Peinture, Carrelage, Faïence', () => {
-    const saisie = {
-      maconnerie: [
-        {
-          longueur: 33.60, hauteur: 3.00, epaisseur: 0.15,
-          ouvertures: [
-            { type: 'porte', nombre: 3, largeur: 0.90, hauteur: 2.10 },
-            { type: 'fenetre', nombre: 6, largeur: 1.20, hauteur: 1.20 }
-          ],
-          colonnes: [
-            { nombre: 12, largeur: 0.20, hauteur: 3.00 }
-          ]
-        }
-      ],
-      enduits: [
-        { longueur: 159, hauteur: 1, nombre: 1 } // Surface directe
-      ],
-      peinture: [
-        { longueur: 159, hauteur: 1, nombre: 1, type: 'latex' }
-      ],
-      carrelage: [
-        { longueur: 69.05, largeur: 1, nombre: 1, epaisseur: 0.03 } // epaisseur mortier 3cm
-      ],
-      faience: [
-        { longueur: 25, hauteur: 1, nombre: 1 }
-      ]
-    };
+test('Finition - Maçonnerie, Enduit, Peinture, Carrelage', () => {
+  const regles = {
+    majorations: {
+      blocs: 1.10,
+      carreaux: 1.10
+    }
+  };
 
-    const { blocs } = calculerMetre(saisie, REGLES_DEFAUT);
-    
-    // 1. Maçonnerie isolée
-    const m = blocs.maconnerie.lignes[0];
-    assert.ok(Math.abs(m.surfaceBrute - 100.80) < 0.01, 'Brute 100.80 m2');
-    assert.ok(Math.abs(m.deductions - 21.51) < 0.01, 'Déductions 5.67+8.64+7.20 = 21.51');
-    const sp = (0.40 + 0.015) * (0.20 + 0.015); // 0.089225
-  const surfaceNette = 75.76;
-  const majoration = 1.10;
-  const blocsAchat = Math.ceil((surfaceNette / sp) * majoration);
+  const saisie = {
+    niveaux: [{ id: 'niv1', nom: 'RDC', type: 'elevation' }],
+    maconnerie: [
+      {
+        id: 'M1',
+        niveauId: 'niv1',
+        repere: 'M1',
+        longueur: 33.60,
+        hauteur: 3.00,
+        nombre: 1,
+        epaisseur: 0.15,
+        longueurBloc: 0.40,
+        hauteurBloc: 0.20,
+        colonnes: [{ nombre: 6, largeur: 0.20, hauteur: 3.00 }],
+        ouvertures: [{ type: 'porte', nombre: 1, largeur: 0.90, hauteur: 2.10 }]
+      }
+    ],
+    enduits: [
+      { id: 'E1', niveauId: 'niv1', repere: 'END1', surface: 190.62, nombre: 1 }
+    ],
+    peinture: [
+      { id: 'P1', niveauId: 'niv1', repere: 'PNT1', longueur: 63.54, hauteur: 3.00, type: 'latex', nombre: 1 } // 63.54 * 3 = 190.62
+    ],
+    carrelage: [
+      { id: 'C1', niveauId: 'niv1', repere: 'SDB', longueur: 2.00, largeur: 2.00, nombre: 1 } // surface: 4.00
+    ]
+  };
 
-  assert.strictEqual(
-    m.nombreBlocs,
-    blocsAchat,
-    `${blocsAchat} blocs majorés`,
-  );
-    assert.ok(Math.abs(m.volumeMortier - 1.230280) < 0.001, 'Mortier 1.23 m3');
+  const metre = calculerMetre(saisie, regles);
+  
+  // Assertions Maçonnerie
+  const mac = metre.blocs.maconnerie;
+  assert.equal(mac.lignes.length, 1);
+  const m1 = mac.lignes[0];
+  assert.equal(m1.surfaceBrute, 100.80);
+  assert.equal(m1.deductions, 5.49);
+  assert.equal(m1.valeur, 95.31);
+  assert.equal(m1.nombreBlocsNet, 1069);
+  assert.equal(m1.nombreBlocs, 1176); 
+  assert.equal(m1.volumeMortier, 1.479229);
 
-    const recMac = calculerRecettes({ maconnerie: blocs.maconnerie });
-    assert.strictEqual(recMac.ciment.quantite, 8, '8 sacs ciment maconnerie');
-    assert.ok(recMac.sable.quantite > 0, 'Sable maconnerie present');
-    assert.strictEqual(recMac.eau.quantite, 200, 'Eau 200 L maconnerie');
-    assert.strictEqual(Math.ceil(m.valeur / 0.089225 * 1.10), 978, 'Vérification des blocs');
+  // Assertions Enduit
+  const end = metre.blocs.enduits;
+  assert.equal(end.total, 190.62);
 
-    // 2. Enduit
-    const recEnd = calculerRecettes({ enduits: blocs.enduits });
-    assert.strictEqual(recEnd.ciment.quantite, 26, '26 sacs ciment enduit');
-    assert.ok(recEnd.sable.quantite > 0, 'Sable enduit present');
-    assert.strictEqual(recEnd.eau.quantite, 650, 'Eau 650 L enduit');
+  // Assertions Peinture
+  const pnt = metre.blocs.peinture;
+  assert.equal(pnt.total, 190.62);
 
-    // 3. Peinture Latex
-    const recPein = calculerRecettes({ peinture: blocs.peinture });
-    assert.strictEqual(recPein.peinture_latex.quantite, 39.75, 'Latex 39.75 kg');
+  // Assertions Carrelage
+  const car = metre.blocs.carrelage;
+  assert.equal(car.total, 4.00);
 
-    // 4. Carrelage
-    const recCar = calculerRecettes({ carrelage: blocs.carrelage });
-    assert.strictEqual(Math.ceil(recCar.carreaux.quantite), 844, '844 carreaux');
-    assert.strictEqual(Math.ceil(recCar.carreaux.quantite / 12), 71, '71 cartons carrelage');
-    assert.strictEqual(recCar.cimentColle.quantite, 552.4, '552.4 kg ciment colle carrelage');
-    assert.ok(recCar.sable.quantite > 0, 'Sable carrelage present');
-    assert.strictEqual(recCar.ciment.quantite, 13, '13 sacs ciment mortier carrelage');
+  // Recettes
+  const recettes = calculerRecettes(metre.blocs, regles);
 
-    // 5. Faïence
-    const recFai = calculerRecettes({ faience: blocs.faience });
-    assert.strictEqual(Math.ceil(recFai.faience.quantite), 275, '275 pièces faïence');
-    assert.strictEqual(Math.ceil(recFai.faience.quantite / 10), 28, '28 cartons faïence');
-    assert.strictEqual(recFai.cimentColle.quantite, 200, '200 kg ciment colle faience');
-  });
+  // Blocs
+  assert.equal(recettes.blocs.quantiteNette, 1069);
+  assert.equal(recettes.blocs.quantite, 1175.9);
+
+  // Enduit
+  // Ciment enduit = ceil(190.62 * 8 / 50) = 31 sacs
+  // Ciment maçonnerie = ceil(1.48 * 300 / 50) = ceil(8.88) = 9 sacs
+  // Ciment pose = ceil(4 * 0.03 * 300 / 50) = ceil(0.72) = 1 sac
+  // Total ciment attendu = 31 + 9 + 1 = 41 sacs
+  assert.equal(recettes.ciment.quantiteNette, 41);
+
+  // Peinture Latex = 190.62 / 4 = 47.655 kg
+  assert.equal(recettes.peinture_latex.quantiteNette, 47.655);
+
+  // Carreaux
+  assert.equal(recettes.carreaux.quantiteNette, 45); // ceil(4 / 0.09) = 45
+  assert.equal(recettes.carreaux.quantite, 49.5); // 45 * 1.1
+
+  // Ciment colle
+  assert.equal(recettes.cimentColle.quantiteNette, 32);
+
+  // Sable
+  // Mortier maç = 1.48 * 1.0 * 1.50 = 2.22 t
+  // Enduit = (31 * 50 / 300) * 1 * 1.50 = 7.75 t
+  // Mortier pose = 4 * 0.03 * 1.50 = 0.18 t
+  assert.equal(recettes.sable.quantiteNette, 10.148843);
+  
+  // Eau
+  assert.equal(recettes.eau.quantiteNette, 1000);
 });

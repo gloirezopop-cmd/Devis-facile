@@ -26,7 +26,7 @@ export function genererResumeFondation(saisie, regles) {
       if (vide < 0) {
         avertissements.push({
           type: 'terrassement-depasse',
-          message: `L'ouvrage (semelle + propreté) dépasse le volume de la fouille ponctuelle à la ligne ${i + 1}.`,
+          message: `Ouvrage trop grand pour la fouille en puits à la ligne ${i + 1}.`,
         });
         vide = 0;
       }
@@ -37,33 +37,31 @@ export function genererResumeFondation(saisie, regles) {
   let videFilant = 0;
   if (totalFouilleFilante > 0) {
     let volPropreteFilant = 0;
-    // Si on a des lignes de propreté au-delà des fouilles ponctuelles, on les affecte au filant
     if (saisie.betonProprete && saisie.fouilles && saisie.betonProprete.length > saisie.fouilles.length) {
        for (let i = saisie.fouilles.length; i < saisie.betonProprete.length; i++) {
          volPropreteFilant += blocs.betonProprete.lignes[i]?.valeur || 0;
        }
+    } else if (saisie.betonProprete && (!saisie.fouilles || saisie.fouilles.length === 0)) {
+       volPropreteFilant = blocs.betonProprete.total || 0;
     }
     
     let volMoellon = blocs.moellon?.total || 0;
-    // Note: on soustrait longrine brute + mur soubassement car "volume de longrine" inclut l'élévation dans la fouille
-    let volLongrineBrut = blocs.longrines?.lignes.reduce((sum, l) => sum + (l.volumeBrut || 0), 0) || 0;
+    let volLongrineBrut = blocs.longrines?.totalBrut || 0;
     let volMurSoubassement = 0;
-    // On estime le volume du mur à partir de sa surface et de son épaisseur (ou largeur)
     if (saisie.soubassement) {
       saisie.soubassement.forEach((m, i) => {
-        let surface = blocs.soubassement.lignes[i]?.valeur || 0;
-        let epaisseur = m.epaisseur || m.largeur || 0.15; // fallback à 0.15 si non saisi
+        let surface = blocs.soubassement?.lignes[i]?.valeur || 0;
+        let epaisseur = m.epaisseur || m.largeur || 0.15; // default 0.15 si non saisi
         volMurSoubassement += surface * epaisseur;
       });
     }
-    
     let volOuvrageFilant = volMoellon > 0 ? volMoellon : (volLongrineBrut + volMurSoubassement);
     
     let vide = (totalFouilleFilante - volPropreteFilant - volOuvrageFilant) * 1.3;
     if (vide < 0) {
       avertissements.push({
         type: 'terrassement-depasse',
-        message: `L'ouvrage filant dépasse le volume de la fouille en tranchée.`,
+        message: `Ouvrage filant trop grand pour la fouille en tranchée.`,
       });
       vide = 0;
     }
@@ -93,7 +91,7 @@ export function genererResumeFondation(saisie, regles) {
   };
 
   // 2. Matériaux totaux
-  const recettes = calculerRecettes(blocs);
+  const recettes = calculerRecettes(blocs, regles);
   const materiaux = {
     ciment: (recettes.ciment?.quantiteCommande || 0) + (recettes.cimentMortierMoellon?.quantiteCommande || 0),
     gravier: recettes.gravier?.quantiteNette || 0,
@@ -103,7 +101,7 @@ export function genererResumeFondation(saisie, regles) {
     planches: recettes.planches?.quantiteCommande || 0,
     chevrons: recettes.chevrons?.quantiteCommande || 0,
     clous: recettes.clous?.quantiteCommande || 0,
-    filLigature: 0,
+    filLigature: recettes.filLigature?.quantiteNette || 0,
     volumeBois: 0
   };
 
@@ -146,15 +144,6 @@ export function genererResumeFondation(saisie, regles) {
   // Extrait-il aussi les aciers de l'amorce ?
   // Dans extractionsArmatures.semelles, y a-t-il les amorces ?
   
-  if (saisie.poteaux) {
-    saisie.poteaux.forEach((poteau, i) => {
-      const armatures = extractionsArmatures.poteaux(poteau, regles);
-      armatures.forEach(a => {
-        aciersLignes.push({ repere: poteau.repere || `P${i+1} - ${a.designation}`, ...a });
-        totalPoidsAcier += a.poids;
-      });
-    });
-  }
 
   materiaux.filLigature = totalPoidsAcier * 0.05; // PARAMETRES.armatures.filLigaturePct
 
@@ -175,7 +164,7 @@ export function genererResumeFondation(saisie, regles) {
  * @param {Object} regles - Règles
  */
 export function genererResumeElevation(blocs, regles) {
-  const recettes = calculerRecettes(blocs); // Pour avoir le béton basique
+  const recettes = calculerRecettes(blocs, regles); // Pour avoir le béton basique
   
   // 1. Volumes Bruts
   const volumes = {
@@ -216,11 +205,22 @@ export function genererResumeElevation(blocs, regles) {
     });
   }
   
+  const avertissements = [];
+
   if (blocs.escalier?.lignes) {
     blocs.escalier.lignes.forEach(e => {
-      // Volume x 12
-      if (renseigne(e.volume)) {
-        surfaceCoffrage += e.volume * 12 * (e.nombre || 1);
+      const surf = _internes.BLOCS.escalier.calculCoffrage(e);
+      surfaceCoffrage += surf;
+      
+      // Garde-fou coffrage [12 m2/m3 +/- 20%]
+      if (e.mode === 'geometrie') {
+        const vol = _internes.BLOCS.escalier.calcul(e);
+        if (vol > 0) {
+          const ratio = surf / vol;
+          if (ratio < 9.6 || ratio > 14.4) {
+            avertissements.push(`Attention : Le coffrage de l'escalier donne un ratio de ${Math.round(ratio * 10) / 10} m²/m³ (attendu ~12). Vérifiez vos dimensions.`);
+          }
+        }
       }
     });
   }
@@ -251,6 +251,8 @@ export function genererResumeElevation(blocs, regles) {
   } else {
     materiaux.planches = 0; materiaux.chevrons = 0; materiaux.clous = 0; materiaux.volumeBois = 0;
   }
+  
+  materiaux.filLigature = recettes.filLigature?.quantiteNette || 0;
 
   // 4. Aciers
   const aciersLignes = [];
@@ -287,18 +289,31 @@ export function genererResumeElevation(blocs, regles) {
       });
     });
   }
-  
+
   if (blocs.escalier?.lignes) {
     blocs.escalier.lignes.forEach((escalier, i) => {
       const armatures = extractionsArmatures.escalier(escalier, regles);
+      let poidsEscalier = 0;
       armatures.forEach(a => {
         aciersLignes.push({ repere: escalier.repere || `Escalier ${i+1}`, ...a });
         totalPoidsAcier += a.poids;
+        poidsEscalier += a.poids;
       });
+
+      // Garde-fou du ratio [70, 130] kg/m3 (sauf en mode volume où le ratio est explicite)
+      if (escalier.mode === 'geometrie') {
+        const volumeBeton = _internes.BLOCS.escalier.calcul(escalier);
+        if (volumeBeton > 0) {
+          const ratioObtenu = poidsEscalier / volumeBeton;
+          if (ratioObtenu < 70 || ratioObtenu > 130) {
+            avertissements.push(`Attention : Le ferraillage de l'escalier donne un ratio de ${Math.round(ratioObtenu)} kg/m³ (attendu entre 70 et 130). Vérifiez vos diamètres et espacements.`);
+          }
+        }
+      }
     });
   }
 
-  materiaux.filLigature = totalPoidsAcier * 0.05; // 5% pour l'élévation
+
 
   return {
     volumes,
@@ -307,7 +322,7 @@ export function genererResumeElevation(blocs, regles) {
       lignes: aciersLignes,
       totalPoids: totalPoidsAcier
     },
-    avertissements: []
+    avertissements
   };
 }
 
@@ -316,7 +331,7 @@ export function genererResumeElevation(blocs, regles) {
  * Aggrège les enduits, la peinture, le carrelage et la faïence.
  */
 export function genererResumeFinition(blocs, regles) {
-  const recettes = calculerRecettes(blocs);
+  const recettes = calculerRecettes(blocs, regles);
   
   const surfaces = {
     enduits: blocs.enduits?.total || 0,
@@ -326,7 +341,7 @@ export function genererResumeFinition(blocs, regles) {
   };
   
   const materiauxKeys = [
-    'ciment', 'sable', 'eau', 'ciment_colle', 
+    'ciment', 'sable', 'eau', 'cimentColle', 
     'peinture_latex', 'peinture_classique', 'peinture_chaux',
     'carreaux', 'faience', 'plinthe'
   ];
@@ -346,7 +361,7 @@ export function genererResumeFinition(blocs, regles) {
  * Agrège les dalles pleines (volume, coffrage, aciers) et les hourdis.
  */
 export function genererResumePlancher(blocs, regles) {
-  const recettes = calculerRecettes(blocs);
+  const recettes = calculerRecettes(blocs, regles);
   
   const surfaces = {
     hourdis: blocs.plancherHourdis?.total || 0,
@@ -365,6 +380,7 @@ export function genererResumePlancher(blocs, regles) {
     planches: recettes.planches?.quantiteCommande || 0,
     chevrons: recettes.chevrons?.quantiteCommande || 0,
     clous: recettes.clous?.quantiteNette || 0,
+    filLigature: recettes.filLigature?.quantiteNette || 0,
   };
 
   // Aciers spécifiques à la dalle
@@ -383,7 +399,7 @@ export function genererResumePlancher(blocs, regles) {
     });
   }
 
-  materiaux.filLigature = totalPoidsAcier * 0.05;
+
 
   return { surfaces, volumes, materiaux, aciers: { lignes: aciersLignes, totalPoids: totalPoidsAcier } };
 }
@@ -393,7 +409,7 @@ export function genererResumePlancher(blocs, regles) {
  * Agrège charpente, couverture, et toiture-terrasse.
  */
 export function genererResumeToiture(blocs, regles) {
-  const recettes = calculerRecettes(blocs);
+  const recettes = calculerRecettes(blocs, regles);
   
   const volumes = {
     charpente: blocs.charpenteBois?.total || 0,
@@ -417,6 +433,7 @@ export function genererResumeToiture(blocs, regles) {
     faitieres: recettes.faitieres?.quantiteCommande || 0,
     clous_toiture: recettes.clous_toiture?.quantiteNette || 0,
     blocs: recettes.blocs?.quantiteCommande || 0,
+    filLigature: recettes.filLigature?.quantiteNette || 0,
   };
   
   // Acier Acrotère
@@ -435,7 +452,7 @@ export function genererResumeToiture(blocs, regles) {
     });
   }
   
-  materiaux.filLigature = totalPoidsAcier * 0.05;
+
 
   return { surfaces, volumes, materiaux, aciers: { lignes: aciersLignes, totalPoids: totalPoidsAcier } };
 }

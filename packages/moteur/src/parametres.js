@@ -174,6 +174,24 @@ export const PARAMETRES = {
     blocCreux20Piece: 450,
     toleBG28Piece: 7500,
     toleFaitierePiece: 8500,
+
+    // Prix ranges sous l'identifiant que les recettes emettent reellement.
+    // Sans eux, l'ouvrage sortait metre mais a zero franc dans le devis.
+    blocs: 450,            // agglo creux, piece
+    blocs_pleins: 600,     // agglo plein de soubassement, piece
+    toles: 7500,           // tole BG28, piece
+    faitieres: 8500,       // faitiere, piece
+    clous_charpente: 1000, // kg
+    clous_toiture: 1000,   // kg
+    peinture_latex: 2800,  // kg
+    peinture_classique: 3200, // L
+    peinture_chaux: 450,   // kg
+    // A confirmer par l'utilisateur : ces trois valeurs sont des ordres de
+    // grandeur, pas des prix releves sur le marche.
+    carreaux: 500,         // carreau 30x30 (surface / 0,09), piece
+    faience: 600,          // carreau de faience (surface / 0,10), piece
+    bois_charpente: 180000, // m3 de bois de charpente
+    plinthe: 800,          // plinthe de 0,40 m, piece
     peintureBoisL: 3500,
     cimentColle: 650,
     cimentColleKg: 650,
