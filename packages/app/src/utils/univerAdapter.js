@@ -1,3 +1,5 @@
+import { TITRES_LOTS_PARTICULIER, TITRES_LOTS_ENTREPRISE } from '@devis-facile/moteur';
+
 export function generateWorkbookData(devisParticulier, devisEntreprise, metre, projet) {
   return {
     id: 'workbook-devis',
@@ -11,7 +13,7 @@ export function generateWorkbookData(devisParticulier, devisEntreprise, metre, p
         tabColor: '#14479B',
         rowCount: 150,
         columnCount: 15,
-        ...generateDevisSheet(devisParticulier)
+        ...generateDevisSheet(devisParticulier, 'particulier')
       },
       'entreprise': {
         id: 'entreprise',
@@ -19,7 +21,7 @@ export function generateWorkbookData(devisParticulier, devisEntreprise, metre, p
         tabColor: '#14634A',
         rowCount: 150,
         columnCount: 15,
-        ...generateDevisSheet(devisEntreprise)
+        ...generateDevisSheet(devisEntreprise, 'entreprise')
       },
       'metre': {
         id: 'metre',
@@ -82,7 +84,17 @@ function generateDefinedNames(projet) {
   return names;
 }
 
-function generateDevisSheet(devis) {
+/**
+ * `devis` est la sortie reelle de genererDevisParticulier() / genererDevisEntreprise() :
+ * `{ lots: {...} }` (Particulier) ou `{ niveaux: {...} }` (Entreprise), chaque
+ * groupe etant `{ lignes: [{designation, unite, quantite, pu, pt}], sousTotal }`
+ * — pas un tableau `.blocs` avec des champs `.titre`/`.prixUnitaire`/`.montant`.
+ * Cette fonction visait cette forme imaginaire depuis le debut : la feuille
+ * Excel sortait donc toujours vide, sans la moindre erreur, quel que soit le
+ * devis. Meme source d'ordre des lots que TableauDevis.jsx (TITRES_LOTS_*),
+ * pour que les deux vues du devis ne divergent jamais.
+ */
+function generateDevisSheet(devis, type = 'particulier') {
   const cellData = {};
   const columnData = {
     0: { hd: 0, hidden: 0, w: 250 }, // Désignation
@@ -91,16 +103,28 @@ function generateDevisSheet(devis) {
     3: { hd: 0, hidden: 0, w: 120 }, // Prix U
     4: { hd: 0, hidden: 0, w: 150 }  // Montant
   };
-  
-  if (!devis || !devis.blocs)  return { cellData, columnData };
+
+  const estEntreprise = type === 'entreprise';
+  const groupes = (estEntreprise ? devis?.niveaux : devis?.lots) || {};
+  const titres = estEntreprise ? TITRES_LOTS_ENTREPRISE : TITRES_LOTS_PARTICULIER;
+  const ordre = [
+    ...Object.keys(titres).filter((id) => groupes[id]),
+    ...Object.keys(groupes).filter((id) => !(id in titres)),
+  ];
+
+  if (!devis || ordre.length === 0) return { cellData, columnData };
 
   let row = 0;
-  
-  devis.blocs.forEach(bloc => {
-    // Titre du bloc
+
+  ordre.forEach((lotId) => {
+    const lot = groupes[lotId];
+    if (!lot?.lignes?.length) return;
+    const titre = titres[lotId] || lot.nom || lotId;
+
+    // Titre du lot
     cellData[row] = {
-      0: { 
-        v: bloc.titre,
+      0: {
+        v: titre,
         s: { bl: 1, fs: 14, bg: { rgb: '#f3f4f6' }, cl: { rgb: '#0F151B' } }
       }
     };
@@ -117,11 +141,11 @@ function generateDevisSheet(devis) {
     row++;
 
     // Lignes
-    bloc.lignes.forEach(ligne => {
+    lot.lignes.forEach(ligne => {
       // Missing values -> "-"
       const quantiteV = ligne.quantite === 0 || !ligne.quantite ? "-" : ligne.quantite;
-      const prixUnitaireV = ligne.prixUnitaire === 0 || !ligne.prixUnitaire ? "-" : ligne.prixUnitaire;
-      const montantV = ligne.montant === 0 || !ligne.montant ? "-" : ligne.montant;
+      const prixUnitaireV = ligne.pu === 0 || !ligne.pu ? "-" : ligne.pu;
+      const montantV = ligne.pt === 0 || !ligne.pt ? "-" : ligne.pt;
 
       // Type de valeur: 2 is Number, 1 is String
       const qT = quantiteV === "-" ? 1 : 2;
@@ -131,26 +155,36 @@ function generateDevisSheet(devis) {
       cellData[row] = {
         0: { v: ligne.designation || "-", s: { cl: { rgb: '#0F151B' } } },
         1: { v: ligne.unite || "-", s: { cl: { rgb: '#0F151B' }, ht: 2 } },
-        2: { 
-          v: quantiteV, 
+        2: {
+          v: quantiteV,
           t: qT,
           s: { cl: { rgb: '#14479B' }, ff: 'JetBrains Mono', ht: 3 } // Saisie: Bleu
         },
-        3: { 
-          v: prixUnitaireV, 
+        3: {
+          v: prixUnitaireV,
           t: puT,
           s: { cl: { rgb: '#14634A' }, ff: 'JetBrains Mono', ht: 3 } // Hérité: Vert
         },
-        4: { 
+        4: {
           f: qT === 2 && puT === 2 ? `=C${row + 1}*D${row + 1}` : undefined,
-          v: montantV, 
+          v: montantV,
           t: mT,
           s: { cl: { rgb: '#0F151B' }, ff: 'JetBrains Mono', ht: 3 } // Calculé: Noir
-        } 
+        }
       };
       row++;
     });
 
+    // Sous-total du lot
+    cellData[row] = {
+      0: { v: `Sous-total — ${titre}`, s: { bl: 1, cl: { rgb: '#0F151B' } } },
+      4: {
+        v: lot.sousTotal || 0,
+        t: 2,
+        s: { bl: 1, cl: { rgb: '#0F151B' }, ff: 'JetBrains Mono', ht: 3, bg: { rgb: '#f3f4f6' } }
+      }
+    };
+    row++;
     row++; // Ligne vide
   });
 
