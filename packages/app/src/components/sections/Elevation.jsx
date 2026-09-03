@@ -34,23 +34,53 @@ export default function Elevation() {
 
       <CarteBloc
         titre="Colonnes (Poteaux)"
-        onAdd={() => addRow(colonnes, setColonnes, { niveauId: niveauActifId, longueur: '', largeur: '', hauteur: '', nombre: '1', diametrePrin: 12, diametreCadre: 8, nbreBarresPrin: 4, espacementCadre: 0.15 }, 'C')}
+        onAdd={() => addRow(colonnes, setColonnes, { niveauId: niveauActifId, forme: 'rectangulaire', longueur: '', largeur: '', diametre: '', hauteur: '', nombre: '1', diametrePrin: 12, diametreCadre: 8, nbreBarresPrin: 4, espacementCadre: 0.15 }, 'C')}
         addLabel="Ajouter type de colonne"
         totalValeur={getBloc('colonnes').total}
         totalUnite={getBloc('colonnes').unite}
         totalLabel="Volume total colonnes"
       >
-        {currentColonnes.map((c, index) => (
+        {currentColonnes.map((c, index) => {
+          const circulaire = c.forme === 'circulaire';
+          return (
           <LigneOuvrage
             key={c.id} repere={c.repere} titre="Colonne"
             onRemove={currentColonnes.length > 1 ? () => removeRow(colonnes, setColonnes, c.id) : null}
             avertissement={getAvertissementLocal('colonnes', index)}
           >
             <div className="grid grid-cols-2 gap-4">
-              <InputSaisie label="Longueur (section)" value={c.longueur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'longueur', v)} unite="m" />
-              <InputSaisie label="Largeur (section)" value={c.largeur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'largeur', v)} unite="m" />
-              <InputSaisie label="Hauteur" value={c.hauteur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'hauteur', v)} unite="m" />
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-devis-saisie font-bold uppercase tracking-wider">Forme</label>
+                <select
+                  value={c.forme || 'rectangulaire'}
+                  onChange={(v) => {
+                    // On efface les champs de l'autre forme au changement,
+                    // sans quoi une valeur oubliee (ex. l'ancien "longueur"
+                    // d'une colonne redevenue rectangulaire) restait en
+                    // memoire et ressortait comme « saisie inutilisee ».
+                    const nouvelleForme = v.target.value;
+                    setColonnes(colonnes.map((x) => x.id !== c.id ? x : (
+                      nouvelleForme === 'circulaire'
+                        ? { ...x, forme: nouvelleForme, longueur: '', largeur: '' }
+                        : { ...x, forme: nouvelleForme, diametre: '' }
+                    )));
+                  }}
+                  className="border border-devis-saisie rounded p-2 text-devis-saisie w-full min-h-[44px] focus:outline-none focus:ring-2 focus:ring-devis-saisie bg-white font-sans text-sm"
+                >
+                  <option value="rectangulaire">Rectangulaire</option>
+                  <option value="circulaire">Circulaire</option>
+                </select>
+              </div>
               <InputSaisie label="Nombre" value={c.nombre} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'nombre', v)} unite="u" />
+              {circulaire ? (
+                <InputSaisie label="Diamètre" value={c.diametre} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'diametre', v)} unite="m" />
+              ) : (
+                <>
+                  <InputSaisie label="Longueur (section)" value={c.longueur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'longueur', v)} unite="m" />
+                  <InputSaisie label="Largeur (section)" value={c.largeur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'largeur', v)} unite="m" />
+                </>
+              )}
+              <InputSaisie label="Hauteur" value={c.hauteur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'hauteur', v)} unite="m" />
             </div>
             <div className="mt-4 pt-4 border-t border-devis-border grid grid-cols-2 gap-4">
               <ValeurCalculee
@@ -63,7 +93,8 @@ export default function Elevation() {
               />
             </div>
           </LigneOuvrage>
-        ))}
+          );
+        })}
       </CarteBloc>
 
       <CarteBloc

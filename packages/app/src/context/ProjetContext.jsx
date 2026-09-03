@@ -35,7 +35,7 @@ export function ProjetProvider({ children }) {
   // `_v2` : les colonnes se saisissaient en sectionA/sectionB (cm), le bloc
   // moteur `colonnes` attend longueur/largeur (m) — l'ancienne cle aurait
   // silencieusement repris des lignes dont le volume ne se calcule plus.
-  const [colonnes, setColonnes] = useLocalStorageState('df_colonnes_v2', [{ id: 1, niveauId: 'elevation_1', repere: 'C1', longueur: '0.20', largeur: '0.20', hauteur: '3.2', nombre: '6', diametrePrin: 12, diametreCadre: 8, nbreBarresPrin: 4, espacementCadre: 0.15 }]);
+  const [colonnes, setColonnes] = useLocalStorageState('df_colonnes_v2', [{ id: 1, niveauId: 'elevation_1', repere: 'C1', forme: 'rectangulaire', longueur: '0.20', largeur: '0.20', diametre: '', hauteur: '3.2', nombre: '6', diametrePrin: 12, diametreCadre: 8, nbreBarresPrin: 4, espacementCadre: 0.15 }]);
 
   const [maconneries, setMaconneries] = useLocalStorageState('df_maconneries', [{
     id: 1, niveauId: 'elevation_1', repere: 'M1', longueur: '30', hauteur: '3.2', nombre: '1',

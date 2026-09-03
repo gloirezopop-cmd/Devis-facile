@@ -164,9 +164,19 @@ const BLOCS = {
     libelle: 'Colonnes',
     unite: 'm3',
     requis: ['longueur', 'largeur', 'hauteur'],
-    formule: 'a x b x H x N',
-    calcul: (l) => l.longueur * l.largeur * l.hauteur * nombre(l.nombre),
-    calculCoffrage: (l) => (2 * l.longueur + 2 * l.largeur) * l.hauteur * nombre(l.nombre)
+    // Poteau circulaire : meme bloc, forme choisie par l'utilisateur (`forme`),
+    // diametre en metres au lieu de longueur/largeur. V = pi x r^2 x H x N.
+    requisAlternatifs: [['diametre', 'hauteur']],
+    requisParChamp: { champ: 'forme', valeurs: { rectangulaire: 0, circulaire: 1 } },
+    formule: 'a x b x H x N (rectangulaire), ou pi x (d/2)^2 x H x N (circulaire)',
+    calcul: (l) =>
+      l.forme === 'circulaire'
+        ? Math.PI * (l.diametre / 2) ** 2 * l.hauteur * nombre(l.nombre)
+        : l.longueur * l.largeur * l.hauteur * nombre(l.nombre),
+    calculCoffrage: (l) =>
+      l.forme === 'circulaire'
+        ? Math.PI * l.diametre * l.hauteur * nombre(l.nombre)
+        : (2 * l.longueur + 2 * l.largeur) * l.hauteur * nombre(l.nombre)
   },
   ceintures: {
     libelle: 'Ceintures et Chaînages',
@@ -488,7 +498,8 @@ const CHAMPS_DIMENSION = [
   'hauteurCm',
   'perimetre',
   'largeurBase',
-  'volume'
+  'volume',
+  'diametre'
 ];
 
 /**
@@ -699,7 +710,8 @@ const extractionsArmatures = {
     ];
   },
   colonnes: (l, regles) => {
-    if (!l.longueur || !l.largeur || !l.hauteur) return [];
+    const circulaire = l.forme === 'circulaire';
+    if (circulaire ? (!l.diametre || !l.hauteur) : (!l.longueur || !l.largeur || !l.hauteur)) return [];
     const h = acierHyp(regles, 'colonnes');
     const dPrin = l.diametrePrin || h.diametrePrin || 12;
     const dCadre = l.diametreCadre || h.diametreCadre || 8;
@@ -708,6 +720,12 @@ const extractionsArmatures = {
 
     const n = nombre(l.nombre);
     const enrobage = PARAMETRES.armatures.enrobage;
+
+    // Cadre (ou spirale/frette) : perimetre rectangulaire, ou circonference au
+    // nu des aciers principaux (diametre - 2 x enrobage) pour un poteau rond.
+    const developpeeCadre = circulaire
+      ? Math.PI * (l.diametre - 2 * enrobage)
+      : ((l.longueur - 2 * enrobage) + (l.largeur - 2 * enrobage)) * 2;
 
     return [
       calculerBlocArmature({
@@ -720,11 +738,11 @@ const extractionsArmatures = {
         overrides: l.overrides_prin
       }),
       calculerBlocArmature({
-        designation: 'Cadre',
+        designation: circulaire ? 'Frette (spirale)' : 'Cadre',
         diametre: dCadre,
         nuance: PARAMETRES.nuanceCadresParDefaut,
         nombreDeFilesTotal: n * (Math.ceil(l.hauteur / espacement) + 1),
-        longueurDeveloppee: ((l.longueur - 2 * enrobage) + (l.largeur - 2 * enrobage)) * 2,
+        longueurDeveloppee: developpeeCadre,
         espacement,
         overrides: l.overrides_cadre
       })
@@ -1640,6 +1658,15 @@ function champsOrphelins(bloc, ligne) {
 function champsRequisEffectifs(bloc, ligne) {
   if (!bloc.requisAlternatifs) return bloc.requis;
   const jeux = [bloc.requis, ...bloc.requisAlternatifs];
+  // Un champ explicite (`forme`, ...) tranche avant meme que le jeu soit
+  // complet : sans ca, un poteau circulaire a moitie rempli (forme choisie,
+  // diametre pas encore tape) se voyait reclamer « longueur, largeur »
+  // au lieu de « diametre » — le mauvais message pour la forme choisie.
+  if (bloc.requisParChamp) {
+    const valeur = ligne[bloc.requisParChamp.champ];
+    const index = bloc.requisParChamp.valeurs[valeur];
+    if (index !== undefined) return jeux[index];
+  }
   return jeux.find((jeu) => jeu.length > 0 && jeu.every((c) => renseigne(ligne[c]))) || bloc.requis;
 }
 
