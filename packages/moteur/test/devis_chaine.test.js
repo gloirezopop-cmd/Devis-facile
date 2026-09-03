@@ -157,4 +157,29 @@ describe('Chaine metre -> devis', () => {
       }
     }
   });
+
+  test('le terrassement entreprise porte le forfait installation/repli, aligne sur le classeur de reference', () => {
+    // Devis_Entreprise!A8 du classeur : "Amenee et repli de materiel", poste
+    // fixe n 1 du terrassement, jamais emis avant que PARAMETRES.prixUnitaires
+    // .ameneeEtRepliForfait — deja present — ne soit jamais lu nulle part.
+    const entreprise = genererDevisEntreprise(construireEntree(), REGLES_DEFAUT, {}, {});
+    const forfait = entreprise.niveaux.terrassement.lignes.find((l) => l.id === 'ameneeEtRepliForfait');
+    assert.ok(forfait, 'le forfait installation/repli doit figurer dans le terrassement');
+    assert.strictEqual(forfait.quantite, 1);
+    assert.ok(forfait.pu > 0);
+  });
+
+  test('la fondation entreprise suit la chronologie du classeur : le mur de soubassement cloture la section', () => {
+    // Devis_Entreprise!A15:A22 : beton de proprete, semelles, longrines,
+    // moellon, chape, sous-pavement, PUIS mur de soubassement en dernier.
+    const entreprise = genererDevisEntreprise(construireEntree(), REGLES_DEFAUT, {}, {});
+    const idsPresents = entreprise.niveaux.fondation.lignes.map((l) => l.id);
+    if (idsPresents.includes('murSoubassement') && idsPresents.length > 1) {
+      assert.strictEqual(
+        idsPresents.indexOf('murSoubassement'),
+        idsPresents.length - 1,
+        `le mur de soubassement doit etre le dernier poste de la fondation, trouve a l'index ${idsPresents.indexOf('murSoubassement')} sur ${idsPresents.length}`,
+      );
+    }
+  });
 });

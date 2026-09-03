@@ -478,6 +478,20 @@ export function genererDevisEntreprise(input, regles, bibliothequePrix, biblioth
       if (resumeFondation) {
         const v = resumeFondation.volumes;
 
+        // Forfait fixe, sans quantite mesuree — installation et repli du materiel
+        // de chantier. Le prix existait deja dans PARAMETRES.prixUnitaires
+        // (ameneeEtRepliForfait) mais n'etait jamais emis dans aucun devis.
+        // Reference : Devis_Entreprise!A8 du classeur, poste n 1 du terrassement.
+        const puInstallation = bibliothequePrix['ameneeEtRepliForfait'] || PARAMETRES.prixUnitaires.ameneeEtRepliForfait || 0;
+        if (puInstallation > 0) {
+          devisParNiveau['terrassement'].lignes.push({
+            id: 'ameneeEtRepliForfait', designation: 'Installation et repli de chantier', unite: 'ens',
+            quantite: 1, pu: puInstallation, pt: puInstallation, avertissements: []
+          });
+          devisParNiveau['terrassement'].sousTotal += puInstallation;
+          totalGrosOeuvre += puInstallation;
+        }
+
         const terrassements = [
           { id: 'fouillesPuits',  nom: 'Fouilles en puits',              qte: v.fouillesPuits,  unite: 'm3' },
           { id: 'fouilleFilante', nom: 'Fouilles en tranchee',           qte: v.fouilleFilante, unite: 'm3' },
@@ -497,14 +511,16 @@ export function genererDevisEntreprise(input, regles, bibliothequePrix, biblioth
           }
         }
 
+        // Ordre repris de Devis_Entreprise!A15:A22 du classeur de reference :
+        // le mur de soubassement cloture la fondation, il ne la precede pas.
         const fondations = [
           { id: 'betonProprete',    nom: 'Beton de proprete dose 150',                   qte: v.betonProprete,    unite: 'm3' },
           { id: 'semelles',         nom: 'Beton arme - Semelles isolees + Amorces',      qte: v.semelles,         unite: 'm3' },
           { id: 'longrines',        nom: 'Beton arme - Longrines',                        qte: v.longrines,        unite: 'm3' },
           { id: 'moellon',          nom: 'Fondation en moellon',                          qte: v.moellon,          unite: 'm3' },
-          { id: 'murSoubassement',  nom: 'Mur de soubassement (agglos)',                  qte: v.murSoubassement,  unite: 'm2' },
           { id: 'chapeEgalisation', nom: "Chape d'egalisation beton 250",                qte: v.chapeEgalisation, unite: 'm3' },
-          { id: 'sousPavement',     nom: 'Beton de sous-pavement dose 250',              qte: v.sousPavement,     unite: 'm3' }
+          { id: 'sousPavement',     nom: 'Beton de sous-pavement dose 250',              qte: v.sousPavement,     unite: 'm3' },
+          { id: 'murSoubassement',  nom: 'Mur de soubassement (agglos)',                  qte: v.murSoubassement,  unite: 'm2' }
         ];
         for (const item of fondations) {
           if (item.qte > 0) {
