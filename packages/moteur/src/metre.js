@@ -1260,7 +1260,11 @@ export function calculerMetre(saisie = {}, regles = {}) {
   const blocs = {};
   const avertissements = [];
 
-  const knownKeys = [...Object.keys(BLOCS), 'faience', 'peinture', 'autresOuvrages', 'niveaux'];
+  // maconnerie, carrelage et soubassement sont traites plus bas par du code
+  // dedie (calculerMur/calculerLocal), pas par la table BLOCS : sans leur
+  // presence ici, le moteur les traitait correctement tout en affirmant a
+  // l'utilisateur qu'il les ignorait — un faux avertissement, pas un vrai.
+  const knownKeys = [...Object.keys(BLOCS), 'faience', 'peinture', 'autresOuvrages', 'niveaux', 'maconnerie', 'carrelage', 'soubassement'];
   for (const key of Object.keys(saisie || {})) {
     if (!knownKeys.includes(key) && Array.isArray(saisie[key]) && saisie[key].length > 0) {
       avertissements.push({

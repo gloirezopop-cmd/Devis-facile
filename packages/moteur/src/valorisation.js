@@ -523,7 +523,13 @@ export function genererDevisEntreprise(input, regles, bibliothequePrix, biblioth
     }
 
     for (const [blocId, blocDonnees] of Object.entries(metre.blocs)) {
-      if (!blocDonnees || (!blocDonnees.total && !blocDonnees.lignes)) continue;
+      // `calculerMetre()` rend un objet pour CHAQUE bloc connu, mesure ou non,
+      // avec `lignes: []` quand rien n'est saisi — un tableau vide est veridique
+      // en JS, donc `!blocDonnees.lignes` ne filtre jamais rien. Sans le test
+      // explicite sur `total`, un devis Entreprise affichait une ligne prix
+      // (P.U. calcule sur un "faux bloc" d'une unite) pour tout ouvrage jamais
+      // mesure — colonnes, ceintures, linteaux, escalier a chaque etage.
+      if (!blocDonnees || !(blocDonnees.total > 0)) continue;
       const catGlobal = BLOCS_PARTICULIER[blocId];
       if (catGlobal === 'terrassement' || catGlobal === 'fondation') continue;
       if (blocId === 'autresOuvrages' || blocId === 'armatures') continue;

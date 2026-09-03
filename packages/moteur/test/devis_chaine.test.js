@@ -119,4 +119,42 @@ describe('Chaine metre -> devis', () => {
     assert.deepStrictEqual(Object.keys(devis.lots), []);
     assert.strictEqual(devis.total, 0);
   });
+
+  test('un ouvrage jamais saisi ne produit pas de ligne fantome dans le devis entreprise', () => {
+    // calculerMetre() rend un objet pour CHAQUE bloc connu (colonnes, ceintures,
+    // linteaux, escalier...), lignes: [] compris, meme quand rien n'est saisi
+    // pour ce niveau. Un garde qui teste seulement la verite de `lignes` ne
+    // filtre jamais rien : [] est veridique en JS. La regression concrete :
+    // un devis Entreprise pour un simple RDC (semelles + colonnes) affichait
+    // aussi des lignes "Ceintures et Chainages", "Linteaux et Appuis",
+    // "Escalier" a prix unitaire non nul mais quantite nulle.
+    const saisieRdc = {
+      fouilles: [{ longueur: 10, largeur: 0.5, profondeur: 0.8, nombre: 1 }],
+      semelles: [{ longueur: 1.2, largeur: 1.2, hauteur: 0.3, nombre: 4 }],
+      colonnes: [{ longueur: 0.2, largeur: 0.2, hauteur: 3, nombre: 6 }],
+      // Ni ceintures, ni linteaux, ni escalier : ces blocs ne doivent
+      // apparaitre nulle part dans le devis.
+    };
+    const metre = calculerMetre(saisieRdc, REGLES_DEFAUT);
+    const entreprise = genererDevisEntreprise(
+      [{ niveau: { id: 'rdc', nom: 'RDC' }, saisie: saisieRdc, metre }],
+      REGLES_DEFAUT,
+      {},
+      {},
+    );
+
+    const idsAbsents = ['ceintures', 'linteaux', 'escalier', 'poutres', 'dalles', 'acrotere'];
+    for (const lot of Object.values(entreprise.niveaux)) {
+      for (const ligne of lot.lignes) {
+        assert.ok(
+          !idsAbsents.includes(ligne.id),
+          `« ${ligne.designation} » (id=${ligne.id}) ne devrait pas figurer : rien n'a ete saisi pour cet ouvrage.`,
+        );
+        assert.ok(
+          ligne.quantite > 0,
+          `« ${ligne.designation} » figure avec une quantite de ${ligne.quantite} : aucune ligne du devis ne doit porter une quantite nulle.`,
+        );
+      }
+    }
+  });
 });

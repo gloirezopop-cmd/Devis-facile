@@ -71,17 +71,21 @@ describe('Intégration Interface <-> Moteur', () => {
   });
 
   test('Une colonne saisie donne un volume non nul', () => {
+    // sanitize.js envoie desormais ces lignes sous `colonnes` (longueur/largeur
+    // en metres), pas sous l'ancien `poteaux` (sectionA/sectionB en cm) : le
+    // formulaire Elevation.jsx saisit longueur/largeur directement, en accord
+    // avec la formule a x b x H x N du bloc `colonnes`.
     const state = {
       ...mockState,
       colonnes: [{
         id: 'c1', niveauId: 'test_1',
-        sectionA: '40', sectionB: '20', hauteur: '3.4', nombre: '5'
+        longueur: '0.40', largeur: '0.20', hauteur: '3.4', nombre: '5'
       }]
     };
     const saisiePreparee = preparerSaisiePourMoteur(niveau, state);
     const { blocs } = calculerMetre(saisiePreparee, REGLES_DEFAUT);
-    // 40cm x 20cm x 3.4m x 5 = 1.36
-    assert.equal(blocs.poteaux.total, 1.36);
+    // 0.40m x 0.20m x 3.4m x 5 = 1.36
+    assert.equal(blocs.colonnes.total, 1.36);
   });
 
   test('Un carrelage saisi donne une surface non nulle', () => {
