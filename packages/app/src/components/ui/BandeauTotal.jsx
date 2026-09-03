@@ -8,7 +8,7 @@ import { formaterNombre } from '../../utils/format.js';
  */
 export default function BandeauTotal({ totalParticulier, totalEntreprise, totalAvertissements }) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-devis-border shadow-xl z-50"
+    <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t-2 border-devis-border shadow-xl z-50"
          style={{ minHeight: '64px' }}>
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
 

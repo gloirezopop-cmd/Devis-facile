@@ -1,5 +1,10 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ProjetProvider, useProjet } from './context/ProjetContext.jsx';
+import Layout from './components/layout/Layout.jsx';
+import Dashboard from './pages/Dashboard.jsx';
+import EmptyState from './components/ui/EmptyState.jsx';
+import { NAVIGATION, ROUTES_ACTIVES } from './components/layout/navigation.js';
 import { useMetre } from './hooks/useMetre.js';
 import { useDevis } from './hooks/useDevis.js';
 
@@ -39,11 +44,6 @@ const TYPES_FIXES = ['terrassement', 'fondation', 'toiture', 'finition'];
 function AppContent() {
   const [vueDevis, setVueDevis] = React.useState('particulier');
   const { exportPDF, exportExcel, exportJSON } = useExport();
-  const infoProjet = React.useMemo(() => ({
-    maitreOuvrage: parametresProjet?.maitreOuvrage || '',
-    localisation:  parametresProjet?.localisation  || '',
-    reference:     parametresProjet?.reference     || 'DF-2026',
-  }), [parametresProjet]);
   const {
     ongletActif, setOngletActif,
     niveaux, setNiveaux,
@@ -51,6 +51,24 @@ function AppContent() {
     defaultAcierHyp,
     taux, parametresProjet, bibliothequePrix
   } = useProjet();
+
+  // `parametresProjet` doit être déstructuré avant ce useMemo — l'inverse est
+  // une erreur de zone morte temporelle (ReferenceError) à chaque rendu.
+  const infoProjet = React.useMemo(() => ({
+    maitreOuvrage: parametresProjet?.maitreOuvrage || '',
+    localisation:  parametresProjet?.localisation  || '',
+    reference:     parametresProjet?.reference     || 'DF-2026',
+  }), [parametresProjet]);
+
+  // La sidebar remplace l'ancien onglet interne : on synchronise ongletActif
+  // sur la route active, pour que le reste du composant (inchangé) continue
+  // de lire cette même variable sans savoir qu'un routeur existe au-dessus.
+  const { pathname } = useLocation();
+  React.useEffect(() => {
+    const parOnglet = { '/parametres': 'projet', '/metre': 'saisie', '/devis': 'editeur' };
+    const cible = parOnglet[pathname];
+    if (cible) setOngletActif(cible);
+  }, [pathname, setOngletActif]);
 
   const { metreParNiveau, avertissementsGlobaux: avertissementsMetre, resumeParNiveau } = useMetre();
   const { devisParticulier, devisEntreprise, avertissementsDevis } = useDevis();
@@ -130,36 +148,9 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-devis-paper pb-20">
+    <div className="pb-20">
 
-      {/* ── En-tête ── */}
-      <header className="bg-devis-saisie text-white shadow-md sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 pt-3 flex items-center justify-between">
-          <h1 className="text-xl font-sans font-bold">Devis Facile BTP</h1>
-          <span className="text-xs bg-white/20 px-2 py-1 rounded font-mono">v1.2</span>
-        </div>
-        <div className="max-w-6xl mx-auto flex px-4 gap-1 overflow-x-auto mt-1">
-          {[
-            ['projet',   '🏗️', 'Paramètres'],
-            ['saisie',   '📏', 'Métré'],
-            ['editeur',  '📊', 'Éditeur de Devis'],
-          ].map(([onglet, icone, libelle]) => (
-            <button
-              key={onglet}
-              onClick={() => setOngletActif(onglet)}
-              className={`px-4 py-3 min-h-[44px] text-sm font-bold border-b-4 transition-colors whitespace-nowrap ${
-                ongletActif === onglet || (onglet === 'editeur' && ['editeur','particulier','entreprise'].includes(ongletActif))
-                  ? 'border-white text-white'
-                  : 'border-transparent text-white/70 hover:text-white'
-              }`}
-            >
-              {icone} {libelle}
-            </button>
-          ))}
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto p-4 md:p-6">
+      <main className="max-w-6xl mx-auto">
 
         {/* ── Paramètres ── */}
         {ongletActif === 'projet' && <ParametresProjet />}
@@ -372,10 +363,33 @@ function AppContent() {
   );
 }
 
+// Entrées de menu sans page construite : un EmptyState honnête, jamais une
+// page inventée. `NAVIGATION` reste la source unique des libellés/icônes.
+const routesEnAttente = NAVIGATION.flatMap((section) => section.liens).filter(
+  (lien) => !ROUTES_ACTIVES.has(lien.to),
+);
+
 export default function App() {
   return (
     <ProjetProvider>
-      <AppContent />
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/metre" element={<AppContent />} />
+            <Route path="/devis" element={<AppContent />} />
+            <Route path="/parametres" element={<AppContent />} />
+
+            {routesEnAttente.map((lien) => (
+              <Route
+                key={lien.to}
+                path={lien.to}
+                element={<EmptyState icone={lien.icone} titre={lien.label} texte="Bientôt disponible." />}
+              />
+            ))}
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </ProjetProvider>
   );
 }
