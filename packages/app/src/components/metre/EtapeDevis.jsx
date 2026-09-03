@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { useProjet } from '../../context/ProjetContext.jsx';
 import { useDevis } from '../../hooks/useDevis.js';
 import { useExport } from '../../hooks/useExport.js';
+import { useProjets } from '../../hooks/useProjets.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import TableauDevis from '../sections/TableauDevis.jsx';
 import { ErrorBoundary } from '../ui/ErrorBoundary.jsx';
 import { formaterNombre } from '../../utils/format.js';
 import Icone from '../ui/Icone.jsx';
 import MenuExport from '../ui/MenuExport.jsx';
+import MenuEnregistrer from '../ui/MenuEnregistrer.jsx';
 import LogoProjet from '../ui/LogoProjet.jsx';
 
 /**
@@ -20,6 +22,7 @@ export default function EtapeDevis() {
   const { parametresProjet, setParametresProjet } = useProjet();
   const { devisEntreprise } = useDevis();
   const { exportPDF, exportExcel } = useExport();
+  const { sauvegarder, sauvegarderSous } = useProjets();
   const toast = useToast();
 
   const infoProjet = {
@@ -72,13 +75,18 @@ export default function EtapeDevis() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <button
-          onClick={() => toast('Le projet est déjà enregistré automatiquement sur cet appareil.')}
-          className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-brand-primary/15 px-3 text-[13px] font-bold text-brand-text/70 hover:bg-black/[0.03]"
-        >
-          <Icone nom="check-square" size={15} />
-          Enregistré
-        </button>
+        <MenuEnregistrer
+          onEnregistrer={() => {
+            sauvegarder(parametresProjet?.reference);
+            toast('Projet enregistré — retrouvez-le dans « Projets ».');
+          }}
+          onEnregistrerSous={() => {
+            const nom = window.prompt('Nom de la copie :', `${parametresProjet?.reference || 'Projet'} (copie)`);
+            if (!nom) return;
+            sauvegarderSous(nom);
+            toast(`Enregistré sous « ${nom} ».`);
+          }}
+        />
         {/* « Modifier » emmene vers l'editeur Excel (formules, edition ligne a
             ligne) : c'est l'action « je corrige mon devis », distincte de
             « je repasse par le metre » que le Stepper permet deja en un clic. */}
