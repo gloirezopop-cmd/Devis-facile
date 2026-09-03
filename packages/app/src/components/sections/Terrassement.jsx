@@ -7,7 +7,7 @@ import InputSaisie from '../ui/InputSaisie.jsx';
 import ValeurCalculee from '../ui/ValeurCalculee.jsx';
 
 export default function Terrassement() {
-  const { fouilles, setFouilles, addRow, removeRow, updateRow, niveauActifId } = useProjet();
+  const { fouilles, setFouilles, fouilleFilante, setFouilleFilante, nivellement, setNivellement, addRow, removeRow, updateRow, niveauActifId } = useProjet();
   const { metreParNiveau } = useMetre();
 
   const idx = metreParNiveau.findIndex(m => m.niveauId === niveauActifId);
