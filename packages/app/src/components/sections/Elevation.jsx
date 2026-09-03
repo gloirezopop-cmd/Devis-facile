@@ -34,30 +34,30 @@ export default function Elevation() {
 
       <CarteBloc
         titre="Colonnes (Poteaux)"
-        onAdd={() => addRow(colonnes, setColonnes, { niveauId: niveauActifId, sectionA: '', sectionB: '', hauteur: '', nombre: '1', diametrePrin: 12, diametreCadre: 8, nbreBarresPrin: 4, espacementCadre: 0.15 }, 'C')}
+        onAdd={() => addRow(colonnes, setColonnes, { niveauId: niveauActifId, longueur: '', largeur: '', hauteur: '', nombre: '1', diametrePrin: 12, diametreCadre: 8, nbreBarresPrin: 4, espacementCadre: 0.15 }, 'C')}
         addLabel="Ajouter type de colonne"
-        totalValeur={getBloc('poteaux').total}
-        totalUnite={getBloc('poteaux').unite}
+        totalValeur={getBloc('colonnes').total}
+        totalUnite={getBloc('colonnes').unite}
         totalLabel="Volume total colonnes"
       >
         {currentColonnes.map((c, index) => (
           <LigneOuvrage
             key={c.id} repere={c.repere} titre="Colonne"
             onRemove={currentColonnes.length > 1 ? () => removeRow(colonnes, setColonnes, c.id) : null}
-            avertissement={getAvertissementLocal('poteaux', index)}
+            avertissement={getAvertissementLocal('colonnes', index)}
           >
             <div className="grid grid-cols-2 gap-4">
-              <InputSaisie label="Section A" value={c.sectionA} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'sectionA', v)} unite="cm" />
-              <InputSaisie label="Section B" value={c.sectionB} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'sectionB', v)} unite="cm" />
+              <InputSaisie label="Longueur (section)" value={c.longueur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'longueur', v)} unite="m" />
+              <InputSaisie label="Largeur (section)" value={c.largeur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'largeur', v)} unite="m" />
               <InputSaisie label="Hauteur" value={c.hauteur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'hauteur', v)} unite="m" />
               <InputSaisie label="Nombre" value={c.nombre} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'nombre', v)} unite="u" />
             </div>
             <div className="mt-4 pt-4 border-t border-devis-border grid grid-cols-2 gap-4">
               <ValeurCalculee
                 label="Volume ligne"
-                value={getBloc('poteaux').lignes[index]?.valeur}
+                value={getBloc('colonnes').lignes[index]?.valeur}
                 unite="m3"
-                trace={getBloc('poteaux').lignes[index]?.trace}
+                trace={getBloc('colonnes').lignes[index]?.trace}
                 overrideValue={c.override_volume}
                 onOverrideChange={(v) => updateRow(colonnes, setColonnes, c.id, 'override_volume', v)}
               />

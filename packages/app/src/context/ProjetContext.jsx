@@ -32,7 +32,10 @@ export function ProjetProvider({ children }) {
 
   const [semelles, setSemelles] = useLocalStorageState('df_semelles', [{ id: 1, niveauId: 'fondation', repere: 'S1', longueur: '1.2', largeur: '1.2', hauteur: '0.3', nombre: '4', diametrePrin: 10, espacement: 0.15 }]);
   const [longrines, setLongrines] = useLocalStorageState('df_longrines', [{ id: 1, niveauId: 'fondation', repere: 'L1', perimetre: '20', largeur: '0.2', hauteur: '0.4', nombre: '1', diametrePrin: 12, diametreCadre: 6, nbreBarresPrin: 4, espacementCadre: 0.20 }]);
-  const [colonnes, setColonnes] = useLocalStorageState('df_colonnes', [{ id: 1, niveauId: 'elevation_1', repere: 'C1', sectionA: '20', sectionB: '20', hauteur: '3.2', nombre: '6', diametrePrin: 12, diametreCadre: 8, nbreBarresPrin: 4, espacementCadre: 0.15 }]);
+  // `_v2` : les colonnes se saisissaient en sectionA/sectionB (cm), le bloc
+  // moteur `colonnes` attend longueur/largeur (m) — l'ancienne cle aurait
+  // silencieusement repris des lignes dont le volume ne se calcule plus.
+  const [colonnes, setColonnes] = useLocalStorageState('df_colonnes_v2', [{ id: 1, niveauId: 'elevation_1', repere: 'C1', longueur: '0.20', largeur: '0.20', hauteur: '3.2', nombre: '6', diametrePrin: 12, diametreCadre: 8, nbreBarresPrin: 4, espacementCadre: 0.15 }]);
 
   const [maconneries, setMaconneries] = useLocalStorageState('df_maconneries', [{
     id: 1, niveauId: 'elevation_1', repere: 'M1', longueur: '30', hauteur: '3.2', nombre: '1',
@@ -120,16 +123,18 @@ export function ProjetProvider({ children }) {
 
   const [taux, setTaux] = useLocalStorageState('df_taux', { ...REGLES_DEFAUT.taux });
   
-  const [majorations, setMajorations] = useLocalStorageState('df_majorations', {
+  // Ces majorations ecrasent celles de PARAMETRES.majorations dans le moteur
+  // (reglesPersonnalisees.majorations est prioritaire sur le defaut du moteur,
+  // voir ajouterMateriau() dans recettes.js) : elles doivent rester alignees
+  // sur les memes valeurs, sans quoi une correction faite dans le moteur est
+  // silencieusement annulee ici pour tout devis genere depuis l'app.
+  const [majorations, setMajorations] = useLocalStorageState('df_majorations_v2', {
     planches: 1.10,
     chevrons: 1.10,
-    blocs: 1.10,
-    acier: 1.00,
-    sable: 1.00,
-    gravier: 1.00,
-    ciment: 1.00,
-    eau: 1.00,
-    moellon: 1.00,
+    blocs: 1.05,
+    acier: 1.05,
+    sable: 1.05,
+    gravier: 1.05,
     toles: 1.10,
     carreaux: 1.10,
     faience: 1.10,
@@ -137,6 +142,7 @@ export function ProjetProvider({ children }) {
 
   const [parametresProjet, setParametresProjet] = useLocalStorageState('df_parametresProjet', {
     maitreOuvrage: '',
+    nomEntreprise: '',
     localisation: '',
     reference: '',
     cimentType: '42.5',

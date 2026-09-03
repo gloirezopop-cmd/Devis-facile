@@ -27,7 +27,14 @@ export function preparerSaisiePourMoteur(niveau, state) {
     betonProprete: sanitize((state.betonProprete || []).filter(bp => bp.niveauId === niveau.id)),
     semelles: sanitize((state.semelles || []).filter(s => s.niveauId === niveau.id)),
     longrines: sanitize((state.longrines || []).filter(l => l.niveauId === niveau.id)),
-    poteaux: sanitize((state.colonnes || []).filter(c => c.niveauId === niveau.id)),
+    // `colonnes`, pas `poteaux` : le bloc moderne attend longueur/largeur en
+    // metres (formule a x b x H x N). L'ancien alias envoyait ces lignes sous
+    // `poteaux`, qui attend sectionA/sectionB en cm — le formulaire Elevation
+    // saisit maintenant longueur/largeur, donc c'est bien `colonnes` qu'il faut
+    // nourrir ; l'envoyer sous l'ancien nom aurait rendu chaque colonne a un
+    // volume nul (dimension-manquante) tout en la facturant quand meme via le
+    // bloc legacy, sous une designation « Colonnes (legacy) » dans le devis.
+    colonnes: sanitize((state.colonnes || []).filter(c => c.niveauId === niveau.id)),
     escalier: sanitize((state.escaliers || []).filter(e => e.niveauId === niveau.id)),
     maconnerie: sanitize((state.maconneries || []).filter(m => m.niveauId === niveau.id)),
     murSoubassement: sanitize((state.soubassements || []).filter(ms => ms.niveauId === niveau.id)),
