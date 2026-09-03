@@ -42,4 +42,4 @@ export const NAVIGATION = [
 ];
 
 /** Routes réellement construites. Les autres passent par EmptyState. */
-export const ROUTES_ACTIVES = new Set(['/', '/metre', '/devis', '/parametres']);
+export const ROUTES_ACTIVES = new Set(['/', '/metre', '/devis', '/parametres', '/projets']);

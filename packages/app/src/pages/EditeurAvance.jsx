@@ -29,7 +29,7 @@ export default function EditeurAvance() {
           </p>
         </div>
         <button
-          onClick={() => navigate('/metre?etape=5')}
+          onClick={() => navigate('/metre?etape=4')}
           className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-md border border-brand-primary/15 bg-white px-4 text-[13px] font-bold text-brand-text/70 hover:bg-black/[0.03]"
         >
           <Icone nom="arrow-right" size={15} className="rotate-180" />

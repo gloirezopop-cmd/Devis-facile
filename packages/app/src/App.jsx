@@ -5,6 +5,8 @@ import { ToastProvider } from './context/ToastContext.jsx';
 import Layout from './components/layout/Layout.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Metre from './pages/Metre.jsx';
+import Parametres from './pages/Parametres.jsx';
+import Projets from './pages/Projets.jsx';
 import EditeurAvance from './pages/EditeurAvance.jsx';
 import EmptyState from './components/ui/EmptyState.jsx';
 import { NAVIGATION, ROUTES_ACTIVES } from './components/layout/navigation.js';
@@ -24,12 +26,14 @@ export default function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<Dashboard />} />
 
-              {/* Le parcours guidé en cinq étapes vit à /metre?etape=N.
-                  /parametres et /devis sont des raccourcis d'entrée directe
-                  vers l'étape correspondante — pas des pages séparées. */}
+              {/* Le parcours guidé (Structure -> Métré -> Résultats -> Devis)
+                  vit à /metre?etape=N. /devis est un raccourci vers sa
+                  dernière étape. /parametres est une page séparée, en dehors
+                  du parcours : ce sont des réglages qu'on pose une fois. */}
               <Route path="/metre" element={<Metre />} />
-              <Route path="/parametres" element={<Navigate to="/metre?etape=1" replace />} />
-              <Route path="/devis" element={<Navigate to="/metre?etape=5" replace />} />
+              <Route path="/parametres" element={<Parametres />} />
+              <Route path="/projets" element={<Projets />} />
+              <Route path="/devis" element={<Navigate to="/metre?etape=4" replace />} />
               <Route path="/devis/avance" element={<EditeurAvance />} />
 
               {routesEnAttente.map((lien) => (
