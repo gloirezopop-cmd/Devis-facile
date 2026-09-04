@@ -66,7 +66,7 @@ export default function ParametresProjet() {
             onClick={handleExportJSON}
             className="bg-gray-100 hover:bg-gray-200 text-devis-calcule px-3 py-2 rounded font-bold text-sm min-h-[44px] flex items-center gap-2"
           >
-            💾 Sauvegarder Projet (JSON)
+            Sauvegarder Projet (JSON)
           </button>
         </div>
       </div>
@@ -284,7 +284,7 @@ export default function ParametresProjet() {
           }}
           className="mt-6 px-4 min-h-[44px] border-2 border-devis-saisie text-devis-saisie font-bold uppercase tracking-wider text-sm rounded hover:bg-devis-saisie hover:text-white transition-colors flex items-center justify-center w-full md:w-auto"
         >
-          ➕ Ajouter un élément / prix libre
+          + Ajouter un élément / prix libre
         </button>
       </div>
     </section>

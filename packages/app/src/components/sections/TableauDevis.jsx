@@ -1,5 +1,7 @@
 import React, { Fragment } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TITRES_LOTS_PARTICULIER, TITRES_LOTS_ENTREPRISE } from '@devis-facile/moteur';
+
 import { formaterNombre } from '../../utils/format.js';
 
 /**
@@ -11,9 +13,21 @@ import { formaterNombre } from '../../utils/format.js';
  * seconde liste finirait par diverger de la premiere.
  */
 export default function TableauDevis({ devis, type = 'particulier' }) {
+  const navigate = useNavigate();
   const estEntreprise = type === 'entreprise';
   const groupes = (estEntreprise ? devis?.niveaux : devis?.lots) || {};
   const titres = estEntreprise ? TITRES_LOTS_ENTREPRISE : TITRES_LOTS_PARTICULIER;
+
+  const voirCalcul = (idTarget) => {
+    if (!idTarget) return;
+    navigate('/metre?etape=3');
+    setTimeout(() => {
+      const el = document.getElementById(`calc_${idTarget}`) || document.getElementById(`mat_${idTarget}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 150);
+  };
 
   // Les lots connus d'abord, dans l'ordre du classeur ; les niveaux ajoutes par
   // l'utilisateur (etage 2, 3...) ensuite, dans leur ordre de creation.
@@ -70,16 +84,27 @@ export default function TableauDevis({ devis, type = 'particulier' }) {
 
                   {lot.lignes.map((ligne, i) => {
                     const sansPrix = !ligne.pu;
+                    const idTarget = ligne.id || lotId;
                     return (
                       <tr key={`${lotId}-${i}`} className={sansPrix ? 'bg-amber-50' : 'hover:bg-gray-50'}>
                         <td className={`${cellule} text-xs text-center text-gray-500`}>{index + 1}.{i + 1}</td>
                         <td className={`${cellule} text-sm`}>
-                          {ligne.designation}
-                          {sansPrix && (
-                            <span className="ml-2 text-xs font-bold text-amber-700" title="Prix unitaire absent de la bibliothèque">
-                              prix à saisir
+                          <div className="flex items-center justify-between gap-2">
+                            <span>
+                              {ligne.designation}
+                              {sansPrix && (
+                                <span className="ml-2 text-xs font-bold text-amber-700" title="Prix unitaire absent de la bibliothèque">
+                                  prix à saisir
+                                </span>
+                              )}
                             </span>
-                          )}
+                            <button
+                              onClick={() => voirCalcul(idTarget)}
+                              className="text-[11px] font-semibold text-brand-primary underline hover:text-brand-primary-dark cursor-pointer shrink-0"
+                            >
+                              Voir le calcul
+                            </button>
+                          </div>
                         </td>
                         <td className={`${cellule} text-xs text-center text-gray-600`}>{ligne.unite}</td>
                         <td className={`${cellule} text-sm text-right tabular-nums`}>{formaterNombre(ligne.quantite)}</td>

@@ -57,7 +57,7 @@ export default function EtapeStructure({ onOuvrir }) {
               )}
 
               <div className="flex items-center gap-2 pr-6">
-                <span className="text-lg leading-none">{ICONES_TYPE[niveau.type] || ''}</span>
+                {ICONES_TYPE[niveau.type] && <span className="text-lg leading-none">{ICONES_TYPE[niveau.type]}</span>}
                 <input
                   value={niveau.nom}
                   onChange={(e) => renommerNiveau(niveau.id, e.target.value)}

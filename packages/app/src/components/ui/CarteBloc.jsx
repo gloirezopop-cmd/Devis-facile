@@ -24,7 +24,7 @@ export default function CarteBloc({ titre, children, onAdd, addLabel, totalValeu
           onClick={onAdd}
           className="w-full py-3 min-h-[44px] border-2 border-dashed border-devis-saisie text-devis-saisie font-bold uppercase tracking-wider text-sm rounded hover:bg-devis-saisie hover:text-white transition-colors flex items-center justify-center gap-2"
         >
-          <span>➕</span> {addLabel}
+          <span className="text-lg">+</span> {addLabel}
         </button>
       )}
     </div>

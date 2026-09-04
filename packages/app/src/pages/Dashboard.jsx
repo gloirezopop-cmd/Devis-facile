@@ -24,7 +24,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-sans text-2xl font-bold text-brand-text">Bonjour 👋</h1>
+        <h1 className="font-sans text-2xl font-bold text-brand-text">Bonjour</h1>
         <p className="mt-1 text-[14px] text-brand-text/60">
           Bienvenue sur Devis Facile. Gérez vos métrés, vos devis et votre progression en apprentissage.
         </p>

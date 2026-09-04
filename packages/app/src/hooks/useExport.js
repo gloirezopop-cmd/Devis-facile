@@ -1,4 +1,4 @@
-﻿import jsPDF from 'jspdf';
+import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { formaterNombre } from '../utils/format.js';
@@ -99,7 +99,7 @@ export function exporterDevisPDF(devis, type = 'particulier', infoProjet = {}) {
       rows.push([
         { content: `${si + 1}.${li + 1}`, styles: { halign: 'center', fontSize: 8 } },
         {
-          content: ligne.designation + (sansPrix ? ' ⚠' : ''),
+          content: ligne.designation + (sansPrix ? ' (!)' : ''),
           styles: { fontSize: 8, textColor: sansPrix ? [138, 93, 0] : [15, 21, 27] }
         },
         { content: ligne.unite || '', styles: { halign: 'center', fontSize: 8 } },

@@ -1,9 +1,9 @@
 import { TITRES_LOTS_PARTICULIER, TITRES_LOTS_ENTREPRISE } from '@devis-facile/moteur';
 
-export function generateWorkbookData(devisParticulier, devisEntreprise, metre, projet) {
+export function generateWorkbookData(devisParticulier, devisEntreprise, metre, noteDeCalcul, projet) {
   return {
     id: 'workbook-devis',
-    sheetOrder: ['particulier', 'entreprise', 'metre', 'parametres'],
+    sheetOrder: ['particulier', 'entreprise', 'note_calcul', 'metre', 'parametres'],
     name: 'Devis Facile BTP',
     appVersion: '0.1.0',
     sheets: {
@@ -22,6 +22,14 @@ export function generateWorkbookData(devisParticulier, devisEntreprise, metre, p
         rowCount: 150,
         columnCount: 15,
         ...generateDevisSheet(devisEntreprise, 'entreprise')
+      },
+      'note_calcul': {
+        id: 'note_calcul',
+        name: 'Note de Calcul',
+        tabColor: '#8A5D00',
+        rowCount: 1000,
+        columnCount: 10,
+        ...generateNoteCalculSheet(noteDeCalcul)
       },
       'metre': {
         id: 'metre',
@@ -285,6 +293,116 @@ export function generateParametresSheet(projet) {
       row++;
     });
   }
+
+  return { cellData, columnData };
+}
+
+export function generateNoteCalculSheet(noteDeCalcul) {
+  const cellData = {};
+  const columnData = {
+    0: { hd: 0, hidden: 0, w: 200 }, // Ouvrage / Ligne
+    1: { hd: 0, hidden: 0, w: 250 }, // Données
+    2: { hd: 0, hidden: 0, w: 200 }, // Formule
+    3: { hd: 0, hidden: 0, w: 250 }, // Application Numérique
+    4: { hd: 0, hidden: 0, w: 100 }, // Résultat
+    5: { hd: 0, hidden: 0, w: 80 },  // Unité
+    6: { hd: 0, hidden: 0, w: 250 }  // Observations
+  };
+
+  if (!noteDeCalcul || !noteDeCalcul.lots) return { cellData, columnData };
+
+  let row = 0;
+
+  noteDeCalcul.lots.forEach(lot => {
+    // Titre du lot
+    cellData[row] = {
+      0: { v: lot.nom, s: { bl: 1, fs: 14, bg: { rgb: '#f3f4f6' }, cl: { rgb: '#0F151B' } } }
+    };
+    row++;
+
+    lot.ouvrages.forEach(ouvrage => {
+      // Titre de l'ouvrage
+      cellData[row] = {
+        0: { v: ouvrage.nom, s: { bl: 1, bg: { rgb: '#f3f4f6' }, cl: { rgb: '#0F151B' } } }
+      };
+      row++;
+
+      // En-têtes des colonnes pour les lignes
+      cellData[row] = {
+        0: { v: 'Ligne / Repère', s: { bl: 1, cl: { rgb: '#0F151B' } } },
+        1: { v: 'Données', s: { bl: 1, cl: { rgb: '#0F151B' } } },
+        2: { v: 'Formule', s: { bl: 1, cl: { rgb: '#0F151B' } } },
+        3: { v: 'Application Numérique', s: { bl: 1, cl: { rgb: '#0F151B' } } },
+        4: { v: 'Résultat', s: { bl: 1, cl: { rgb: '#0F151B' }, ht: 3 } },
+        5: { v: 'Unité', s: { bl: 1, cl: { rgb: '#0F151B' }, ht: 2 } },
+        6: { v: 'Observations', s: { bl: 1, cl: { rgb: '#0F151B' } } }
+      };
+      row++;
+
+      if (ouvrage.lignes && ouvrage.lignes.length > 0) {
+        ouvrage.lignes.forEach(ligne => {
+          let donneesStr = Object.entries(ligne.donnees || {})
+            .map(([k, v]) => `${k}=${v}`)
+            .join(', ');
+            
+          cellData[row] = {
+            0: { v: ligne.repere || '-' },
+            1: { v: donneesStr || '-' },
+            2: { v: ligne.formule || '-' },
+            3: { v: ligne.application || '-' },
+            4: { v: ligne.valeur_arrondie, t: 2, s: { cl: { rgb: '#0F151B' }, ff: 'JetBrains Mono', ht: 3 } },
+            5: { v: ligne.unite || '-', s: { ht: 2 } },
+            6: { v: '-' }
+          };
+          row++;
+        });
+      }
+      
+      // Total Ouvrage
+      cellData[row] = {
+        0: { v: `Total ${ouvrage.nom}`, s: { bl: 1, cl: { rgb: '#0F151B' } } },
+        4: { v: ouvrage.total_arrondi, t: 2, s: { bl: 1, cl: { rgb: '#0F151B' }, ff: 'JetBrains Mono', ht: 3, bg: { rgb: '#f3f4f6' } } },
+        5: { v: ouvrage.unite || '-', s: { bl: 1, ht: 2, bg: { rgb: '#f3f4f6' } } },
+        6: { v: ouvrage.motif_arrondi || '-', s: { i: 1, cl: { rgb: '#8A5D00' } } }
+      };
+      row++;
+      
+      // Décomposition des matériaux si existante
+      if (ouvrage.decomposition_materiaux && ouvrage.decomposition_materiaux.length > 0) {
+        row++;
+        cellData[row] = {
+          0: { v: 'Décomposition des matériaux', s: { bl: 1, cl: { rgb: '#14634A' } } }
+        };
+        row++;
+        
+        cellData[row] = {
+          0: { v: 'Matériau', s: { bl: 1, cl: { rgb: '#14634A' } } },
+          2: { v: 'Formule', s: { bl: 1, cl: { rgb: '#14634A' } } },
+          3: { v: 'Calcul', s: { bl: 1, cl: { rgb: '#14634A' } } },
+          4: { v: 'Quantité', s: { bl: 1, cl: { rgb: '#14634A' }, ht: 3 } },
+          5: { v: 'Unité', s: { bl: 1, cl: { rgb: '#14634A' }, ht: 2 } },
+          6: { v: 'Observations', s: { bl: 1, cl: { rgb: '#14634A' } } }
+        };
+        row++;
+        
+        ouvrage.decomposition_materiaux.forEach(mat => {
+          cellData[row] = {
+            0: { v: mat.nom, s: { cl: { rgb: '#14634A' } } },
+            2: { v: mat.formule || '-', s: { cl: { rgb: '#14634A' } } },
+            3: { v: mat.calcul || '-', s: { cl: { rgb: '#14634A' } } },
+            4: { v: mat.valeur_arrondie, t: 2, s: { cl: { rgb: '#14634A' }, ff: 'JetBrains Mono', ht: 3 } },
+            5: { v: mat.unite || '-', s: { cl: { rgb: '#14634A' }, ht: 2 } },
+            6: { v: mat.motif_arrondi || '-', s: { i: 1, cl: { rgb: '#8A5D00' } } }
+          };
+          row++;
+        });
+      }
+
+      row++; // Ligne vide entre les ouvrages
+    });
+    
+    row++; // Ligne vide entre les lots
+  });
 
   return { cellData, columnData };
 }

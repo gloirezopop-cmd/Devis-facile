@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import Stepper from '../components/ui/Stepper.jsx';
 import EtapeStructure from '../components/metre/EtapeStructure.jsx';
 import EtapeMetre from '../components/metre/EtapeMetre.jsx';
+import EtapeNoteCalcul from '../components/metre/EtapeNoteCalcul.jsx';
 import EtapeResultats from '../components/metre/EtapeResultats.jsx';
 import EtapeDevis from '../components/metre/EtapeDevis.jsx';
 import BandeauTotal from '../components/ui/BandeauTotal.jsx';
@@ -14,10 +15,12 @@ import LegendeEtats from '../components/ui/LegendeEtats.jsx';
 const ETAPES = [
   { id: 'structure', label: 'Plans et éléments' },
   { id: 'metre', label: 'Métré' },
+  { id: 'noteCalcul', label: 'Note de calcul' },
   { id: 'resultats', label: 'Résultats' },
   { id: 'devis', label: 'Devis' },
 ];
 const DERNIERE_ETAPE = ETAPES.length;
+
 
 /**
  * Le parcours guidé. Les réglages de projet (dosages, prix, taux) ne sont
@@ -54,8 +57,10 @@ export default function Metre() {
 
       {etape === 1 && <EtapeStructure onOuvrir={() => allerA(2)} />}
       {etape === 2 && <EtapeMetre />}
-      {etape === 3 && <EtapeResultats />}
-      {etape === 4 && <EtapeDevis />}
+      {etape === 3 && <EtapeNoteCalcul />}
+      {etape === 4 && <EtapeResultats />}
+      {etape === 5 && <EtapeDevis />}
+
 
       <div className="mt-8 flex justify-between border-t border-brand-primary/10 pt-4">
         <button

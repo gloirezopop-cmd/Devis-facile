@@ -1,11 +1,11 @@
 /** Source unique : icône par type de niveau, et types que l'on ne peut pas supprimer. */
 export const ICONES_TYPE = {
-  terrassement: '⛏️',
-  fondation:    '🧱',
-  elevation:    '🏗️',
-  plancher:     '🪟',
-  toiture:      '🏠',
-  finition:     '🎨',
+  terrassement: '',
+  fondation:    '',
+  elevation:    '',
+  plancher:     '',
+  toiture:      '',
+  finition:     '',
 };
 
 // Terrassement, fondation, toiture et finition sont uniques par projet ;

@@ -14,14 +14,14 @@ export default function LigneOuvrage({ repere, titre, children, onRemove, averti
             className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded text-sm min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
             title="Supprimer cette ligne"
           >
-            🗑️
+            X
           </button>
         )}
       </div>
 
       {avertissement && (
         <div className="mb-4 p-3 bg-amber-50 border border-devis-averifier rounded text-devis-averifier text-sm flex items-start gap-2">
-          <span className="text-xl">⚠️</span>
+          <span className="text-xl text-amber-500 font-bold">(!)</span>
           <div>
             <strong>Avertissement :</strong> {avertissement.message}
           </div>

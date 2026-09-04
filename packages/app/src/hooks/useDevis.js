@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { genererDevisParticulier, genererDevisEntreprise } from '@devis-facile/moteur';
+import { genererDevisParticulier, genererDevisEntreprise, genererNoteDeCalcul } from '@devis-facile/moteur';
 import { useProjet } from '../context/ProjetContext.jsx';
+
 import { useMetre } from './useMetre.js';
 
 /**
@@ -20,6 +21,11 @@ export function useDevis() {
   } = useProjet();
 
   const { metreParNiveau } = useMetre();
+
+  const noteDeCalcul = useMemo(
+    () => genererNoteDeCalcul(metreParNiveau, reglesPersonnalisees),
+    [metreParNiveau, reglesPersonnalisees],
+  );
 
   const devisParticulier = useMemo(
     () => genererDevisParticulier(metreParNiveau, reglesPersonnalisees, bibliothequePrixNumerique, labelsPrix),
@@ -68,5 +74,6 @@ export function useDevis() {
     return warns;
   }, [bibliothequePrixNumerique, devisParticulier]);
 
-  return { devisParticulier, devisEntreprise, avertissementsDevis };
+  return { noteDeCalcul, devisParticulier, devisEntreprise, avertissementsDevis };
 }
+

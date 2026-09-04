@@ -54,7 +54,7 @@ export default function EtapeMetre() {
                   }`}
                 >
                   <span className="flex items-center gap-1.5 whitespace-nowrap leading-tight">
-                    <span>{ICONES_TYPE[niveau.type] || ''}</span>
+                    {ICONES_TYPE[niveau.type] && <span>{ICONES_TYPE[niveau.type]}</span>}
                     <span>{niveau.nom}</span>
                   </span>
                   {resume && (
@@ -75,7 +75,7 @@ export default function EtapeMetre() {
         </div>
 
         <h2 className="mt-3 font-sans text-lg font-bold leading-tight text-brand-text">
-          {ICONES_TYPE[typeNiveauActif]} {niveaux[idx]?.nom}
+          {ICONES_TYPE[typeNiveauActif] ? `${ICONES_TYPE[typeNiveauActif]} ` : ''}{niveaux[idx]?.nom}
         </h2>
       </nav>
 

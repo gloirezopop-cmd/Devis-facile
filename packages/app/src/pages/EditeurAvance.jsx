@@ -17,7 +17,7 @@ export default function EditeurAvance() {
   const navigate = useNavigate();
   const { taux, parametresProjet, bibliothequePrix } = useProjet();
   const { metreParNiveau } = useMetre();
-  const { devisParticulier, devisEntreprise } = useDevis();
+  const { devisParticulier, devisEntreprise, noteDeCalcul } = useDevis();
 
   return (
     <section>
@@ -49,7 +49,7 @@ export default function EditeurAvance() {
       <div className="overflow-hidden rounded-lg border border-brand-primary/10 bg-white">
         <ErrorBoundary>
           <TableurDevis
-            initialData={generateWorkbookData(devisParticulier, devisEntreprise, metreParNiveau, {
+            initialData={generateWorkbookData(devisParticulier, devisEntreprise, metreParNiveau, noteDeCalcul, {
               taux,
               parametresProjet,
               bibliothequePrix,

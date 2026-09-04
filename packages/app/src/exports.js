@@ -103,3 +103,59 @@ export function exportExcel(devisData, type) {
   XLSX.utils.book_append_sheet(wb, ws, 'Devis');
   XLSX.writeFile(wb, `Devis_${type}.xlsx`);
 }
+
+export function exportNoteDeCalculPDF(noteDeCalcul, infoProjet = {}) {
+  if (!noteDeCalcul || !noteDeCalcul.lots) return;
+
+  const doc = new jsPDF();
+  const title = `NOTE DE CALCUL — SOURCE DE VÉRITÉ`;
+  const reference = infoProjet.reference || 'DF-2026';
+  const client = infoProjet.maitreOuvrage || '—';
+
+  doc.setFont('times', 'bold');
+  doc.setFontSize(16);
+  doc.text(title, 14, 20);
+
+  doc.setFontSize(10);
+  doc.setFont('times', 'normal');
+  doc.text(`Projet / Réf : ${reference} | Client : ${client} | Date : ${new Date().toLocaleDateString('fr-FR')}`, 14, 27);
+
+  let startY = 35;
+
+  noteDeCalcul.lots.forEach((lot) => {
+    if (!lot.ouvrages || lot.ouvrages.length === 0) return;
+
+    doc.setFontSize(12);
+    doc.setFont('times', 'bold');
+    doc.text(lot.nom.toUpperCase(), 14, startY);
+    startY += 6;
+
+    lot.ouvrages.forEach((ov) => {
+      const head = [['Repère', 'Données', 'Formule', 'Calcul', `Résultat (${ov.unite})`]];
+      const body = ov.lignes.map((l) => [
+        l.repere,
+        Object.entries(l.donnees).map(([k, v]) => `${k}=${v}`).join(', '),
+        l.formule,
+        l.application,
+        String(l.valeur_arrondie),
+      ]);
+
+      doc.autoTable({
+        startY: startY,
+        head: head,
+        body: body,
+        theme: 'grid',
+        headStyles: { fillColor: [20, 71, 155], font: 'times', fontSize: 9 },
+        bodyStyles: { font: 'times', fontSize: 9 },
+        margin: { left: 14, right: 14 },
+      });
+
+      startY = doc.lastAutoTable.finalY + 8;
+    });
+
+    startY += 5;
+  });
+
+  doc.save(`Note_De_Calcul_${reference}.pdf`);
+}
+
