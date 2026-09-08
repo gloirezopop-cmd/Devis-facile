@@ -34,7 +34,10 @@ export default function Stepper({ etapes, etapeActive, onChange }) {
                 >
                   {faite ? <Icone nom="check-square" size={12} /> : numero}
                 </span>
-                <span className="hidden sm:inline">{etape.label}</span>
+                {/* Sur téléphone, les cinq noms ne tiennent pas : seul celui
+                    de l'étape en cours reste lisible, les autres se réduisent
+                    à leur numéro. Au-delà de `sm`, tout s'affiche. */}
+                <span className={active ? 'inline' : 'hidden sm:inline'}>{etape.label}</span>
               </button>
               {numero < etapes.length && (
                 <span className="mx-1 h-px w-4 shrink-0 bg-brand-primary/15 sm:w-6" />
