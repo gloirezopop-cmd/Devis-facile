@@ -20,7 +20,7 @@ function dejaRepondu() {
 }
 function noterLaReponse() {
   try {
-    noterLaReponse();
+    sessionStorage.setItem(CLE_REPONSE, 'oui');
   } catch { /* sans mémoire de session, la question se reposera : tant pis */ }
 }
 
