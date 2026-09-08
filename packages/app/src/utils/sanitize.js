@@ -26,6 +26,7 @@ export function preparerSaisiePourMoteur(niveau, state) {
     fouilleFilante: sanitize((state.fouilleFilante || []).filter(f => f.niveauId === niveau.id)),
     betonProprete: sanitize((state.betonProprete || []).filter(bp => bp.niveauId === niveau.id)),
     semelles: sanitize((state.semelles || []).filter(s => s.niveauId === niveau.id)),
+    amorces: sanitize((state.amorces || []).filter(a => a.niveauId === niveau.id)),
     longrines: sanitize((state.longrines || []).filter(l => l.niveauId === niveau.id)),
     // `colonnes`, pas `poteaux` : le bloc moderne attend longueur/largeur en
     // metres (formule a x b x H x N). L'ancien alias envoyait ces lignes sous
@@ -37,12 +38,14 @@ export function preparerSaisiePourMoteur(niveau, state) {
     colonnes: sanitize((state.colonnes || []).filter(c => c.niveauId === niveau.id)),
     escalier: sanitize((state.escaliers || []).filter(e => e.niveauId === niveau.id)),
     maconnerie: sanitize((state.maconneries || []).filter(m => m.niveauId === niveau.id)),
+    linteaux: sanitize((state.linteaux || []).filter(l => l.niveauId === niveau.id)),
     murSoubassement: sanitize((state.soubassements || []).filter(ms => ms.niveauId === niveau.id)),
     // Meme saisie, deux blocs : la surface pour le devis, les agglos pleins et
     // le mortier pour les recettes. Le moteur fait l'equivalence perimetre/longueur.
     soubassement: sanitize((state.soubassements || []).filter(ms => ms.niveauId === niveau.id)),
     moellon: sanitize((state.moellons || []).filter(m => m.niveauId === niveau.id)),
-    chapeEgalisation: sanitize((state.chapeEgalisations || []).filter(c => c.niveauId === niveau.id)),
+    dallage: sanitize((state.dallages || []).filter(c => c.niveauId === niveau.id)),
+    remblai: sanitize((state.remblais || []).filter(c => c.niveauId === niveau.id)),
     sousPavement: sanitize((state.sousPavements || []).filter(s => s.niveauId === niveau.id)),
     nivellement: sanitize((state.nivellement || []).filter(n => n.niveauId === niveau.id)),
     carrelage: sanitize((state.carrelages || []).filter(c => c.niveauId === niveau.id)),

@@ -87,18 +87,40 @@ describe('Intégration du Socle Armé (Semelle + Amorce)', () => {
     // Vérification des armatures extraites directement (avant agrégation)
     const armatures = _internes.extractionsArmatures.semelles(saisie.semelles[0], REGLES_DEFAUT);
     
-    const nappe = armatures.find(a => a.designation === 'Nappe (Quadrillage)');
-    assert.equal(nappe.nombreDeFiles, 96);
-    assert.equal(nappe.longueurDeveloppee, 0.51); // 0.35 - 2*0.02 + 2*0.10
-    assert.equal(nappe.nombreBarres12m, 5);
-    assert.equal(nappe.poids, 37.02);
-    
+    // Le quadrillage est desormais extrait en DEUX nappes, une par sens, parce
+    // que le formulaire permet un diametre et un espacement differents dans
+    // chaque direction. C'est aussi ce que fait le classeur v7, dont la note
+    // sous Fondation!A48 precise que sa colonne « Nbre barres/sens » ne vaut
+    // que pour un seul sens et doit etre doublee. Additionner les deux sens en
+    // une seule ligne avant d'arrondir faisait d'ailleurs disparaitre une barre
+    // (5 au lieu de 6) : l'arrondi au debit se fait par sens.
+    const nappeL = armatures.find(a => a.designation === 'Nappe sens Longueur (L)');
+    const nappel = armatures.find(a => a.designation === 'Nappe sens Largeur (l)');
+    assert.ok(nappeL && nappel, 'les deux nappes du quadrillage sont extraites');
+
+    // v7 Fondation!D47 : ROUNDUP(largeur / espacement + 1) = ROUNDUP(0.35/0.15+1) = 4 files
+    // par sens et par semelle, soit 4 x 12 = 48, et 96 pour les deux sens.
+    assert.equal(nappeL.nombreDeFiles, 48);
+    assert.equal(nappel.nombreDeFiles, 48);
+    assert.equal(nappeL.nombreDeFiles + nappel.nombreDeFiles, 96);
+
+    // v7 Fondation!E47 : Ld = largeur - 2 x ENROBAGE + 2 x CROCHET, avec les
+    // valeurs du classeur ENROBAGE = 0,02 et CROCHET = 0,10.
+    assert.equal(nappeL.longueurDeveloppee, 0.51);
+    assert.equal(nappel.longueurDeveloppee, 0.51);
+
+    // v7 Fondation!G47 puis H47 : ROUNDUP(48 / floor(11,5 / 0,51)) = 3 barres,
+    // pesees en barres entieres de 12 m au poids de table (0,617 kg/m pour HA10).
+    assert.equal(nappeL.nombreBarres12m, 3);
+    assert.equal(nappeL.poids, 22.212);
+    assert.equal(nappel.poids, 22.212);
+
     const amorcePrin = armatures.find(a => a.designation === 'Amorce Principale');
     assert.equal(amorcePrin.nombreDeFiles, 48);
     assert.equal(amorcePrin.longueurDeveloppee, 1.25); // 0.55 + 0.30 + 0.40
     assert.equal(amorcePrin.nombreBarres12m, 6);
     assert.equal(amorcePrin.poids, 44.424);
-    
+
     const cadreAmorce = armatures.find(a => a.designation === 'Cadre Amorce');
     assert.equal(cadreAmorce.nombreDeFiles, 60); // ceil(0.55/0.15 + 1) * 12 = 5 * 12
     assert.equal(cadreAmorce.longueurDeveloppee, 0.44); // (0.11 + 0.11) * 2
@@ -115,6 +137,9 @@ describe('Intégration du Socle Armé (Semelle + Amorce)', () => {
     // Coffrage
     assert.equal(recettes.planches.quantite, 12);
     assert.equal(recettes.chevrons.quantite, 9);
-    assert.equal(recettes.clous.quantite, 1.944);
+    // v7 Parametres : « Clous pour coffrage bois = 0,15 kg/m2 (guide p.32) ».
+    // 9,00 m2 de coffrage x 0,15 = 1,35 kg. La valeur precedente (0,216 kg/m2)
+    // ne se retrouve nulle part dans le classeur de reference.
+    assert.equal(recettes.clous.quantite, 1.35);
   });
 });

@@ -2,15 +2,45 @@ import React from 'react';
 import { useProjet } from '../../context/ProjetContext.jsx';
 import { useMetre } from '../../hooks/useMetre.js';
 import CarteBloc from '../ui/CarteBloc.jsx';
+import { AccordionProvider } from '../ui/Accordion.jsx';
 import LigneOuvrage from '../ui/LigneOuvrage.jsx';
 import InputSaisie from '../ui/InputSaisie.jsx';
+import SelectSaisie from '../ui/SelectSaisie.jsx';
 import ValeurCalculee from '../ui/ValeurCalculee.jsx';
+
+const BLOCS_ELEVATION = ['Colonnes (Poteaux)', 'Linteaux', 'Maçonnerie en Agglos', 'Escaliers'];
+
+const LC_OPTIONS = [
+  { label: '0 m (Sans crochets)', value: 0 },
+  { label: '0.10 m', value: 0.10 },
+  { label: '0.15 m', value: 0.15 },
+  { label: '0.20 m', value: 0.20 },
+  { label: '0.25 m', value: 0.25 },
+  { label: '0.30 m', value: 0.30 }
+];
+
+const ENROBAGE_OPTIONS = [
+  { label: '3 cm (0.03m)', value: 0.03 },
+  { label: '4 cm (0.04m)', value: 0.04 },
+  { label: '5 cm (0.05m)', value: 0.05 }
+];
+
+const LA_OPTIONS = [
+  { label: '40 × Ø', value: '40D' },
+  { label: '50 × Ø', value: '50D' },
+  { label: '0.50 m', value: 0.50 },
+  { label: '0.60 m', value: 0.60 },
+  { label: '0.80 m', value: 0.80 },
+  { label: '1.00 m', value: 1.00 }
+];
 
 export default function Elevation() {
   const {
     colonnes, setColonnes,
+    linteaux, setLinteaux,
     maconneries, setMaconneries,
     escaliers, setEscaliers,
+    parametresProjet, setParametresProjet,
     addRow, removeRow, updateRow, niveauActifId
   } = useProjet();
   
@@ -25,6 +55,7 @@ export default function Elevation() {
   };
 
   const currentColonnes = colonnes.filter(x => x.niveauId === niveauActifId);
+  const currentLinteaux = linteaux.filter(x => x.niveauId === niveauActifId);
   const currentMaconneries = maconneries.filter(x => x.niveauId === niveauActifId);
   const currentEscaliers = escaliers.filter(x => x.niveauId === niveauActifId);
 
@@ -32,14 +63,41 @@ export default function Elevation() {
     <section>
       <h2 className="font-sans text-2xl font-bold mb-4 text-devis-calcule border-b border-devis-border pb-2">Élévation</h2>
 
+      <AccordionProvider key={niveauActifId} ids={BLOCS_ELEVATION}>
       <CarteBloc
         titre="Colonnes (Poteaux)"
-        onAdd={() => addRow(colonnes, setColonnes, { niveauId: niveauActifId, forme: 'rectangulaire', longueur: '', largeur: '', diametre: '', hauteur: '', nombre: '1', diametrePrin: 12, diametreCadre: 8, nbreBarresPrin: 4, espacementCadre: 0.15 }, 'C')}
+        onAdd={() => addRow(colonnes, setColonnes, { niveauId: niveauActifId, forme: 'rectangulaire', longueur: '', largeur: '', diametre: '', hauteur: '', nombre: '1', diametrePrin1: 12, diametreCadre: 8, espacementCadre: 0.15, nbreBarresPrin1: 4, enrobage: 0.05, La: '40D', LcCadre: 0 }, 'C')}
         addLabel="Ajouter type de colonne"
         totalValeur={getBloc('colonnes').total}
         totalUnite={getBloc('colonnes').unite}
         totalLabel="Volume total colonnes"
       >
+        <div className="bg-blue-50/50 p-3 rounded border border-blue-100 mb-6 flex flex-col md:flex-row gap-4 items-center">
+          <h4 className="text-xs font-bold text-blue-800 uppercase w-full md:w-auto md:mr-auto">Paramètres globaux du béton</h4>
+          <div className="flex gap-4 w-full md:w-auto">
+            <SelectSaisie
+              label="Dosage (kg/m³)"
+              value={parametresProjet.dosageColonnes || 350}
+              onChange={(v) => setParametresProjet({...parametresProjet, dosageColonnes: Number(v)})}
+              options={[
+                {label: '250 kg/m³', value: 250},
+                {label: '300 kg/m³', value: 300},
+                {label: '350 kg/m³', value: 350},
+                {label: '400 kg/m³', value: 400}
+              ]}
+            />
+            <SelectSaisie
+              label="Type de ciment"
+              value={parametresProjet.cimentTypeColonnes || '42.5'}
+              onChange={(v) => setParametresProjet({...parametresProjet, cimentTypeColonnes: v})}
+              options={[
+                {label: 'Ciment 32.5', value: '32.5'},
+                {label: 'Ciment 42.5', value: '42.5'}
+              ]}
+            />
+          </div>
+        </div>
+
         {currentColonnes.map((c, index) => {
           const circulaire = c.forme === 'circulaire';
           return (
@@ -48,16 +106,13 @@ export default function Elevation() {
             onRemove={currentColonnes.length > 1 ? () => removeRow(colonnes, setColonnes, c.id) : null}
             avertissement={getAvertissementLocal('colonnes', index)}
           >
-            <div className="grid grid-cols-2 gap-4">
+            <h4 className="text-sm font-bold text-devis-calcule mb-2 border-b border-devis-border pb-1">Dimensions Colonne</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-devis-saisie font-bold uppercase tracking-wider">Forme</label>
                 <select
                   value={c.forme || 'rectangulaire'}
                   onChange={(v) => {
-                    // On efface les champs de l'autre forme au changement,
-                    // sans quoi une valeur oubliee (ex. l'ancien "longueur"
-                    // d'une colonne redevenue rectangulaire) restait en
-                    // memoire et ressortait comme « saisie inutilisee ».
                     const nouvelleForme = v.target.value;
                     setColonnes(colonnes.map((x) => x.id !== c.id ? x : (
                       nouvelleForme === 'circulaire'
@@ -71,16 +126,118 @@ export default function Elevation() {
                   <option value="circulaire">Circulaire</option>
                 </select>
               </div>
-              <InputSaisie label="Nombre" value={c.nombre} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'nombre', v)} unite="u" />
               {circulaire ? (
-                <InputSaisie label="Diamètre" value={c.diametre} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'diametre', v)} unite="m" />
+                <InputSaisie label="Diamètre (m)" value={c.diametre} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'diametre', v)} unite="m" />
               ) : (
                 <>
-                  <InputSaisie label="Longueur (section)" value={c.longueur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'longueur', v)} unite="m" />
-                  <InputSaisie label="Largeur (section)" value={c.largeur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'largeur', v)} unite="m" />
+                  <InputSaisie label="Côté a (m)" value={c.longueur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'longueur', v)} unite="m" />
+                  <InputSaisie label="Côté b (m)" value={c.largeur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'largeur', v)} unite="m" />
                 </>
               )}
-              <InputSaisie label="Hauteur" value={c.hauteur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'hauteur', v)} unite="m" />
+              <InputSaisie label="Hauteur (m)" value={c.hauteur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'hauteur', v)} unite="m" />
+              <InputSaisie label="Nombre" value={c.nombre} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'nombre', v)} unite="u" />
+            </div>
+
+            {/* Hypothèses Armatures Colonnes */}
+            <div className="bg-amber-50 p-3 rounded border border-amber-200 mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="text-xs font-bold text-amber-800 uppercase">Armatures Colonne</h4>
+                <div className="w-48">
+                  <SelectSaisie
+                    label="Enrobage (c)"
+                    value={c.enrobage || 0.05}
+                    onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'enrobage', Number(v))}
+                    options={ENROBAGE_OPTIONS}
+                    styleClass="!bg-white"
+                  />
+                </div>
+              </div>
+              
+              <div className="mb-3">
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Armatures Principales 1</span>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <SelectSaisie
+                    label="Diam. Principal"
+                    value={c.diametrePrin1 || c.diametrePrin || 12}
+                    onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'diametrePrin1', Number(v))}
+                    options={[
+                      {label: 'HA 8', value: 8}, {label: 'HA 10', value: 10}, {label: 'HA 12', value: 12}, {label: 'HA 14', value: 14}, {label: 'HA 16', value: 16}
+                    ]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Nbre barres"
+                    value={c.nbreBarresPrin1 !== undefined ? c.nbreBarresPrin1 : (c.nbreBarresPrin || 4)}
+                    onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'nbreBarresPrin1', Number(v))}
+                    options={[
+                      {label: '4', value: 4}, {label: '6', value: 6}, {label: '8', value: 8}, {label: '10', value: 10}, {label: '12', value: 12}
+                    ]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Ancrage (La)"
+                    value={c.La || '40D'}
+                    onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'La', v)}
+                    options={LA_OPTIONS}
+                    styleClass="!bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Armatures Principales 2 (Optionnel)</span>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <SelectSaisie
+                    label="Diam. Principal"
+                    value={c.diametrePrin2 || 10}
+                    onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'diametrePrin2', Number(v))}
+                    options={[
+                      {label: 'HA 8', value: 8}, {label: 'HA 10', value: 10}, {label: 'HA 12', value: 12}, {label: 'HA 14', value: 14}, {label: 'HA 16', value: 16}
+                    ]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Nbre barres"
+                    value={c.nbreBarresPrin2 || 0}
+                    onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'nbreBarresPrin2', Number(v))}
+                    options={[
+                      {label: '0 (Aucune)', value: 0}, {label: '2', value: 2}, {label: '4', value: 4}, {label: '6', value: 6}, {label: '8', value: 8}
+                    ]}
+                    styleClass="!bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Cadres</span>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <SelectSaisie
+                    label="Diam. Cadres"
+                    value={c.diametreCadre || 8}
+                    onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'diametreCadre', Number(v))}
+                    options={[
+                      {label: 'RL 6', value: 6}, {label: 'RL 8', value: 8}
+                    ]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Espacement (m)"
+                    value={c.espacementCadre || 0.15}
+                    onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'espacementCadre', Number(v))}
+                    options={[
+                      {label: '0.10 m', value: 0.10}, {label: '0.15 m', value: 0.15}, {label: '0.20 m', value: 0.20}, {label: '0.25 m', value: 0.25}
+                    ]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Crochets (Lc)"
+                    value={c.LcCadre !== undefined ? c.LcCadre : 0}
+                    onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'LcCadre', Number(v))}
+                    options={LC_OPTIONS}
+                    styleClass="!bg-white"
+                  />
+                </div>
+              </div>
             </div>
             <div className="mt-4 pt-4 border-t border-devis-border grid grid-cols-2 gap-4">
               <ValeurCalculee
@@ -98,6 +255,102 @@ export default function Elevation() {
       </CarteBloc>
 
       <CarteBloc
+        titre="Linteaux"
+        onAdd={() => addRow(linteaux, setLinteaux, { niveauId: niveauActifId, longueur: '', largeur: '', hauteur: '', nombre: '1', diametrePrin: 10, diametreCadre: 6, espacementCadre: 0.20, nbreBarresPrin: 2, enrobage: 0.05 }, 'L')}
+        addLabel="Ajouter type de linteau"
+        totalValeur={getBloc('linteaux').total}
+        totalUnite={getBloc('linteaux').unite}
+        totalLabel="Volume total linteaux"
+      >
+        {currentLinteaux.map((l, index) => (
+          <LigneOuvrage
+            key={l.id} repere={l.repere} titre="Linteau"
+            onRemove={currentLinteaux.length > 1 ? () => removeRow(linteaux, setLinteaux, l.id) : null}
+            avertissement={getAvertissementLocal('linteaux', index)}
+          >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <InputSaisie label="Longueur" value={l.longueur} onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'longueur', v)} unite="m" />
+              <InputSaisie label="Largeur" value={l.largeur} onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'largeur', v)} unite="m" />
+              <InputSaisie label="Hauteur" value={l.hauteur} onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'hauteur', v)} unite="m" />
+              <InputSaisie label="Nombre" value={l.nombre} onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'nombre', v)} unite="u" />
+            </div>
+            
+            <div className="border-t border-devis-border pt-4 mt-2 bg-gray-50 -mx-3 px-3 pb-3 rounded">
+              <h4 className="text-xs font-bold text-devis-calcule uppercase mb-3">Armatures (Formule Longrines)</h4>
+              
+              <div className="grid grid-cols-2 gap-6 mb-4">
+                <div>
+                  <span className="text-xs font-semibold text-devis-saisie block mb-1">Aciers Principaux</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <SelectSaisie
+                      label="Diamètre"
+                      value={l.diametrePrin || 10}
+                      onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'diametrePrin', Number(v))}
+                      options={[
+                        {label: 'HA 8', value: 8}, {label: 'HA 10', value: 10}, {label: 'HA 12', value: 12}, {label: 'HA 14', value: 14}
+                      ]}
+                      styleClass="!bg-white"
+                    />
+                    <SelectSaisie
+                      label="Nbre par file"
+                      value={l.nbreBarresPrin !== undefined ? l.nbreBarresPrin : 2}
+                      onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'nbreBarresPrin', Number(v))}
+                      options={[
+                        {label: '2', value: 2}, {label: '4', value: 4}, {label: '6', value: 6}, {label: '8', value: 8}
+                      ]}
+                      styleClass="!bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-xs font-semibold text-amber-700 block mb-1">Cadres</span>
+                  <div className="grid grid-cols-3 gap-4">
+                    <SelectSaisie
+                      label="Diam. Cadres"
+                      value={l.diametreCadre || 6}
+                      onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'diametreCadre', Number(v))}
+                      options={[
+                        {label: 'RL 6', value: 6}, {label: 'RL 8', value: 8}
+                      ]}
+                      styleClass="!bg-white"
+                    />
+                    <SelectSaisie
+                      label="Espacement"
+                      value={l.espacementCadre || 0.20}
+                      onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'espacementCadre', Number(v))}
+                      options={[
+                        {label: '0.15 m', value: 0.15}, {label: '0.20 m', value: 0.20}, {label: '0.25 m', value: 0.25}
+                      ]}
+                      styleClass="!bg-white"
+                    />
+                    <SelectSaisie
+                      label="Crochets (Lc)"
+                      value={l.LcCadre !== undefined ? l.LcCadre : 0}
+                      onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'LcCadre', Number(v))}
+                      options={LC_OPTIONS}
+                      styleClass="!bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-devis-border grid grid-cols-2 gap-4">
+              <ValeurCalculee
+                label="Volume ligne"
+                value={getBloc('linteaux').lignes[index]?.valeur}
+                unite="m3"
+                trace={getBloc('linteaux').lignes[index]?.trace}
+                overrideValue={l.override_volume}
+                onOverrideChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'override_volume', v)}
+              />
+            </div>
+          </LigneOuvrage>
+        ))}
+      </CarteBloc>
+
+      <CarteBloc
         titre="Maçonnerie en Agglos"
         onAdd={() => addRow(maconneries, setMaconneries, { niveauId: niveauActifId, longueur: '', hauteur: '', nombre: '1', ouvertures: [] }, 'M')}
         addLabel="Ajouter section de mur"
@@ -105,6 +358,39 @@ export default function Elevation() {
         totalUnite={getBloc('maconnerie').unite}
         totalLabel="Surface nette totale"
       >
+        <div className="bg-blue-50/50 p-3 rounded border border-blue-100 mb-6 flex flex-col md:flex-row gap-4 items-center">
+          <h4 className="text-xs font-bold text-blue-800 uppercase w-full md:w-auto md:mr-auto">Paramètres Globaux Maçonnerie</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 w-full">
+            <SelectSaisie
+              label="Type d'Agglo"
+              value={parametresProjet.maconnerieTypeAgglo || '15'}
+              onChange={(v) => setParametresProjet({...parametresProjet, maconnerieTypeAgglo: v})}
+              options={[
+                {label: 'Agglo 15 cm', value: '15'},
+                {label: 'Agglo 20 cm', value: '20'},
+                {label: 'Agglo 25 cm', value: '25'}
+              ]}
+              styleClass="!bg-white"
+            />
+            <InputSaisie 
+              label="Perte Agglos (%)" 
+              value={parametresProjet.maconneriePerte !== undefined ? parametresProjet.maconneriePerte : 7} 
+              onChange={(v) => setParametresProjet({...parametresProjet, maconneriePerte: Number(v)})} 
+              unite="%" 
+            />
+            <SelectSaisie
+              label="Dosage Mortier"
+              value={parametresProjet.maconnerieDosageMortier || 300}
+              onChange={(v) => setParametresProjet({...parametresProjet, maconnerieDosageMortier: Number(v)})}
+              options={[
+                {label: '250 kg/m³', value: 250},
+                {label: '300 kg/m³', value: 300},
+                {label: '350 kg/m³', value: 350}
+              ]}
+              styleClass="!bg-white"
+            />
+          </div>
+        </div>
         {currentMaconneries.map((m, index) => (
           <LigneOuvrage
             key={m.id} repere={m.repere} titre="Mur"
@@ -129,13 +415,28 @@ export default function Elevation() {
               </div>
 
               {m.ouvertures.map((ouv, oIdx) => (
-                <div key={ouv.id} className="grid grid-cols-2 gap-4 relative mb-3 last:mb-0 border border-gray-200 bg-white p-2 rounded">
+                <div key={ouv.id} className="grid grid-cols-2 md:grid-cols-4 gap-4 relative mb-3 last:mb-0 border border-gray-200 bg-white p-2 rounded pt-4 md:pt-2 mt-4 md:mt-2">
                   <button
                     onClick={() => updateRow(maconneries, setMaconneries, m.id, 'ouvertures', m.ouvertures.filter(o => o.id !== ouv.id))}
-                    className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full w-8 h-8 flex items-center justify-center text-xs"
+                    className="absolute -top-3 -right-3 bg-red-100 text-red-600 rounded-full w-6 h-6 flex items-center justify-center text-xs shadow z-10"
                   >
                     ×
                   </button>
+                  <div className="flex flex-col space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Type</label>
+                    <select 
+                      className="w-full bg-white border border-devis-border rounded px-3 py-2 text-sm text-devis-calcule font-mono focus:border-devis-saisie focus:ring-1 focus:ring-devis-saisie h-[42px]"
+                      value={ouv.type || 'Porte'}
+                      onChange={(e) => {
+                        const newOuvs = [...m.ouvertures]; newOuvs[oIdx].type = e.target.value; updateRow(maconneries, setMaconneries, m.id, 'ouvertures', newOuvs);
+                      }}
+                    >
+                      <option value="Porte">Porte</option>
+                      <option value="Fenêtre">Fenêtre</option>
+                      <option value="Baie">Baie vitrée</option>
+                      <option value="Autre">Autre ouverture</option>
+                    </select>
+                  </div>
                   <InputSaisie label="Largeur" value={ouv.largeur} onChange={(v) => {
                     const newOuvs = [...m.ouvertures]; newOuvs[oIdx].largeur = v; updateRow(maconneries, setMaconneries, m.id, 'ouvertures', newOuvs);
                   }} unite="m" />
@@ -179,6 +480,32 @@ export default function Elevation() {
         totalUnite={getBloc('escalier').unite}
         totalLabel="Volume total escaliers"
       >
+        <div className="bg-blue-50/50 p-3 rounded border border-blue-100 mb-6 flex flex-col md:flex-row gap-4 items-center">
+          <h4 className="text-xs font-bold text-blue-800 uppercase w-full md:w-auto md:mr-auto">Paramètres globaux du béton</h4>
+          <div className="flex gap-4 w-full md:w-auto">
+            <SelectSaisie
+              label="Dosage (kg/m³)"
+              value={parametresProjet.dosageEscaliers || 350}
+              onChange={(v) => setParametresProjet({...parametresProjet, dosageEscaliers: Number(v)})}
+              options={[
+                {label: '250 kg/m³', value: 250},
+                {label: '300 kg/m³', value: 300},
+                {label: '350 kg/m³', value: 350},
+                {label: '400 kg/m³', value: 400}
+              ]}
+            />
+            <SelectSaisie
+              label="Type de ciment"
+              value={parametresProjet.cimentTypeEscaliers || '42.5'}
+              onChange={(v) => setParametresProjet({...parametresProjet, cimentTypeEscaliers: v})}
+              options={[
+                {label: 'Ciment 32.5', value: '32.5'},
+                {label: 'Ciment 42.5', value: '42.5'}
+              ]}
+            />
+          </div>
+        </div>
+
         {currentEscaliers.map((e, index) => (
           <LigneOuvrage
             key={e.id} repere={e.repere} titre="Escalier"
@@ -226,16 +553,16 @@ export default function Elevation() {
                         className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full w-6 h-6 flex items-center justify-center text-xs"
                       >×</button>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-                        <InputSaisie label="H. à monter" value={v.hauteurAMonter} onChange={(val) => {
+                        <InputSaisie label="H. à monter (H)" value={v.hauteurAMonter} onChange={(val) => {
                           const arr = [...e.volees]; arr[vIdx].hauteurAMonter = val; updateRow(escaliers, setEscaliers, e.id, 'volees', arr);
                         }} unite="m" />
-                        <InputSaisie label="Nb Contremarches" value={v.nombreContremarches} onChange={(val) => {
+                        <InputSaisie label="Nb Contremarches (n)" value={v.nombreContremarches} onChange={(val) => {
                           const arr = [...e.volees]; arr[vIdx].nombreContremarches = val; updateRow(escaliers, setEscaliers, e.id, 'volees', arr);
                         }} unite="u" />
-                        <InputSaisie label="Giron" value={v.giron} onChange={(val) => {
+                        <InputSaisie label="Giron (g)" value={v.giron} onChange={(val) => {
                           const arr = [...e.volees]; arr[vIdx].giron = val; updateRow(escaliers, setEscaliers, e.id, 'volees', arr);
                         }} unite="m" />
-                        <InputSaisie label="Largeur" value={v.largeur} onChange={(val) => {
+                        <InputSaisie label="Largeur (L)" value={v.largeur} onChange={(val) => {
                           const arr = [...e.volees]; arr[vIdx].largeur = val; updateRow(escaliers, setEscaliers, e.id, 'volees', arr);
                         }} unite="m" />
                         <InputSaisie label="Ep. Paillasse" value={v.epaisseurPaillasse} onChange={(val) => {
@@ -341,6 +668,7 @@ export default function Elevation() {
           </LigneOuvrage>
         ))}
       </CarteBloc>
+      </AccordionProvider>
     </section>
   );
 }

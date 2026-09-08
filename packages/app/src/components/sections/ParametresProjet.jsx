@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useProjet } from '../../context/ProjetContext.jsx';
+import { useAuth } from '../../context/AuthContext';
 import SelectAvecAutre from '../ui/SelectAvecAutre.jsx';
+import Icone from '../ui/Icone';
 import { useExport } from '../../hooks/useExport.js';
 
 // Dosages courants du BTP (kg de ciment / m³) — betonProprete: 150,
@@ -19,6 +21,7 @@ export default function ParametresProjet() {
     taux, setTaux,
     majorations, setMajorations,
     parametresProjet, setParametresProjet,
+    saveProjectToCloud,
     bibliothequePrix, setBibliothequePrix,
     labelsPrix, setLabelsPrix,
     niveaux,
@@ -34,6 +37,8 @@ export default function ParametresProjet() {
     reglesPersonnalisees
   } = useProjet();
   
+  const { session } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
   const { exportJSON } = useExport();
 
   const handleExportJSON = () => {
@@ -57,17 +62,46 @@ export default function ParametresProjet() {
     exportJSON(fullState);
   };
 
+  const handleSaveToCloud = async () => {
+    try {
+      setIsSaving(true);
+      await saveProjectToCloud();
+      // addToast('Succès', 'Projet sauvegardé dans le cloud avec succès', 'success');
+    } catch (err) {
+      // addToast('Erreur', err.message || 'Erreur lors de la sauvegarde dans le cloud', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <section className="animate-in fade-in duration-300">
       <div className="flex justify-between items-end mb-4 border-b border-devis-border pb-2">
         <h2 className="font-sans text-2xl font-bold text-devis-calcule">Paramètres du Projet</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-4">
           <button
+            type="button"
             onClick={handleExportJSON}
-            className="bg-gray-100 hover:bg-gray-200 text-devis-calcule px-3 py-2 rounded font-bold text-sm min-h-[44px] flex items-center gap-2"
+            className="bg-gray-100 hover:bg-gray-200 text-devis-calcule px-3 py-2 rounded font-bold text-sm min-h-[44px] flex items-center gap-2 transition-colors"
           >
             Sauvegarder Projet (JSON)
           </button>
+          
+          {session ? (
+            <button
+              type="button"
+              onClick={handleSaveToCloud}
+              disabled={isSaving}
+              className="bg-brand-primary hover:bg-brand-primary/90 text-white px-4 py-2 rounded font-bold text-sm min-h-[44px] flex items-center gap-2 transition-colors disabled:opacity-70"
+            >
+              {isSaving ? <Icone nom="loader" className="animate-spin" size={18} /> : <Icone nom="cloud" size={18} />}
+              Sauvegarder dans le Cloud
+            </button>
+          ) : (
+            <div className="text-xs text-gray-500 flex items-center">
+              (Connectez-vous pour sauvegarder dans le Cloud)
+            </div>
+          )}
         </div>
       </div>
 
@@ -207,9 +241,62 @@ export default function ParametresProjet() {
 
       <div className="bg-white rounded-lg shadow-sm border border-devis-border p-5 mb-6">
         <h3 className="font-sans font-bold text-devis-calcule mb-4 flex items-center justify-between border-b border-devis-border pb-2">
-          Taux de Marge & Frais (État : Saisie)
+          Frais du Devis Particulier (État : Saisie)
         </h3>
-        <p className="text-sm text-gray-600 mb-4">Ces taux calculent le coefficient de majoration utilisé pour le <strong>Devis Entreprise</strong>.</p>
+        <p className="text-sm text-gray-600 mb-4">
+          Les cinq frais appliqués après le TOTAL du <strong>Devis Particulier</strong>. Ce sont vos taux :
+          modifiez-les librement, le devis et le total général suivent.
+        </p>
+
+        <div className="grid grid-cols-2 gap-4">
+          <SelectAvecAutre
+            label="Imprévus (%)"
+            value={Math.round((taux.imprevus ?? 0) * 100)}
+            onChange={(v) => setTaux({ ...taux, imprevus: Number(v) / 100 })}
+            unite="%"
+            options={POURCENTAGES_TAUX}
+          />
+          <SelectAvecAutre
+            label="Transport des matériaux (%)"
+            value={Math.round((taux.transport ?? 0) * 100)}
+            onChange={(v) => setTaux({ ...taux, transport: Number(v) / 100 })}
+            unite="%"
+            options={POURCENTAGES_TAUX}
+          />
+          <SelectAvecAutre
+            label="Main d'œuvre (%)"
+            value={Math.round((taux.mainOeuvre ?? 0) * 100)}
+            onChange={(v) => setTaux({ ...taux, mainOeuvre: Number(v) / 100 })}
+            unite="%"
+            options={POURCENTAGES_TAUX}
+          />
+          <SelectAvecAutre
+            label="Honoraires Architecte (%)"
+            value={Math.round((taux.honorairesArchi ?? 0) * 100)}
+            onChange={(v) => setTaux({ ...taux, honorairesArchi: Number(v) / 100 })}
+            unite="%"
+            options={POURCENTAGES_TAUX}
+          />
+          <SelectAvecAutre
+            label="Honoraires Ingénieur (%)"
+            value={Math.round((taux.honorairesInge ?? 0) * 100)}
+            onChange={(v) => setTaux({ ...taux, honorairesInge: Number(v) / 100 })}
+            unite="%"
+            options={POURCENTAGES_TAUX}
+          />
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-devis-border p-5 mb-6">
+        <h3 className="font-sans font-bold text-devis-calcule mb-4 flex items-center justify-between border-b border-devis-border pb-2">
+          Coefficient de vente — Devis Entreprise (État : Saisie)
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Ces taux forment le coefficient appliqué au déboursé sec pour obtenir le prix de vente
+          d'un m³ ou d'un m² dans le <strong>Devis Entreprise</strong> :
+          <span className="font-mono text-[12.5px]"> prix de vente = déboursé sec × (1 + somme des taux)</span>.
+          Les frais de chantier et les frais généraux se règlent ici, pas dans le Devis Particulier.
+        </p>
 
         <div className="grid grid-cols-2 gap-4">
           <SelectAvecAutre

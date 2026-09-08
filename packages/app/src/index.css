@@ -4,9 +4,10 @@
 
 @layer base {
   body {
-    @apply bg-devis-paper text-devis-calcule font-serif;
+    @apply bg-devis-paper text-devis-calcule font-sans;
+    font-size: 12px !important;
   }
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-sans;
+  h1, h2, h3, h4, h5, h6, .text-xl, .text-lg, .text-2xl, .text-3xl {
+    font-size: revert !important;
   }
 }

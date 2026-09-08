@@ -89,22 +89,14 @@ export default function TableauDevis({ devis, type = 'particulier' }) {
                       <tr key={`${lotId}-${i}`} className={sansPrix ? 'bg-amber-50' : 'hover:bg-gray-50'}>
                         <td className={`${cellule} text-xs text-center text-gray-500`}>{index + 1}.{i + 1}</td>
                         <td className={`${cellule} text-sm`}>
-                          <div className="flex items-center justify-between gap-2">
-                            <span>
-                              {ligne.designation}
-                              {sansPrix && (
-                                <span className="ml-2 text-xs font-bold text-amber-700" title="Prix unitaire absent de la bibliothèque">
-                                  prix à saisir
-                                </span>
-                              )}
-                            </span>
-                            <button
-                              onClick={() => voirCalcul(idTarget)}
-                              className="text-[11px] font-semibold text-brand-primary underline hover:text-brand-primary-dark cursor-pointer shrink-0"
-                            >
-                              Voir le calcul
-                            </button>
-                          </div>
+                          <span>
+                            {ligne.designation}
+                            {sansPrix && (
+                              <span className="ml-2 text-xs font-bold text-amber-700" title="Prix unitaire absent de la bibliothèque">
+                                prix à saisir
+                              </span>
+                            )}
+                          </span>
                         </td>
                         <td className={`${cellule} text-xs text-center text-gray-600`}>{ligne.unite}</td>
                         <td className={`${cellule} text-sm text-right tabular-nums`}>{formaterNombre(ligne.quantite)}</td>

@@ -44,15 +44,29 @@ describe('Terrassement et Résumé Fondation', () => {
     assert.equal(resume.volumes.evacuation, 0);
 
     // Résumé Matériaux
-    assert.equal(resume.materiaux.ciment, 45); // Calculé : 45 sacs (arrondi par ligne)
-    assert.equal(resume.materiaux.gravier.toFixed(5), '7.07968');
-    // 4.453275 et non 4.451957 : le mortier se calcule desormais sur le nombre
-    // entier de blocs reellement poses (410), et non sur la fraction
-    // ceil(410 x 1,05) / 1,05 = 409,52 qui n'a pas de sens physique.
-    assert.equal(resume.materiaux.sable.toFixed(6), '4.453275');
-    assert.equal(resume.materiaux.eau.toFixed(6), '1074.775000');
+    // 59 et non 45 : le mur de soubassement se calcule en AGGLOS BOURRES —
+    // agglos pleins, mortier de pose ET beton de remplissage des alveoles.
+    // La decomposition sort donc deux postes de ciment distincts,
+    // « Ciment (Mortier) » et « Ciment (Béton Alvéoles) ». C'est la formule
+    // retenue pour le produit ; l'ancienne attente ne comptait que le mortier.
+    assert.equal(resume.materiaux.ciment, 59);
+    // Gravier du beton (semelles + proprete + longrines) plus celui du beton de
+    // remplissage des alveoles du mur bourre, le tout en tonnes.
+    assert.equal(resume.materiaux.gravier.toFixed(5), '11.39440');
+    // Le mortier se calcule sur le nombre entier de blocs reellement poses, et
+    // le sable est converti en tonnes comme le reste (x1,5) : le mur bourre
+    // apporte en plus son sable de mortier ET son sable de beton d'alveoles.
+    assert.equal(resume.materiaux.sable.toFixed(6), '7.257900');
+    // Le mur de soubassement apporte desormais son eau de gachage : celle du
+    // mortier de pose ET celle du beton de remplissage des alveoles, qui
+    // n'etait comptee nulle part.
+    assert.equal(resume.materiaux.eau.toFixed(6), '1405.068125');
 
     // Aciers
-    assert.equal(resume.aciers.totalPoids.toFixed(2), '273.67');
+    // 262,14 kg : nappes de semelle 44,42 + amorces 58,64 + longrine 84,48
+    // + etriers de longrine 74,59. Ces etriers pesaient zero avant correction —
+    // le moteur lisait un parametre LcCadre inexistant, la longueur d'etrier
+    // partait en NaN et le poids tombait a 0 sans rien signaler.
+    assert.equal(resume.aciers.totalPoids.toFixed(2), '262.14');
   });
 });

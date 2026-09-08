@@ -37,7 +37,8 @@ test('Bloc 5 - Plancher et Toiture', async (t) => {
     // Chevrons = ceil(surface)
     assert.strictEqual(resume.materiaux.chevrons, 69, '69 chevrons'); // Test expects 69 chevrons
     // Clous
-    assert.ok(Math.abs(resume.materiaux.clous - 15.39) < 0.05, '15.39 kg de clous environ (approx)');
+    // v7 Parametres : clous de coffrage = 0,15 kg/m2 (guide p.32).
+    assert.ok(Math.abs(resume.materiaux.clous - 11.59158) < 0.05, 'clous a 0,15 kg/m2');
     
     // Aciers
     const nappeL = resume.aciers.lignes.find(a => a.designation === 'Nappe suivant L');

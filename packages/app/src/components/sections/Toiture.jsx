@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useProjet } from '../../context/ProjetContext';
 import CarteBloc from '../ui/CarteBloc';
+import { AccordionProvider } from '../ui/Accordion.jsx';
 import LigneOuvrage from '../ui/LigneOuvrage';
+
+const BLOCS_CHARPENTE = ['Charpente en Bois (Méthode Simplifiée)', 'Couverture en Tôles'];
 
 export default function Toiture() {
   const { niveauActifId, charpentes, setCharpentes, couverturesToles, setCouverturesToles, terrasses, setTerrasses, addRow, updateRow, removeRow } = useProjet();
@@ -40,7 +43,7 @@ export default function Toiture() {
 
       <div className="space-y-6">
         {variante === 'charpente' && (
-          <>
+          <AccordionProvider key={niveauActifId} ids={BLOCS_CHARPENTE}>
             <CarteBloc titre="Charpente en Bois (Méthode Simplifiée)">
               {charpentesNiveau.map((ligne, i) => (
                 <LigneOuvrage
@@ -90,7 +93,7 @@ export default function Toiture() {
                 + Ajouter une couverture
               </button>
             </CarteBloc>
-          </>
+          </AccordionProvider>
         )}
 
         {variante === 'terrasse' && (

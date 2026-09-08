@@ -1,5 +1,6 @@
 import { calculerMetre, _internes as metreInternes } from './metre.js';
-import { calculerRecettes } from './recettes.js';
+import { calculerRecettes, obtenirDecompositionOuvrage } from './recettes.js';
+import { calculerTerrassement } from './terrassement.js';
 import { PARAMETRES } from './parametres.js';
 
 const { net } = metreInternes;
@@ -27,9 +28,10 @@ const CATALOGUE_LOTS = {
   remblai: 'terrassement',
   betonProprete: 'fondation',
   semelles: 'fondation',
+  amorces: 'fondation',
   longrines: 'fondation',
   moellon: 'fondation',
-  chapeEgalisation: 'fondation',
+  dallage: 'fondation',
   sousPavement: 'fondation',
   murSoubassement: 'soubassement',
   soubassement: 'soubassement',
@@ -63,6 +65,9 @@ function construireApplication(formule, entrees) {
     'N': entrees.nombre,
     'L': entrees.longueur,
     'l': entrees.largeur,
+    'a': entrees.longueur,
+    'b': entrees.largeur,
+    'd': entrees.diametre,
     'h': entrees.hauteur ?? entrees.profondeur,
     'Ep': entrees.epaisseur,
     'S': entrees.surface,
@@ -111,6 +116,13 @@ export function genererNoteDeCalcul(saisie = {}, regles = {}) {
   const { blocs, avertissements } = calculerMetre(saisieGlobale, regles);
   const recettes = calculerRecettes(blocs, regles);
 
+  // Le remblai ne se saisit plus : il se déduit des fouilles, des semelles,
+  // des longrines et des murs de soubassement — le même calcul que celui
+  // affiché dans l'onglet Terrassement. La note de calcul le montre ici,
+  // juste à côté du déblai, plutôt que de laisser croire qu'il faudrait le
+  // mesurer soi-même.
+  const terrassement = calculerTerrassement(blocs, saisieGlobale, regles, avertissements);
+
   const lots = {};
   for (const key of Object.keys(LOTS_NOTE_DE_CALCUL)) {
     lots[key] = {
@@ -136,6 +148,7 @@ export function genererNoteDeCalcul(saisie = {}, regles = {}) {
       total_brut: bloc.total || 0,
       total_arrondi: bloc.total || 0,
       motif_arrondi: 'Arrondi standard à 2 décimales pour l\'affichage du devis',
+      label_resultat: (blocId === 'fouilles' || blocId === 'fouilleFilante') ? 'Quantité de déblais' : 'Résultat',
       lignes: [],
       decomposition_materiaux: [],
       armatures: null,
@@ -146,8 +159,8 @@ export function genererNoteDeCalcul(saisie = {}, regles = {}) {
       for (const l of bloc.lignes) {
         lineIndex++;
         const idLigne = `${blocId}_${lineIndex}`;
-        const val = l.valeur ?? l.surface ?? l.volume ?? 0;
-        if (val === null || val === undefined) continue;
+        const val = l.valeur ?? l.surface ?? l.volume;
+        if (val === null || val === undefined || val === 0 || isNaN(val)) continue;
 
         const entreesClean = {};
         if (l.nombre !== undefined) entreesClean.nombre = l.nombre;
@@ -158,9 +171,14 @@ export function genererNoteDeCalcul(saisie = {}, regles = {}) {
         if (l.epaisseur !== undefined) entreesClean.epaisseur = l.epaisseur;
         if (l.surface !== undefined) entreesClean.surface = l.surface;
 
-        const application = l.trace?.calcul 
-          ? l.trace.calcul 
+        let application = l.trace?.calcul 
+          ? String(l.trace.calcul) 
           : construireApplication(l.trace?.formule || bloc.formule || 'N × L × l × h', entreesClean);
+
+        if (l.trace?.deductions && l.trace.deductions.length > 0) {
+          const deductText = l.trace.deductions.map(d => `${d.nombre} ${d.type} (${d.largeur}x${d.hauteur} = ${d.surface}m²)`).join(', ');
+          application += ` - [Déductions : ${deductText}]`;
+        }
 
         ouvrage.lignes.push({
           id_ligne: idLigne,
@@ -178,81 +196,85 @@ export function genererNoteDeCalcul(saisie = {}, regles = {}) {
     }
 
     // Décomposition automatique des matériaux pour cet ouvrage
-    const volumeBeton = bloc.unite === 'm3' ? bloc.total : null;
-    const surfaceMaconnerie = (blocId === 'maconnerie' || blocId === 'murSoubassement') ? bloc.total : null;
-
-    if (volumeBeton && volumeBeton > 0) {
-      // Dosage par défaut selon le bloc
-      const dosage = (blocId === 'betonProprete') ? 150 : 350;
-      const poidsSac = PARAMETRES.beton.poidsSacCiment || 50;
-
-      const sacsCimentBrut = (volumeBeton * dosage) / poidsSac;
-      const sacsCimentArrondi = Math.ceil(sacsCimentBrut);
-
-      ouvrage.decomposition_materiaux.push({
-        id_materiau: `${blocId}_ciment`,
-        nom: 'Ciment (CPJ 35)',
-        dosage: `${dosage} kg/m³`,
-        donnees: { volume_beton: volumeBeton, dosage, poids_sac: poidsSac },
-        formule: 'Nb sacs = (Volume × Dosage) / Poids du sac',
-        calcul: `(${volumeBeton} × ${dosage}) / ${poidsSac}`,
-        valeur_brute: net(sacsCimentBrut),
-        valeur_arrondie: sacsCimentArrondi,
-        unite: 'sac',
-        motif_arrondi: 'Arrondi au sac supérieur pour garantir l\'approvisionnement du chantier',
-      });
-
-      // Sable
-      const volSable = net(volumeBeton * PARAMETRES.beton.sableParM3);
-      const tonnesSable = net(volSable * PARAMETRES.beton.densiteSable);
-      ouvrage.decomposition_materiaux.push({
-        id_materiau: `${blocId}_sable`,
-        nom: 'Sable de rivière',
-        donnees: { volume_beton: volumeBeton, ratio: PARAMETRES.beton.sableParM3, densite: PARAMETRES.beton.densiteSable },
-        formule: 'Tonnes = Volume × Ratio Sable × Densité',
-        calcul: `${volumeBeton} × ${PARAMETRES.beton.sableParM3} × ${PARAMETRES.beton.densiteSable}`,
-        valeur_brute: tonnesSable,
-        valeur_arrondie: net(tonnesSable),
-        unite: 't',
-        motif_arrondi: 'Valeur exacte',
-      });
-
-      // Gravier
-      const volGravier = net(volumeBeton * PARAMETRES.beton.gravierParM3);
-      const tonnesGravier = net(volGravier * PARAMETRES.beton.densiteGravier);
-      ouvrage.decomposition_materiaux.push({
-        id_materiau: `${blocId}_gravier`,
-        nom: 'Gravier 15/25',
-        donnees: { volume_beton: volumeBeton, ratio: PARAMETRES.beton.gravierParM3, densite: PARAMETRES.beton.densiteGravier },
-        formule: 'Tonnes = Volume × Ratio Gravier × Densité',
-        calcul: `${volumeBeton} × ${PARAMETRES.beton.gravierParM3} × ${PARAMETRES.beton.densiteGravier}`,
-        valeur_brute: tonnesGravier,
-        valeur_arrondie: net(tonnesGravier),
-        unite: 't',
-        motif_arrondi: 'Valeur exacte',
-      });
-    } else if (surfaceMaconnerie && surfaceMaconnerie > 0) {
-      const nbAgglosParM2 = 12.5;
-      const agglosBrut = surfaceMaconnerie * nbAgglosParM2;
-      const agglosArrondi = Math.ceil(agglosBrut);
-
-      ouvrage.decomposition_materiaux.push({
-        id_materiau: `${blocId}_agglos`,
-        nom: 'Agglos (parpaings)',
-        donnees: { surface: surfaceMaconnerie, ratio: nbAgglosParM2 },
-        formule: 'Quantité = Surface × 12,5 agglos/m²',
-        calcul: `${surfaceMaconnerie} × 12,5`,
-        valeur_brute: net(agglosBrut),
-        valeur_arrondie: agglosArrondi,
-        unite: 'u',
-        motif_arrondi: 'Arrondi à l\'unité supérieure',
-      });
+    const detailsMateriaux = obtenirDecompositionOuvrage(blocId, bloc, regles);
+    for (const mat of detailsMateriaux) {
+      // On préfixe l'id_materiau par le blocId pour garantir l'unicité dans la vue UI
+      mat.id_materiau = `${blocId}_${mat.id_materiau}`;
+      ouvrage.decomposition_materiaux.push(mat);
     }
+    
+    // Ignorer si l'ouvrage est vide de toute saisie et matériaux (0 valeurs)
+    if (ouvrage.lignes.length === 0 && ouvrage.decomposition_materiaux.length === 0) continue;
 
     if (lots[lotKey]) {
       lots[lotKey].ouvrages.push(ouvrage);
     }
     indexOuvrages[blocId] = ouvrage;
+  }
+
+  // Déblais et remblai, côte à côte, dans le lot Terrassement.
+  //
+  // Ce ne sont pas des ouvrages saisis : `deblais` totalise les fouilles,
+  // `remblai` est le volume que les fouilles, une fois les ouvrages enterrés
+  // en place, laissent à reboucher. Un remblai laissé à la saisie manuelle
+  // aurait pu diverger de ce que le chantier remue réellement.
+  if (terrassement.deblais.volumeNet > 0 || terrassement.remblais.volumeTasse > 0) {
+    const Ct = PARAMETRES.coefficients.coefficientTassement || 1.3;
+    const d = terrassement.details;
+
+    const ouvrageDeblais = {
+      id_ouvrage: 'deblais_auto',
+      nom: 'Déblais (total)',
+      lot: LOTS_NOTE_DE_CALCUL.terrassement,
+      unite: 'm³',
+      total_brut: terrassement.deblais.volumeFoisonne,
+      total_arrondi: net(terrassement.deblais.volumeFoisonne),
+      motif_arrondi: 'Arrondi standard à 2 décimales pour l\'affichage du devis',
+      label_resultat: 'Volume foisonné',
+      lignes: [{
+        id_ligne: 'deblais_auto_1',
+        repere: 'Automatique',
+        donnees: { fouillesPuits: net(d.fouillesPuits), fouilleFilante: net(d.fouilleFilante) },
+        formule: '(Fouilles puits + Fouilles filantes) × Ct',
+        application: `(${net(d.fouillesPuits, 3)} + ${net(d.fouilleFilante, 3)}) × ${Ct} = ${net(terrassement.deblais.volumeFoisonne, 3)} m³`,
+        valeur_brute: terrassement.deblais.volumeFoisonne,
+        valeur_arrondie: net(terrassement.deblais.volumeFoisonne),
+        unite: 'm³',
+      }],
+      decomposition_materiaux: [],
+      armatures: null,
+    };
+
+    const ouvrageRemblai = {
+      id_ouvrage: 'remblai_auto',
+      nom: 'Remblai (calcul automatique)',
+      lot: LOTS_NOTE_DE_CALCUL.terrassement,
+      unite: 'm³',
+      total_brut: terrassement.remblais.volumeTasse,
+      total_arrondi: net(terrassement.remblais.volumeTasse),
+      motif_arrondi: 'Arrondi standard à 2 décimales pour l\'affichage du devis',
+      label_resultat: 'Volume à remblayer',
+      lignes: [{
+        id_ligne: 'remblai_auto_1',
+        repere: 'Automatique',
+        donnees: {
+          videSemelles: net(d.videSemelles),
+          videFilant: net(d.videFilant),
+          nivellement: net(d.nivellement),
+        },
+        formule: 'Vide autour des semelles + vide autour des fouilles filantes + nivellement (chacun majoré du tassement, Ct = ' + Ct + ')',
+        application: `${net(d.videSemelles, 3)} + ${net(d.videFilant, 3)} + ${net(d.nivellement, 3)} = ${net(terrassement.remblais.volumeTasse, 3)} m³`,
+        valeur_brute: terrassement.remblais.volumeTasse,
+        valeur_arrondie: net(terrassement.remblais.volumeTasse),
+        unite: 'm³',
+      }],
+      decomposition_materiaux: [],
+      armatures: null,
+    };
+
+    lots.terrassement.ouvrages.push(ouvrageDeblais, ouvrageRemblai);
+    indexOuvrages.deblais_auto = ouvrageDeblais;
+    indexOuvrages.remblai_auto = ouvrageRemblai;
   }
 
   return {

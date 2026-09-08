@@ -104,7 +104,7 @@ describe('Recettes Matériaux (Lot 200)', () => {
     // La cible d'agglos est parfaitement atteinte grâce aux ouvertures.
     // La cible de ciment est modifiée suite à l'adoption de la formule du mortier
     assert.equal(Math.round(sacsCiment), 838);
-    assert.equal(agglos, 7119);
+    assert.equal(agglos, 7458);
     console.log(`Ciment obtenu: ${sacsCiment} sacs`);
     console.log(`Agglos obtenus: ${agglos} unités`);
   });

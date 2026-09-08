@@ -38,6 +38,11 @@ export const REGLES_DEFAUT = {
     imprevus: 0.05,
     benefice: 0.1,
     tva: 0, // absente des devis reels examines ; a activer au cas par cas
+    // Honoraires du Devis Particulier. Ils etaient appliques par le generateur
+    // sans exister ici : l'utilisateur ne pouvait donc pas les modifier alors
+    // que la specification demande que les cinq frais soient parametrables.
+    honorairesArchi: 0.08,
+    honorairesInge: 0.08,
     fraisChantier: 0.08,
     fraisGeneraux: 0.1,
     fraisOperation: 0.05,

@@ -59,47 +59,62 @@ export default function ValeurCalculee({ label, value, unite, trace, overrideVal
         <div className="mt-2">
           <button 
             onClick={() => setShowTrace(!showTrace)}
-            className="text-xs font-bold text-devis-saisie hover:underline"
+            className="text-xs font-bold text-devis-saisie hover:underline flex items-center gap-1"
           >
-            {showTrace ? 'Masquer le calcul' : 'Voir le calcul'}
+            {showTrace ? 'Masquer le détail' : 'Voir le détail'}
           </button>
           
           {showTrace && (
-            <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700 font-mono">
-              <div className="mb-1"><span className="font-bold text-gray-500">Formule :</span> {trace.formule}</div>
-              <div className="mb-1">
-                <span className="font-bold text-gray-500">Entrées :</span> {
-                  trace.entrees && Object.keys(trace.entrees).length > 0
-                    ? Object.entries(trace.entrees).map(([k, v]) => `${k} = ${v}`).join(' · ')
-                    : '-'
-                }
+            <div className="mt-3 p-4 bg-gray-50/80 border border-gray-200 rounded-lg text-sm text-gray-700 font-mono shadow-inner">
+              <div className="mb-2 pb-2 border-b border-gray-200/50">
+                <span className="font-bold text-gray-500 uppercase text-xs tracking-wider">Formule</span>
+                <div className="mt-1 text-devis-calcule">{trace.formule}</div>
+              </div>
+              <div className="mb-2">
+                <span className="font-bold text-gray-500 uppercase text-xs tracking-wider">Valeurs</span>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {trace.entrees && Object.keys(trace.entrees).length > 0
+                    ? Object.entries(trace.entrees).map(([k, v]) => (
+                        <span key={k} className="bg-white px-2 py-1 rounded border border-gray-200 text-xs">
+                          <span className="text-gray-500">{k}:</span> <strong className="text-devis-saisie">{v}</strong>
+                        </span>
+                      ))
+                    : <span className="text-gray-400 italic">Aucune variable</span>
+                  }
+                </div>
               </div>
               
               {trace.deductions && trace.deductions.length > 0 && (
-                <div className="my-2 p-2 bg-white border border-gray-200 rounded">
-                  <span className="font-bold text-gray-500 mb-1 block">Déductions :</span>
-                  <ul className="list-disc pl-4 mb-2">
+                <div className="my-3 p-3 bg-white border border-gray-200 rounded-lg">
+                  <span className="font-bold text-gray-500 uppercase text-xs tracking-wider mb-2 block">Déductions appliquées</span>
+                  <ul className="space-y-1 mb-3">
                     {trace.deductions.map((d, i) => (
-                      <li key={i}>{d.type || 'Ouverture'} ({d.nombre}) : {d.largeur} x {d.hauteur} = {d.surface} {trace.unite}</li>
+                      <li key={i} className="flex justify-between items-center text-xs">
+                        <span>{d.type || 'Ouverture'} <span className="text-gray-400">×{d.nombre}</span></span>
+                        <span className="text-amber-600 font-bold">-{d.surface} {trace.unite}</span>
+                      </li>
                     ))}
                   </ul>
-                  <div className="font-bold text-devis-calcule pt-1 border-t border-gray-100">
-                    Total déduit : {trace.totalDeductions} {trace.unite}
+                  <div className="font-bold text-devis-calcule pt-2 border-t border-gray-100 flex justify-between text-xs">
+                    <span>Total à déduire</span>
+                    <span>-{trace.totalDeductions} {trace.unite}</span>
                   </div>
                 </div>
               )}
               
-              <div className="mt-2 pt-2 border-t border-gray-200 font-bold">
-                <span className="text-gray-500">Résultat : </span> 
+              <div className="mt-3 pt-3 border-t border-gray-300 font-bold flex justify-between items-center text-base">
+                <span className="text-gray-500 uppercase tracking-widest text-xs">Résultat net</span> 
                 {trace.resultat === null ? (
-                  <span className="text-amber-600">{trace.motif || 'Dimension manquante'}</span>
+                  <span className="text-amber-600 bg-amber-50 px-2 py-1 rounded text-sm border border-amber-200">{trace.motif || 'Données insuffisantes'}</span>
                 ) : (
-                  <span className={trace.typeSurface?.includes('Ratio') ? 'text-amber-600' : 'text-devis-calcule'}>
-                    {trace.resultat} {trace.unite}
-                  </span>
-                )}
-                {trace.typeSurface && (
-                  <span className="text-gray-400 ml-2 text-xs font-normal">({trace.typeSurface})</span>
+                  <div className="text-right">
+                    <span className={trace.typeSurface?.includes('Ratio') ? 'text-amber-600' : 'text-devis-calcule'}>
+                      {trace.resultat} <span className="text-gray-500 text-sm">{trace.unite}</span>
+                    </span>
+                    {trace.typeSurface && (
+                      <div className="text-amber-600/70 text-[10px] uppercase tracking-wider font-sans mt-0.5">{trace.typeSurface}</div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

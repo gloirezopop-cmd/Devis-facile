@@ -9,10 +9,10 @@ export const PARAMETRES = {
   majorations: {
     planches: 1.10,
     chevrons: 1.10,
-    blocs: 1.05,
-    acier: 1.05,
-    sable: 1.05,
-    gravier: 1.05,
+    blocs: 1.10, // Majoration de 10% validée sur le v7 (ex: 978 blocs pour 888.6 nets)
+    acier: 1.00, // Le v7 gère la chute via LONG_BARRE_UTILE (11.5m)
+    sable: 1.00, // Le v7 n'applique aucune majoration (0.3537 t pour 0.5895 m3)
+    gravier: 1.00, // Le v7 n'applique aucune majoration (0.75456 t pour 0.5895 m3)
     toles: 1.10,
     carreaux: 1.10,
     faience: 1.10,
@@ -75,6 +75,12 @@ export const PARAMETRES = {
     longueurBarreUtile: 11.5, // m (pertes déduites)
     enrobage: 0.02, // m
     crochet: 0.10, // m
+    // Retour de crochet des cadres et etriers. Le classeur v7 n'en met pas :
+    // sa longueur d'etrier vaut 2 x [(b - 2c) + (h - 2c)] (Elevation!E22).
+    // Ce parametre etait LU par le moteur mais n'existait pas ici : la longueur
+    // d'etrier partait donc en NaN et les cadres de longrine pesaient zero
+    // kilo sur tous les projets. L'utilisateur peut toujours saisir sa valeur.
+    LcCadre: 0, // m
     filLigaturePct: 0.05,
     poidsVolumiqueAcier: 7.85, // t/m3
   },
@@ -82,6 +88,7 @@ export const PARAMETRES = {
   // G. COEFFICIENTS GÉNÉRAUX
   coefficients: {
     coefficientTassement: 1.3,
+    coefficientFoisonnement: 1.2,
     majorationAchat: 1.10, // planches, blocs, tôles
     majorationCarrelage: 1.10,
     densiteMoellon: 1.60, // t/m3

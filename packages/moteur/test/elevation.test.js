@@ -27,12 +27,12 @@ test('Bloc 4 - Élévation', async (t) => {
     assert.strictEqual(resume.materiaux.sable, 1, 'Sable arrondi a 1 t');
     assert.strictEqual(resume.materiaux.eau, 252, 'Eau = 252 L');
     // Aciers Colonne
-    const prin = resume.aciers.lignes.find(l => l.designation === 'Principale');
+    const prin = resume.aciers.lignes.find(l => l.designation.startsWith('Principale'));
     assert.ok(prin, 'Aciers principaux extraits');
     assert.strictEqual(prin.nombreDeFiles, 48, '48 files principales'); 
     assert.ok(Math.abs(prin.longueurDeveloppee - 3.44) < 0.01, 'Ld 3.44m (3 - 0.04 + 0.48)');
     
-    const cadres = resume.aciers.lignes.find(l => l.designation === 'Cadre');
+    const cadres = resume.aciers.lignes.find(l => l.designation.startsWith('Cadre'));
     assert.strictEqual(cadres.nombreDeFiles, 252, '252 cadres');
     assert.ok(Math.abs(cadres.longueurDeveloppee - 0.64) < 0.01, 'Ld cadre 0.64m');
 
@@ -49,10 +49,10 @@ test('Bloc 4 - Élévation', async (t) => {
     assert.ok(Math.abs(resume.volumes.ceintures - 1.008) < 0.001, 'Volume ceinture 1.008');
     assert.strictEqual(resume.materiaux.ciment, 8, 'Ciment 8 sacs (1.008 * 350 / 50 = 7.056 -> 8)');
     
-    const prin = resume.aciers.lignes.find(l => l.designation === 'Principale');
+    const prin = resume.aciers.lignes.find(l => l.designation.startsWith('Principale'));
     assert.strictEqual(prin.longueurDeveloppee, 33.60, 'Principale = périmètre');
     
-    const cadres = resume.aciers.lignes.find(l => l.designation === 'Cadre');
+    const cadres = resume.aciers.lignes.find(l => l.designation.startsWith('Cadre'));
     assert.strictEqual(cadres.diametre, 6, 'Cadre diametre 6');
   });
 
@@ -65,10 +65,10 @@ test('Bloc 4 - Élévation', async (t) => {
     
     assert.ok(Math.abs(resume.volumes.linteaux - 0.2835) < 0.001, 'Volume 0.2835');
     
-    const prin = resume.aciers.lignes.find(l => l.designation === 'Principale');
+    const prin = resume.aciers.lignes.find(l => l.designation.startsWith('Principale'));
     assert.strictEqual(prin.nombreBarres12m, 3, '3 barres de 12m pour les linteaux');
     
-    const cadres = resume.aciers.lignes.find(l => l.designation === 'Cadre');
+    const cadres = resume.aciers.lignes.find(l => l.designation.startsWith('Cadre'));
     assert.strictEqual(cadres, undefined, 'Pas de cadres pour linteaux');
   });
 

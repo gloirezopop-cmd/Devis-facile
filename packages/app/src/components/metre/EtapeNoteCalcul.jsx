@@ -115,8 +115,7 @@ export default function EtapeNoteCalcul() {
                           <h4 className="font-sans text-[16px] font-bold text-brand-text">{ov.nom}</h4>
                         </div>
                         <p className="mt-1 text-[13px] text-brand-text/60">
-                          {ov.lignes.length} élément(s) mesuré(s) — Total :{' '}
-                          <strong className="font-mono tabular-nums text-brand-text">{ov.total_arrondi} {ov.unite}</strong>
+                          {ov.lignes.length} élément(s) mesuré(s)
                         </p>
                       </div>
 
@@ -142,7 +141,7 @@ export default function EtapeNoteCalcul() {
                                   <th className="py-2 px-3">Données de saisie</th>
                                   <th className="py-2 px-3">Formule</th>
                                   <th className="py-2 px-3">Application numérique</th>
-                                  <th className="py-2 pl-3 text-right">Résultat ({ov.unite})</th>
+                                  <th className="py-2 pl-3 text-right">{ov.label_resultat || 'Résultat'} ({ov.unite})</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-brand-primary/5">
@@ -164,6 +163,16 @@ export default function EtapeNoteCalcul() {
                                   </tr>
                                 ))}
                               </tbody>
+                              <tfoot>
+                                <tr className="bg-brand-primary/5 border-t border-brand-primary/10">
+                                  <td colSpan="4" className="py-3 px-3 text-right font-bold text-brand-primary uppercase text-[12px]">
+                                    {ov.label_resultat || 'Total'}
+                                  </td>
+                                  <td className="py-3 pl-3 text-right font-mono font-bold text-brand-text text-[14px]">
+                                    {ov.total_arrondi}
+                                  </td>
+                                </tr>
+                              </tfoot>
                             </table>
                           </div>
                         )}
@@ -194,7 +203,7 @@ export default function EtapeNoteCalcul() {
                                       {mat.valeur_arrondie} {mat.unite}
                                     </span>
                                   </div>
-                                  <p className="mt-1 font-mono text-[11.5px] text-brand-text/60">
+                                  <p className="mt-1 font-mono text-[11.5px] text-brand-text/60 whitespace-pre-wrap">
                                     Calcul : {mat.calcul}
                                   </p>
                                   {mat.motif_arrondi && (

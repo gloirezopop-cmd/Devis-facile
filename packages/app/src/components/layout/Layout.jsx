@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar.jsx';
 import MobileDrawer from './MobileDrawer.jsx';
 import Header from './Header.jsx';
+import RepriseProjet from '../projet/RepriseProjet.jsx';
 
 /** Coquille de l'application : Sidebar fixe (ordinateur) + tiroir (mobile) + Header + contenu routé. */
 export default function Layout() {
@@ -10,6 +11,10 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen bg-brand-bg text-brand-text">
+      {/* Posé ici plutôt que dans une page : la question vaut pour tout
+          l'espace connecté, quel que soit l'écran d'arrivée. */}
+      <RepriseProjet />
+
       <Sidebar />
       <MobileDrawer open={menuOuvert} onClose={() => setMenuOuvert(false)} />
 

@@ -33,9 +33,9 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['"Libre Franklin"', 'sans-serif'],
-        serif: ['"Source Serif 4"', 'serif'],
-        mono: ['"JetBrains Mono"', 'monospace']
+        sans: ['"Times New Roman"', 'Times', 'serif'],
+        serif: ['"Times New Roman"', 'Times', 'serif'],
+        mono: ['"Times New Roman"', 'Times', 'serif']
       }
     },
   },

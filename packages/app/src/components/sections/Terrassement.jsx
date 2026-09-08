@@ -1,17 +1,28 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useProjet } from '../../context/ProjetContext.jsx';
 import { useMetre } from '../../hooks/useMetre.js';
+import { genererResumeFondation } from '@devis-facile/moteur';
 import CarteBloc from '../ui/CarteBloc.jsx';
+import { AccordionProvider } from '../ui/Accordion.jsx';
 import LigneOuvrage from '../ui/LigneOuvrage.jsx';
 import InputSaisie from '../ui/InputSaisie.jsx';
 import ValeurCalculee from '../ui/ValeurCalculee.jsx';
 
+const BLOCS_TERRASSEMENT = ['Fouilles en puits', 'Fouilles en rigole', "Nivellement de l'emprise"];
+
 export default function Terrassement() {
-  const { fouilles, setFouilles, fouilleFilante, setFouilleFilante, nivellement, setNivellement, addRow, removeRow, updateRow, niveauActifId } = useProjet();
+  const state = useProjet();
+  const { fouilles, setFouilles, fouilleFilante, setFouilleFilante, nivellement, setNivellement, addRow, removeRow, updateRow, niveauActifId, reglesPersonnalisees } = state;
   const { metreParNiveau } = useMetre();
 
   const idx = metreParNiveau.findIndex(m => m.niveauId === niveauActifId);
-  const currentMetre = idx >= 0 ? metreParNiveau[idx].metre : { blocs: {}, avertissements: [] };
+  const currentLevelData = idx >= 0 ? metreParNiveau[idx] : null;
+  const currentMetre = currentLevelData ? currentLevelData.metre : { blocs: {}, avertissements: [] };
+
+  const resumeFondation = useMemo(() => {
+    if (!currentLevelData || !currentLevelData.saisie) return {};
+    return genererResumeFondation(currentLevelData.saisie, reglesPersonnalisees);
+  }, [currentLevelData, reglesPersonnalisees]);
 
   const getBloc = (id) => currentMetre.blocs?.[id] || { total: 0, unite: '', lignes: [] };
   const getAvertissementLocal = (blocCode, ligneIndex) => {
@@ -25,17 +36,18 @@ export default function Terrassement() {
       <h2 className="font-sans text-2xl font-bold mb-4 text-devis-calcule border-b border-devis-border pb-2">Terrassement</h2>
       <p className="text-sm text-gray-600 mb-6 italic">Le terrassement concerne les fouilles et les mouvements de terre.</p>
 
+      <AccordionProvider key={niveauActifId} ids={BLOCS_TERRASSEMENT}>
       <CarteBloc
-        titre="Fouilles en rigoles et en puits"
-        onAdd={() => addRow(fouilles, setFouilles, { niveauId: niveauActifId, longueur: '', largeur: '', profondeur: '', nombre: '1' }, 'F')}
-        addLabel="Ajouter une fouille"
+        titre="Fouilles en puits"
+        onAdd={() => addRow(fouilles, setFouilles, { niveauId: niveauActifId, longueur: '', largeur: '', profondeur: '', nombre: '1' }, 'FP')}
+        addLabel="Ajouter une fouille en puits"
         totalValeur={getBloc('fouilles').total}
         totalUnite={getBloc('fouilles').unite}
-        totalLabel="Volume total fouilles"
+        totalLabel="Quantité de déblais"
       >
         {currentFouilles.map((f, index) => (
           <LigneOuvrage
-            key={f.id} repere={f.repere} titre="Fouille"
+            key={f.id} repere={f.repere} titre="Fouille en puits"
             onRemove={currentFouilles.length > 1 ? () => removeRow(fouilles, setFouilles, f.id) : null}
             avertissement={getAvertissementLocal('fouilles', index)}
           >
@@ -61,21 +73,21 @@ export default function Terrassement() {
       </CarteBloc>
 
       <CarteBloc
-        titre="Fouilles en tranchée (Filante)"
-        onAdd={() => addRow(fouilleFilante, setFouilleFilante, { niveauId: niveauActifId, longueur: '', largeur: '', profondeur: '', nombre: '1' }, 'FF')}
-        addLabel="Ajouter une fouille filante"
+        titre="Fouilles en rigole"
+        onAdd={() => addRow(fouilleFilante, setFouilleFilante, { niveauId: niveauActifId, longueur: '', largeur: '', profondeur: '', nombre: '1' }, 'FR')}
+        addLabel="Ajouter une fouille en rigole"
         totalValeur={getBloc('fouilleFilante').total}
         totalUnite={getBloc('fouilleFilante').unite}
-        totalLabel="Volume total filante"
+        totalLabel="Quantité de déblais"
       >
         {fouilleFilante.filter(x => x.niveauId === niveauActifId).map((f, index) => (
           <LigneOuvrage
-            key={f.id} repere={f.repere} titre="Fouille Filante"
+            key={f.id} repere={f.repere} titre="Fouille en rigole"
             onRemove={fouilleFilante.filter(x => x.niveauId === niveauActifId).length > 1 ? () => removeRow(fouilleFilante, setFouilleFilante, f.id) : null}
             avertissement={getAvertissementLocal('fouilleFilante', index)}
           >
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <InputSaisie label="Longueur" value={f.longueur} onChange={(v) => updateRow(fouilleFilante, setFouilleFilante, f.id, 'longueur', v)} unite="m" />
+              <InputSaisie label="Périmètre" value={f.longueur} onChange={(v) => updateRow(fouilleFilante, setFouilleFilante, f.id, 'longueur', v)} unite="m" />
               <InputSaisie label="Largeur" value={f.largeur} onChange={(v) => updateRow(fouilleFilante, setFouilleFilante, f.id, 'largeur', v)} unite="m" />
               <InputSaisie label="Profondeur" value={f.profondeur} onChange={(v) => updateRow(fouilleFilante, setFouilleFilante, f.id, 'profondeur', v)} unite="m" />
               <InputSaisie label="Nombre" value={f.nombre} onChange={(v) => updateRow(fouilleFilante, setFouilleFilante, f.id, 'nombre', v)} unite="u" />
@@ -125,6 +137,27 @@ export default function Terrassement() {
           </LigneOuvrage>
         ))}
       </CarteBloc>
+      </AccordionProvider>
+
+      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 className="text-lg font-bold text-devis-calcule mb-2">Volume de Remblai Automatique</h3>
+        {resumeFondation.volumes?.remblais > 0 || resumeFondation.avertissements?.some(a => a.type === 'remblai-negatif') ? (
+          <div className="flex items-end gap-2">
+            <span className="text-3xl font-black text-devis-saisie">
+              {resumeFondation.volumes.remblais > 0 ? resumeFondation.volumes.remblais.toFixed(2) : "0.00"}
+            </span>
+            <span className="text-gray-600 font-bold mb-1">m³</span>
+          </div>
+        ) : (
+          <p className="text-sm text-amber-700 italic">Volume indisponible (complétez les fouilles, semelles, amorces et murs de soubassement).</p>
+        )}
+        
+        {resumeFondation.avertissements?.filter(a => a.type === 'remblai-manquant' || a.type === 'remblai-negatif').map((a, i) => (
+          <div key={i} className="mt-3 p-3 bg-amber-100 text-amber-800 text-sm rounded border border-amber-300">
+            <strong>Attention :</strong> {a.message}
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

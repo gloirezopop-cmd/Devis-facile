@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useProjet } from '../../context/ProjetContext.jsx';
 import { useMetre } from '../../hooks/useMetre.js';
 import { ICONES_TYPE } from '../../config/niveaux.js';
@@ -23,9 +23,22 @@ import OuvragesSupplementaires from '../sections/OuvragesSupplementaires.jsx';
 export default function EtapeMetre() {
   const { niveaux, niveauActifId, setNiveauActifId } = useProjet();
   const { avertissementsGlobaux, resumeParNiveau } = useMetre();
+  
+  const scrollRef = useRef(null);
 
   const idx = niveaux.findIndex((n) => n.id === niveauActifId);
   const typeNiveauActif = niveaux[idx]?.type || '';
+
+  // Auto-scroll vers l'onglet actif au chargement et au changement
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const activeBtn = scrollRef.current.querySelector('[data-active="true"]');
+    if (activeBtn) {
+      const container = scrollRef.current;
+      const scrollLeft = activeBtn.offsetLeft - (container.offsetWidth / 2) + (activeBtn.offsetWidth / 2);
+      container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+    }
+  }, [niveauActifId, niveaux.length]);
 
   return (
     <div>
@@ -36,7 +49,7 @@ export default function EtapeMetre() {
       />
 
       <nav aria-label="Niveaux du chantier" className="mb-6">
-        <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
+        <div ref={scrollRef} className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
           {niveaux.map((niveau, index) => {
             const isActive = niveauActifId === niveau.id;
             const resume = resumeParNiveau[niveau.id];
@@ -45,6 +58,7 @@ export default function EtapeMetre() {
             return (
               <div key={niveau.id} className="relative shrink-0">
                 <button
+                  data-active={isActive}
                   onClick={() => setNiveauActifId(niveau.id)}
                   style={{ minWidth: '120px' }}
                   className={`relative flex min-h-[56px] flex-col items-start gap-0.5 rounded-lg px-4 py-3 text-sm font-bold transition-all ${

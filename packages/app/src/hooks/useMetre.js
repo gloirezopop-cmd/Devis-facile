@@ -1,4 +1,4 @@
-﻿import { useMemo } from 'react';
+import { useMemo } from 'react';
 import { calculerMetre } from '@devis-facile/moteur';
 import { useProjet } from '../context/ProjetContext.jsx';
 import { preparerSaisiePourMoteur } from '../utils/sanitize.js';
@@ -17,7 +17,7 @@ function resumeBlocs(blocs) {
   if (!blocs) return null;
   let volumeM3 = 0;
   let surfaceM2 = 0;
-  const blocsM3 = ['semelles', 'longrines', 'poteaux', 'colonnes', 'ceintures', 'poutres', 'linteaux', 'dalles', 'plancherHourdis', 'escalier', 'acrotere', 'betonProprete', 'sousPavement', 'chapeEgalisation', 'fouilles', 'fouilleFilante', 'remblai', 'moellon', 'murSoubassement'];
+  const blocsM3 = ['semelles', 'amorces', 'longrines', 'poteaux', 'colonnes', 'ceintures', 'poutres', 'linteaux', 'dalles', 'plancherHourdis', 'escalier', 'acrotere', 'betonProprete', 'sousPavement', 'dallage', 'fouilles', 'fouilleFilante', 'remblai', 'moellon', 'murSoubassement'];
   const blocsM2 = ['maconnerie', 'enduits', 'carrelage', 'faience'];
 
   for (const [key, val] of Object.entries(blocs)) {
@@ -40,13 +40,15 @@ export function useMetre() {
     fouilleFilante,
     betonProprete,
     semelles,
+    amorces,
     longrines,
     colonnes,
     escaliers,
     maconneries,
+    linteaux,
     soubassements,
     moellons,
-    chapeEgalisations,
+    dallages, remblais,
     sousPavements,
     nivellement,
     carrelages,
@@ -64,19 +66,59 @@ export function useMetre() {
   } = useProjet();
 
   const metreParNiveau = useMemo(() => {
-    return niveaux.map(niveau => {
+    const premierPassage = niveaux.map(niveau => {
       const stateNiveau = preparerSaisiePourMoteur(niveau, {
-        fouilles, fouilleFilante, betonProprete, semelles, longrines, colonnes, escaliers, maconneries, soubassements,
-        moellons, chapeEgalisations, sousPavements, nivellement, carrelages, enduits, peintures, faiences, autresOuvrages,
+        fouilles, fouilleFilante, betonProprete, semelles, amorces, longrines, colonnes, escaliers, maconneries, linteaux, soubassements,
+        moellons, dallages, remblais, sousPavements, nivellement, carrelages, enduits, peintures, faiences, autresOuvrages,
         dalles, plancherHourdis12, plancherHourdis16, charpentes, couverturesToles, terrasses
       });
       const result = calculerMetre(stateNiveau, reglesPersonnalisees);
       return { niveauId: niveau.id, niveau, saisie: stateNiveau, metre: result };
     });
+
+    /**
+     * Enduit et peinture couvrent les DEUX faces d'un mur. Plutot que de faire
+     * ressaisir une surface deja mesuree, on reprend la maconnerie nette de
+     * tous les niveaux — deductions d'ouvertures et de poteaux comprises — et
+     * on la double.
+     *
+     * Le classeur de reference le dit dans ses intitules : « 4.1 ENDUIT
+     * (INTERIEUR + EXTERIEUR) » et « Surface totale a enduire (2 faces) ».
+     *
+     * Ce calcul ne peut se faire qu'ici : les enduits vivent sur le niveau
+     * Finition alors que la maconnerie vit sur les niveaux d'elevation, et le
+     * moteur ne voit qu'un niveau a la fois. Une surface saisie a la main
+     * l'emporte toujours — la reprise ne sert qu'a remplir un champ laisse vide.
+     */
+    const surfaceMaconnerie = premierPassage.reduce(
+      (total, n) => total + (n.metre?.blocs?.maconnerie?.total || 0),
+      0,
+    );
+    const surfaceDeuxFaces = Math.round(surfaceMaconnerie * 2 * 100) / 100;
+    if (!surfaceDeuxFaces) return premierPassage;
+
+    const aBesoinDeReprise = (ligne) =>
+      !(ligne.surface > 0) && !(ligne.longueur > 0 && ligne.hauteur > 0);
+
+    return premierPassage.map((entree) => {
+      const lignesEnduits = entree.saisie.enduits || [];
+      const lignesPeinture = entree.saisie.peinture || [];
+      if (!lignesEnduits.some(aBesoinDeReprise) && !lignesPeinture.some(aBesoinDeReprise)) return entree;
+
+      const reprendre = (ligne) =>
+        aBesoinDeReprise(ligne) ? { ...ligne, surface: surfaceDeuxFaces, surfaceReprise: true } : ligne;
+
+      const saisie = {
+        ...entree.saisie,
+        enduits: lignesEnduits.map(reprendre),
+        peinture: lignesPeinture.map(reprendre),
+      };
+      return { ...entree, saisie, metre: calculerMetre(saisie, reglesPersonnalisees) };
+    });
   }, [
     niveaux,
-    fouilles, fouilleFilante, betonProprete, semelles, longrines, colonnes, escaliers,
-    maconneries, soubassements, moellons, chapeEgalisations, sousPavements, nivellement,
+    fouilles, fouilleFilante, betonProprete, semelles, amorces, longrines, colonnes, escaliers,
+    maconneries, linteaux, soubassements, moellons, dallages, remblais, sousPavements, nivellement,
     carrelages, enduits, peintures, faiences, autresOuvrages,
     dalles, plancherHourdis12, plancherHourdis16, charpentes, couverturesToles, terrasses,
     reglesPersonnalisees

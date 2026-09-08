@@ -7,10 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verifier:estimation": "node scripts/verifier-estimation.mjs",
+    "verifier:offres": "node scripts/verifier-offres.mjs",
+    "verifier:calcul": "node scripts/verifier-calcul.mjs",
+    "verifier:brouillon": "node scripts/verifier-brouillon.mjs"
   },
   "dependencies": {
     "@devis-facile/moteur": "*",
+    "@supabase/supabase-js": "^2.115.0",
     "@univerjs/core": "^0.5.5",
     "@univerjs/design": "^0.5.5",
     "@univerjs/docs": "^0.5.5",

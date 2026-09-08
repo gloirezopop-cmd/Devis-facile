@@ -1,7 +1,10 @@
 export { calculerMetre } from './metre.js';
 export { calculerRecettes } from './recettes.js';
-export { genererDevisParticulier, genererDevisEntreprise, genererSousDetailPrix, TITRES_LOTS_PARTICULIER, TITRES_LOTS_ENTREPRISE } from './valorisation.js';
+export { genererDevisParticulier, genererDevisEntreprise, genererSousDetailPrix, TITRES_LOTS_PARTICULIER, TITRES_LOTS_ENTREPRISE, LOTS_DEVIS_PARTICULIER } from './valorisation.js';
+export { construireBordereauParticulier, construireBordereauEntreprise } from './bordereau.js';
 export { REGLES_DEFAUT } from './regles.js';
 export { PARAMETRES, prixBarre, calculerRecouvrement } from './parametres.js';
 export { genererNoteDeCalcul, LOTS_NOTE_DE_CALCUL } from './noteDeCalcul.js';
 export { genererResumeFondation, genererResumeElevation, genererResumeFinition, genererResumePlancher, genererResumeToiture } from './resume.js';
+export { genererResumeProjet } from './resumeMetre.js';
+export { genererResumeChantier, GRANDS_TITRES_CHANTIER } from './resumeChantier.js';

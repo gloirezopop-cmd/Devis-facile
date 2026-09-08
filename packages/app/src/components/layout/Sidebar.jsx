@@ -1,14 +1,28 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import Icone from '../ui/Icone.jsx';
 import { NAVIGATION } from './navigation.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 /**
  * Navigation principale. Rendue deux fois : fixe sur ordinateur (Sidebar),
  * dans un tiroir sur mobile (MobileDrawer) — ce composant est le contenu
  * partagé par les deux, `onNavigate` ferme le tiroir au clic côté mobile.
  */
-export function ContenuNavigation({ onNavigate, planLabel = 'PLAN GRATUIT' }) {
+export function ContenuNavigation({ onNavigate }) {
+  const { session, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleAuthAction = async () => {
+    if (session) {
+      await signOut();
+      navigate('/login');
+    } else {
+      navigate('/login');
+    }
+    if (onNavigate) onNavigate();
+  };
+
   return (
     <div className="flex h-full flex-col">
       <div className="px-5 py-6">
@@ -36,7 +50,7 @@ export function ContenuNavigation({ onNavigate, planLabel = 'PLAN GRATUIT' }) {
                     end={lien.exact}
                     onClick={onNavigate}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-md px-3 py-2.5 min-h-[40px] text-[13.5px] font-medium transition-colors ${
+                      `flex items-center gap-3 rounded-md px-3 py-2.5 min-h-[44px] text-[13.5px] font-medium transition-colors ${
                         isActive
                           ? 'bg-white/10 text-white'
                           : 'text-white/70 hover:bg-white/5 hover:text-white'
@@ -53,24 +67,14 @@ export function ContenuNavigation({ onNavigate, planLabel = 'PLAN GRATUIT' }) {
         ))}
       </nav>
 
-      {/* Repères d'angle en croix, comme un calage de plan — signature discrète. */}
-      <div className="relative mx-3 mb-4 rounded-lg border border-white/15 bg-white/[0.04] p-4">
-        <span className="absolute -top-px -left-px h-2 w-2 border-t border-l border-brand-accent/60" />
-        <span className="absolute -top-px -right-px h-2 w-2 border-t border-r border-brand-accent/60" />
-        <span className="absolute -bottom-px -left-px h-2 w-2 border-b border-l border-brand-accent/60" />
-        <span className="absolute -bottom-px -right-px h-2 w-2 border-b border-r border-brand-accent/60" />
-
-        <p className="font-mono text-[10px] font-bold tracking-wider text-brand-accent">{planLabel}</p>
-        <p className="mt-1.5 text-[12.5px] leading-snug text-white/75">
-          1 métré disponible<br />1 devis disponible
-        </p>
-        <NavLink
-          to="/abonnement"
-          onClick={onNavigate}
-          className="mt-3 inline-flex min-h-[36px] items-center rounded-md bg-brand-accent px-3 text-[12.5px] font-bold text-brand-primary-dark transition-transform hover:scale-[1.02]"
+      <div className="p-4 border-t border-white/10">
+        <button
+          onClick={handleAuthAction}
+          className="flex w-full items-center justify-center gap-2 min-h-[44px] rounded-md border border-white/15 px-3 text-[13.5px] font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
         >
-          Passer à PRO
-        </NavLink>
+          <Icone nom={session ? 'log-out' : 'log-in'} size={17} />
+          {session ? 'Se déconnecter' : 'Se connecter'}
+        </button>
       </div>
     </div>
   );

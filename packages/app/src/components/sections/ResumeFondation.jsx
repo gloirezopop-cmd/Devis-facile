@@ -21,7 +21,8 @@ export default function ResumeFondation() {
       maconneries: state.maconneries,
       soubassements: state.soubassements,
       moellons: state.moellons,
-      chapeEgalisations: state.chapeEgalisations,
+      dallages: state.dallages,
+      remblais: state.remblais,
       sousPavements: state.sousPavements,
       carrelages: state.carrelages,
       autresOuvrages: state.autresOuvrages
@@ -54,14 +55,16 @@ export default function ResumeFondation() {
           <StatBox label="Fouilles en tranchée (filante)" valeur={volumes.fouilleFilante} unite="m³" />
           <StatBox label="Nivellement emprise" valeur={volumes.nivellement} unite="m³" />
           <StatBox label="Déblais totaux" valeur={volumes.deblais} unite="m³" />
-          <StatBox label="Remblais (volume déduit)" valeur={volumes.remblais} unite="m³" />
+          {/* Le remblai ne s'affiche plus dans l'onglet Fondation : sa valeur,
+              calculée automatiquement, vit désormais dans la Note de Calcul,
+              à côté du déblai. */}
           <StatBox label="Évacuation des terres" valeur={volumes.evacuation} unite="m³" />
           <StatBox label="Béton de propreté" valeur={volumes.betonProprete} unite="m³" />
           <StatBox label="Semelles isolées (Socles)" valeur={volumes.semelles} unite="m³" />
           <StatBox label="Longrines" valeur={volumes.longrines} unite="m³" />
           <StatBox label="Murs de soubassement" valeur={volumes.murSoubassement} unite="m²" />
           <StatBox label="Fondation en Moellon" valeur={volumes.moellon} unite="m³" />
-          <StatBox label="Chape d'égalisation" valeur={volumes.chapeEgalisation} unite="m³" />
+          <StatBox label="Dallage" valeur={volumes.dallage} unite="m³" />
           <StatBox label="Sous-pavement" valeur={volumes.sousPavement} unite="m³" />
         </div>
       </div>

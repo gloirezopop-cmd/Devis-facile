@@ -44,7 +44,9 @@ test('Plancher et Toiture - Cas de test', (t) => {
   assert.equal(resumePlancher.surfaces.coffrage, 77.2772);
   assert.equal(resumePlancher.materiaux.planches, 95);
   assert.equal(resumePlancher.materiaux.chevrons, 69);
-  assert.equal(resumePlancher.materiaux.clous, 15.39); // 15.39 -> wait, is it? We'll check
+  // v7 Parametres : « Clous pour coffrage bois = 0,15 kg/m2 (guide p.32) ».
+  // 77,2772 m2 x 0,15 = 11,59158 kg.
+  assert.equal(resumePlancher.materiaux.clous, 11.59158);
 
   // Hourdis
   assert.equal(resumePlancher.surfaces.hourdis, 68.9975);

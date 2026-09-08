@@ -1,6 +1,7 @@
 import { calculerMetre, _internes } from './metre.js';
 const { extractionsArmatures } = _internes;
 import { calculerRecettes } from './recettes.js';
+import { calculerTerrassement } from './terrassement.js';
 
 const renseigne = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0;
 
@@ -10,84 +11,25 @@ export function genererResumeFondation(saisie, regles) {
   const avertissements = result.avertissements;
 
   // 1. Calcul du terrassement
-  let totalFouillesPuits = blocs.fouilles?.total || 0;
-  let totalFouilleFilante = blocs.fouilleFilante?.total || 0;
-  
-  let deblais = (totalFouillesPuits + totalFouilleFilante) * 1.3;
+  const terr = calculerTerrassement(blocs, saisie, regles, avertissements);
 
-  let videSemelles = 0;
-  if (saisie.fouilles) {
-    saisie.fouilles.forEach((f, i) => {
-      let vFouille = blocs.fouilles?.lignes[i]?.valeur || 0;
-      let vSemelle = blocs.semelles?.lignes[i]?.valeur || 0;
-      let vProprete = blocs.betonProprete?.lignes[i]?.valeur || 0;
-      
-      let vide = (vFouille - vSemelle - vProprete) * 1.3;
-      if (vide < 0) {
-        avertissements.push({
-          type: 'terrassement-depasse',
-          message: `Ouvrage trop grand pour la fouille en puits à la ligne ${i + 1}.`,
-        });
-        vide = 0;
-      }
-      videSemelles += vide;
-    });
-  }
-
-  let videFilant = 0;
-  if (totalFouilleFilante > 0) {
-    let volPropreteFilant = 0;
-    if (saisie.betonProprete && saisie.fouilles && saisie.betonProprete.length > saisie.fouilles.length) {
-       for (let i = saisie.fouilles.length; i < saisie.betonProprete.length; i++) {
-         volPropreteFilant += blocs.betonProprete.lignes[i]?.valeur || 0;
-       }
-    } else if (saisie.betonProprete && (!saisie.fouilles || saisie.fouilles.length === 0)) {
-       volPropreteFilant = blocs.betonProprete.total || 0;
-    }
-    
-    let volMoellon = blocs.moellon?.total || 0;
-    let volLongrineBrut = blocs.longrines?.totalBrut || 0;
-    let volMurSoubassement = 0;
-    if (saisie.soubassement) {
-      saisie.soubassement.forEach((m, i) => {
-        let surface = blocs.soubassement?.lignes[i]?.valeur || 0;
-        let epaisseur = m.epaisseur || m.largeur || 0.15; // default 0.15 si non saisi
-        volMurSoubassement += surface * epaisseur;
-      });
-    }
-    let volOuvrageFilant = volMoellon > 0 ? volMoellon : (volLongrineBrut + volMurSoubassement);
-    
-    let vide = (totalFouilleFilante - volPropreteFilant - volOuvrageFilant) * 1.3;
-    if (vide < 0) {
-      avertissements.push({
-        type: 'terrassement-depasse',
-        message: `Ouvrage filant trop grand pour la fouille en tranchée.`,
-      });
-      vide = 0;
-    }
-    videFilant = vide;
-  }
-
-  let totalNivellement = (blocs.nivellement?.total || 0) * 1.3;
-  let remblais = videSemelles + videFilant + totalNivellement;
-  let evacuation = Math.max(0, deblais - remblais);
 
   const volumes = {
     betonProprete: blocs.betonProprete?.total || 0,
     semelles: blocs.semelles?.total || 0,
     moellon: blocs.moellon?.total || 0,
-    chapeEgalisation: blocs.chapeEgalisation?.total || 0,
+    dallage: blocs.dallage?.total || 0,
     sousPavement: blocs.sousPavement?.total || 0,
-    deblais: deblais,
-    remblais: remblais,
-    evacuation: evacuation,
-    fouillesPuits: totalFouillesPuits,
-    fouilleFilante: totalFouilleFilante,
+    deblais: terr.deblais.volumeFoisonne,
+    remblais: terr.remblais.volumeTasse,
+    evacuation: terr.evacuation.volume,
+    fouillesPuits: terr.details.fouillesPuits,
+    fouilleFilante: terr.details.fouilleFilante,
     longrines: blocs.longrines?.total || 0,
     murSoubassement: blocs.murSoubassement?.total || 0,
-    videSemelles,
-    videFilant,
-    nivellement: totalNivellement
+    videSemelles: terr.details.videSemelles,
+    videFilant: terr.details.videFilant,
+    nivellement: terr.details.nivellement
   };
 
   // 2. Matériaux totaux
@@ -211,8 +153,9 @@ export function genererResumeElevation(blocs, regles) {
     blocs.escalier.lignes.forEach(e => {
       const surf = _internes.BLOCS.escalier.calculCoffrage(e);
       surfaceCoffrage += surf;
-      
-      // Garde-fou coffrage [12 m2/m3 +/- 20%]
+
+      // Garde-fou coffrage [12 m2/m3 +/- 20%] : un ratio hors plage revele
+      // presque toujours une dimension saisie de travers.
       if (e.mode === 'geometrie') {
         const vol = _internes.BLOCS.escalier.calcul(e);
         if (vol > 0) {
@@ -300,7 +243,9 @@ export function genererResumeElevation(blocs, regles) {
         poidsEscalier += a.poids;
       });
 
-      // Garde-fou du ratio [70, 130] kg/m3 (sauf en mode volume où le ratio est explicite)
+      // Garde-fou du ratio [70, 130] kg/m3, sauf en mode volume ou le ratio est
+      // saisi explicitement. Un ratio trop bas trahit le plus souvent des
+      // chapeaux d'appui oublies.
       if (escalier.mode === 'geometrie') {
         const volumeBeton = _internes.BLOCS.escalier.calcul(escalier);
         if (volumeBeton > 0) {

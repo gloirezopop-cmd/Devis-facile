@@ -7,20 +7,20 @@ import Stepper from '../components/ui/Stepper.jsx';
 import EtapeStructure from '../components/metre/EtapeStructure.jsx';
 import EtapeMetre from '../components/metre/EtapeMetre.jsx';
 import EtapeNoteCalcul from '../components/metre/EtapeNoteCalcul.jsx';
-import EtapeResultats from '../components/metre/EtapeResultats.jsx';
+import EtapeResume from '../components/metre/EtapeResume.jsx';
 import EtapeDevis from '../components/metre/EtapeDevis.jsx';
 import BandeauTotal from '../components/ui/BandeauTotal.jsx';
 import LegendeEtats from '../components/ui/LegendeEtats.jsx';
+import { Protege } from '../components/offres/EcranVerrou.jsx';
 
 const ETAPES = [
   { id: 'structure', label: 'Plans et éléments' },
   { id: 'metre', label: 'Métré' },
   { id: 'noteCalcul', label: 'Note de calcul' },
-  { id: 'resultats', label: 'Résultats' },
+  { id: 'resume', label: 'Résumé' },
   { id: 'devis', label: 'Devis' },
 ];
 const DERNIERE_ETAPE = ETAPES.length;
-
 
 /**
  * Le parcours guidé. Les réglages de projet (dosages, prix, taux) ne sont
@@ -55,11 +55,35 @@ export default function Metre() {
     <div className="pb-20">
       <Stepper etapes={ETAPES} etapeActive={etape} onChange={allerA} />
 
+      {/* Les deux premières étapes restent ouvertes à tous : c'est là que
+          l'utilisateur fait son travail, et rien ne justifie de le lui
+          interdire. Ce qui se paie, c'est de voir ce que ce travail donne. */}
       {etape === 1 && <EtapeStructure onOuvrir={() => allerA(2)} />}
       {etape === 2 && <EtapeMetre />}
-      {etape === 3 && <EtapeNoteCalcul />}
-      {etape === 4 && <EtapeResultats />}
-      {etape === 5 && <EtapeDevis />}
+      {etape === 3 && (
+        <Protege
+          source="NOTE_CALCUL"
+          description="Votre note de calcul a été produite à partir de vos dimensions. Elle fait partie des formules payantes."
+        >
+          <EtapeNoteCalcul />
+        </Protege>
+      )}
+      {etape === 4 && (
+        <Protege
+          source="RESUME"
+          description="Le résumé rassemble vos quantités et vos matériaux, niveau par niveau. Il fait partie des formules payantes."
+        >
+          <EtapeResume />
+        </Protege>
+      )}
+      {etape === 5 && (
+        <Protege
+          source="DEVIS"
+          description="Votre devis est prêt : postes, quantités, prix et totaux. Il fait partie de la formule Devis Complet."
+        >
+          <EtapeDevis />
+        </Protege>
+      )}
 
 
       <div className="mt-8 flex justify-between border-t border-brand-primary/10 pt-4">

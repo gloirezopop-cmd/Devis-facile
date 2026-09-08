@@ -2,9 +2,12 @@ import React from 'react';
 import { useProjet } from '../../context/ProjetContext.jsx';
 import { useMetre } from '../../hooks/useMetre.js';
 import CarteBloc from '../ui/CarteBloc.jsx';
+import { AccordionProvider } from '../ui/Accordion.jsx';
 import LigneOuvrage from '../ui/LigneOuvrage.jsx';
 import InputSaisie from '../ui/InputSaisie.jsx';
 import ValeurCalculee from '../ui/ValeurCalculee.jsx';
+
+const BLOCS_FINITION = ['Enduit Ciment', 'Peinture', 'Faïence Murale', 'Carrelage Sol et Plinthes'];
 
 export default function Finition() {
   const {
@@ -34,6 +37,7 @@ export default function Finition() {
     <section>
       <h2 className="font-sans text-2xl font-bold mb-4 text-devis-calcule border-b border-devis-border pb-2">Finition</h2>
 
+      <AccordionProvider key={niveauActifId} ids={BLOCS_FINITION}>
       <CarteBloc
         titre="Enduit Ciment"
         onAdd={() => addRow(enduits, setEnduits, { niveauId: niveauActifId, surface: '', nombre: '1' }, 'END')}
@@ -43,7 +47,9 @@ export default function Finition() {
         totalLabel="Surface totale à enduire"
       >
         <p className="text-sm text-gray-500 mb-4 px-2">
-          Saisissez une surface explicite ou laissez vide pour utiliser 2x la surface de maçonnerie de ce niveau.
+          Laissez la surface vide : elle reprend automatiquement la maçonnerie
+          nette de tous les niveaux, <strong>multipliée par 2</strong> — l'enduit
+          couvre l'intérieur et l'extérieur. Saisissez une valeur pour l'imposer.
         </p>
         {currentEnduits.map((e, index) => (
           <LigneOuvrage
@@ -172,6 +178,7 @@ export default function Finition() {
           </LigneOuvrage>
         ))}
       </CarteBloc>
+      </AccordionProvider>
     </section>
   );
 }
