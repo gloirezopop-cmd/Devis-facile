@@ -103,7 +103,11 @@ export function ProjetProvider({ children }) {
     bois_charpente: '180000', clous_charpente: '1000',
     toles: '7500', faitieres: '8500', clous_toiture: '1000',
     carreaux: '500', faience: '600', plinthe: '800', cimentColle: '650',
-    peinture_latex: '2800', peinture_classique: '3200', peinture_chaux: '450'
+    peinture_latex: '2800', peinture_classique: '3200', peinture_chaux: '450',
+    // Vide a dessein : le prix du terrassement a l'engin varie trop d'un
+    // chantier a l'autre pour qu'une valeur par defaut ait un sens. Tant
+    // qu'il n'est pas saisi, le devis affiche « Prix manquant ».
+    terrassementEnginM3: ''
   });
 
   const [labelsPrix, setLabelsPrix] = useLocalStorageState('df_labelsPrix_v3', {
@@ -113,7 +117,8 @@ export function ProjetProvider({ children }) {
     bois_charpente: "Bois de charpente (m³)", clous_charpente: "Clous de charpente (kg)",
     toles: "Tôle BG28 (unité)", faitieres: "Faîtière (unité)", clous_toiture: "Pointes à tôle (kg)",
     carreaux: "Carreau 30x30 (unité)", faience: "Faïence (unité)", plinthe: "Plinthe (unité)", cimentColle: "Ciment-colle (kg)",
-    peinture_latex: "Peinture latex (kg)", peinture_classique: "Peinture classique (L)", peinture_chaux: "Badigeon de chaux (kg)"
+    peinture_latex: "Peinture latex (kg)", peinture_classique: "Peinture classique (L)", peinture_chaux: "Badigeon de chaux (kg)",
+    terrassementEnginM3: "Terrassement à l'engin (m³)"
   });
 
   const [devisExcelSnapshot, setDevisExcelSnapshot] = useLocalStorageState('df_devisExcelSnapshot_v3', null);
