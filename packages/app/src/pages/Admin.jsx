@@ -1,102 +1,139 @@
 import React, { useEffect, useState } from 'react';
 import Icone from '../components/ui/Icone.jsx';
-import { fetchStatistiquesAdmin } from '../lib/estimationApi.js';
+import HistogrammeInscriptions from '../components/admin/HistogrammeInscriptions.jsx';
+import ListeComptes from '../components/admin/ListeComptes.jsx';
+import { fetchStatistiquesAdmin, fetchComptesAdmin } from '../lib/estimationApi.js';
 
 /**
  * Le tableau de bord du fondateur.
  *
- * Tous les chiffres viennent d'une seule fonction de la base
- * (`statistiques_admin`), qui refuse de répondre à un compte ordinaire. Rien
- * n'est calculé ici : le navigateur n'a le droit de lire ni `auth.users`, ni
- * les paiements des autres comptes, et cette page ne cherche pas à contourner
- * cela.
+ * Tous les chiffres viennent de deux fonctions de la base
+ * (`statistiques_admin`, `comptes_admin`), qui refusent de répondre à un
+ * compte ordinaire. Rien n'est calculé ici : le navigateur n'a le droit de
+ * lire ni `auth.users`, ni les paiements des autres comptes, et cette page ne
+ * cherche pas à contourner cela.
  *
  * Ce qui n'est pas mesuré n'est pas affiché. En particulier le nombre de
  * visiteurs non connectés : rien dans l'application n'enregistre aujourd'hui
- * leur passage, et afficher un zéro laisserait croire que personne ne vient.
+ * leur passage, et un zéro laisserait croire que personne ne vient.
  */
 export default function Admin() {
   const [stats, setStats] = useState(null);
+  const [comptes, setComptes] = useState([]);
   const [erreur, setErreur] = useState(null);
   const [chargement, setChargement] = useState(true);
 
   useEffect(() => {
     let annule = false;
-    fetchStatistiquesAdmin()
-      .then((data) => { if (!annule) { setStats(data); setChargement(false); } })
+    Promise.all([fetchStatistiquesAdmin(), fetchComptesAdmin()])
+      .then(([s, c]) => {
+        if (annule) return;
+        setStats(s);
+        setComptes(Array.isArray(c) ? c : []);
+        setChargement(false);
+      })
       .catch((e) => { if (!annule) { setErreur(e); setChargement(false); } });
     return () => { annule = true; };
   }, []);
 
   if (chargement) {
-    return <p className="py-20 text-center text-[13px] text-brand-text/40">Chargement des statistiques…</p>;
+    return <p className="py-20 text-center text-[13px] text-brand-text/40">Chargement du tableau de bord…</p>;
   }
 
   if (erreur || stats === null) {
     return (
       <div className="mx-auto mt-10 max-w-lg rounded-xl border border-devis-averifier/30 bg-amber-50 p-5 text-[13px] leading-relaxed text-brand-text/75">
-        <p className="font-bold text-brand-text">Statistiques indisponibles.</p>
+        <p className="font-bold text-brand-text">Tableau de bord indisponible.</p>
         <p className="mt-1">
-          Ce compte n'est pas reconnu comme administrateur, ou le script
-          <code className="mx-1 rounded bg-black/5 px-1">maj_admin.sql</code>
-          n'a pas encore été exécuté dans Supabase.
+          Ce compte n'est pas reconnu comme administrateur, ou les scripts
+          <code className="mx-1 rounded bg-black/5 px-1">maj_admin.sql</code> et
+          <code className="mx-1 rounded bg-black/5 px-1">maj_admin_tableau_de_bord.sql</code>
+          n'ont pas encore été exécutés dans Supabase.
         </p>
       </div>
     );
   }
 
   const formules = stats.abonnements_par_formule || {};
+  const maxFormule = Math.max(1, ...Object.values(formules).map(Number));
 
   return (
-    <section className="mx-auto max-w-5xl py-2">
-      <header className="mb-8">
-        <h1 className="font-sans text-[26px] font-extrabold leading-tight tracking-tight text-brand-text">
-          Tableau de bord
-        </h1>
-        <p className="mt-2 text-[13.5px] text-brand-text/60">
-          Ce que la base sait réellement, arrêté au {formaterDate(stats.genere_le)}.
+    <section className="mx-auto max-w-6xl py-2">
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-brand-accent">
+            Administration
+          </p>
+          <h1 className="mt-1 font-sans text-[28px] font-extrabold leading-tight tracking-tight text-brand-text">
+            {stats.mon_prenom ? `Bonjour ${stats.mon_prenom}` : 'Tableau de bord'}
+          </h1>
+        </div>
+        <p className="text-[12.5px] text-brand-text/45">
+          Arrêté au {dateLongue(stats.genere_le)}
         </p>
       </header>
 
-      <Groupe titre="Comptes" icone="users">
-        <Chiffre valeur={stats.comptes_total} libelle="comptes au total" />
-        <Chiffre valeur={stats.comptes_7j} libelle="créés ces 7 derniers jours" />
-        <Chiffre valeur={stats.comptes_30j} libelle="créés ces 30 derniers jours" />
-      </Groupe>
+      {/* ── Les quatre chiffres qui comptent, en tête ── */}
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Tuile
+          valeur={stats.comptes_total} libelle="comptes au total"
+          detail={`+${nombre(stats.comptes_7j)} cette semaine`} icone="users"
+        />
+        <Tuile
+          valeur={stats.actifs_30j} libelle="comptes actifs sur 30 jours"
+          detail={`${nombre(stats.actifs_7j)} sur 7 jours`} icone="bar-chart"
+        />
+        <Tuile
+          valeur={stats.projets_total} libelle="projets créés"
+          detail={`+${nombre(stats.projets_7j)} cette semaine`} icone="folder"
+        />
+        <Tuile
+          valeur={stats.recettes_totales} libelle="FCFA encaissés" monetaire
+          detail={`${nombre(stats.recettes_30j)} F sur 30 jours`} icone="credit-card"
+        />
+      </div>
 
-      <Groupe titre="Activité" icone="bar-chart">
-        <Chiffre valeur={stats.actifs_7j} libelle="comptes actifs sur 7 jours" />
-        <Chiffre valeur={stats.actifs_30j} libelle="comptes actifs sur 30 jours" />
-        <Chiffre valeur={stats.evenements_7j} libelle="actions enregistrées sur 7 jours" />
-      </Groupe>
+      <div className="mb-8 grid gap-4 lg:grid-cols-3">
+        <div className="rounded-xl border border-brand-primary/10 bg-white p-5 lg:col-span-2">
+          <HistogrammeInscriptions donnees={stats.inscriptions_par_jour} />
+        </div>
 
-      <Groupe titre="Travail produit" icone="folder">
-        <Chiffre valeur={stats.projets_total} libelle="projets créés" />
-        <Chiffre valeur={stats.projets_7j} libelle="projets ces 7 derniers jours" />
-      </Groupe>
-
-      <Groupe titre="Abonnements et recettes" icone="credit-card">
-        <Chiffre valeur={stats.abonnes_actifs} libelle="abonnés actifs" />
-        <Chiffre valeur={stats.paiements_reussis} libelle="paiements encaissés" />
-        <Chiffre valeur={stats.recettes_totales} libelle="FCFA encaissés au total" monetaire />
-        <Chiffre valeur={stats.recettes_30j} libelle="FCFA sur 30 jours" monetaire />
-      </Groupe>
-
-      {Object.keys(formules).length > 0 && (
-        <div className="mb-8 rounded-xl border border-brand-primary/10 bg-white p-5">
-          <h3 className="mb-3 text-[13px] font-extrabold uppercase tracking-[0.1em] text-brand-text/50">
+        <div className="rounded-xl border border-brand-primary/10 bg-white p-5">
+          <h3 className="mb-4 text-[13px] font-extrabold uppercase tracking-[0.1em] text-brand-text/50">
             Abonnés par formule
           </h3>
-          <ul className="space-y-1.5 text-[13.5px] text-brand-text/80">
-            {Object.entries(formules).map(([formule, nombre]) => (
-              <li key={formule} className="flex justify-between border-b border-brand-primary/5 pb-1.5 last:border-0">
-                <span>{formule}</span>
-                <span className="font-bold text-brand-text">{nombre}</span>
-              </li>
-            ))}
-          </ul>
+          {Object.keys(formules).length === 0 ? (
+            <p className="text-[13px] italic text-brand-text/40">
+              Aucun abonnement actif pour l'instant.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {Object.entries(formules).map(([formule, valeur]) => (
+                <li key={formule}>
+                  <div className="mb-1 flex items-baseline justify-between text-[13px]">
+                    <span className="text-brand-text/75">{formule}</span>
+                    <span className="font-bold text-brand-text">{nombre(valeur)}</span>
+                  </div>
+                  {/* Une seule teinte : l'identité est portée par le libellé
+                      juste au-dessus, pas par la couleur. */}
+                  <div className="h-2 rounded-full bg-black/5">
+                    <div
+                      className="h-2 rounded-full"
+                      style={{ width: `${(Number(valeur) / maxFormule) * 100}%`, backgroundColor: '#2F6FDE' }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <dl className="mt-6 space-y-2 border-t border-brand-primary/10 pt-4 text-[13px]">
+            <Ligne terme="Abonnés actifs" valeur={nombre(stats.abonnes_actifs)} />
+            <Ligne terme="Paiements encaissés" valeur={nombre(stats.paiements_reussis)} />
+            <Ligne terme="Actions enregistrées (7 j)" valeur={nombre(stats.evenements_7j)} />
+          </dl>
         </div>
-      )}
+      </div>
 
       {stats.intentions_en_attente > 0 && (
         <div className="mb-8 flex items-start gap-3 rounded-xl border border-devis-averifier/30 bg-amber-50 p-5">
@@ -107,28 +144,16 @@ export default function Admin() {
               {stats.intentions_en_attente > 1 ? 's' : ''} sans confirmation.
             </p>
             <p className="mt-1">
-              Normal si quelqu'un a quitté la page de paiement. Si le nombre grimpe sans
+              Normal si quelqu'un a quitté la page de paiement. Si ce nombre grimpe sans
               qu'aucune recette n'arrive, c'est que le webhook Chariow ne reçoit plus rien.
             </p>
           </div>
         </div>
       )}
 
-      {Array.isArray(stats.derniers_comptes) && stats.derniers_comptes.length > 0 && (
-        <div className="mb-8 rounded-xl border border-brand-primary/10 bg-white p-5">
-          <h3 className="mb-3 text-[13px] font-extrabold uppercase tracking-[0.1em] text-brand-text/50">
-            Dix derniers comptes créés
-          </h3>
-          <ul className="space-y-1.5 text-[13px] text-brand-text/80">
-            {stats.derniers_comptes.map((compte) => (
-              <li key={compte.email} className="flex flex-wrap justify-between gap-x-4 border-b border-brand-primary/5 pb-1.5 last:border-0">
-                <span className="break-all">{compte.email}</span>
-                <span className="text-brand-text/45">{formaterDate(compte.cree_le)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <div className="mb-8">
+        <ListeComptes comptes={comptes} />
+      </div>
 
       <p className="text-[12.5px] leading-relaxed text-brand-text/45">
         Le nombre de <strong>visiteurs</strong> n'apparaît pas ici : l'application n'enregistre
@@ -139,31 +164,36 @@ export default function Admin() {
   );
 }
 
-function Groupe({ titre, icone, children }) {
-  return (
-    <div className="mb-8">
-      <h2 className="mb-3 flex items-center gap-2 text-[13px] font-extrabold uppercase tracking-[0.1em] text-brand-text/50">
-        <Icone nom={icone} size={15} className="shrink-0" /> {titre}
-      </h2>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{children}</div>
-    </div>
-  );
-}
-
-function Chiffre({ valeur, libelle, monetaire = false }) {
-  const nombre = Number(valeur ?? 0);
+function Tuile({ valeur, libelle, detail, icone, monetaire = false }) {
   return (
     <div className="rounded-xl border border-brand-primary/10 bg-white p-4">
-      <p className="font-sans text-[26px] font-extrabold leading-none tracking-tight text-brand-text">
-        {nombre.toLocaleString('fr-FR')}
+      <div className="mb-2 flex items-center gap-2 text-brand-text/35">
+        <Icone nom={icone} size={15} className="shrink-0" />
+      </div>
+      <p className="font-sans text-[27px] font-extrabold leading-none tracking-tight text-brand-text">
+        {nombre(valeur)}
         {monetaire && <span className="ml-1 text-[13px] font-bold text-brand-text/40">F</span>}
       </p>
-      <p className="mt-2 text-[12.5px] leading-snug text-brand-text/55">{libelle}</p>
+      <p className="mt-1.5 text-[12.5px] leading-snug text-brand-text/55">{libelle}</p>
+      {detail && <p className="mt-1 text-[12px] font-bold text-devis-herite">{detail}</p>}
     </div>
   );
 }
 
-function formaterDate(valeur) {
+function Ligne({ terme, valeur }) {
+  return (
+    <div className="flex justify-between">
+      <dt className="text-brand-text/60">{terme}</dt>
+      <dd className="font-bold text-brand-text">{valeur}</dd>
+    </div>
+  );
+}
+
+function nombre(valeur) {
+  return Number(valeur ?? 0).toLocaleString('fr-FR');
+}
+
+function dateLongue(valeur) {
   if (!valeur) return '—';
   const date = new Date(valeur);
   if (Number.isNaN(date.getTime())) return '—';

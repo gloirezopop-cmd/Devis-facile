@@ -191,6 +191,18 @@ export async function fetchStatistiquesAdmin() {
   return data;
 }
 
+/**
+ * La liste des comptes, pour l'administration : de quoi reconnaître un client
+ * et le contacter. Ni mot de passe ni jeton n'en sortent — la fonction en base
+ * choisit exactement les colonnes qu'elle expose, et répond `null` à un compte
+ * ordinaire.
+ */
+export async function fetchComptesAdmin() {
+  const { data, error } = await supabase.rpc('comptes_admin');
+  if (error) throw error;
+  return data;
+}
+
 export async function creerTarif(tarif) {
   const { data, error } = await supabase.from('construction_rates').insert(tarif).select().single();
   if (error) throw error;
