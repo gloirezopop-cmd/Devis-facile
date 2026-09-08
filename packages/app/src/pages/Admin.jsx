@@ -22,6 +22,10 @@ export default function Admin() {
   const [comptes, setComptes] = useState([]);
   const [erreur, setErreur] = useState(null);
   const [chargement, setChargement] = useState(true);
+  // Les chiffres sont relus à chaque ouverture de la page : une inscription
+  // qui arrive maintenant apparaît au prochain affichage. Ce compteur permet
+  // de redemander sans recharger toute l'application.
+  const [rafraichissement, setRafraichissement] = useState(0);
 
   useEffect(() => {
     let annule = false;
@@ -34,7 +38,7 @@ export default function Admin() {
       })
       .catch((e) => { if (!annule) { setErreur(e); setChargement(false); } });
     return () => { annule = true; };
-  }, []);
+  }, [rafraichissement]);
 
   if (chargement) {
     return <p className="py-20 text-center text-[13px] text-brand-text/40">Chargement du tableau de bord…</p>;
@@ -68,9 +72,18 @@ export default function Admin() {
             {stats.mon_prenom ? `Bonjour ${stats.mon_prenom}` : 'Tableau de bord'}
           </h1>
         </div>
-        <p className="text-[12.5px] text-brand-text/45">
-          Arrêté au {dateLongue(stats.genere_le)}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-[12.5px] text-brand-text/45">
+            Arrêté au {dateLongue(stats.genere_le)}
+          </p>
+          <button
+            type="button"
+            onClick={() => { setChargement(true); setRafraichissement((n) => n + 1); }}
+            className="flex min-h-[36px] items-center gap-1.5 rounded-lg border-2 border-brand-primary/15 px-3 text-[13px] font-bold text-brand-text/75 transition-colors hover:bg-black/5"
+          >
+            <Icone nom="refresh" size={15} /> Actualiser
+          </button>
+        </div>
       </header>
 
       {/* ── Les quatre chiffres qui comptent, en tête ── */}

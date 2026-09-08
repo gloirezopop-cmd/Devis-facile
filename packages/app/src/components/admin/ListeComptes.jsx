@@ -163,10 +163,17 @@ export default function ListeComptes({ comptes = [] }) {
                   />
                 </td>
                 <td className="px-2 py-2.5">
-                  {(compte.prenom || compte.nom) && (
+                  {/* Un compte créé avant que le formulaire d'inscription
+                      exige prénom et nom n'en a pas. Le dire vaut mieux
+                      qu'une ligne vide qui ressemble à un bug — et c'est
+                      aussi l'information qui explique qu'il ne peut pas
+                      payer (Chariow exige ces champs). */}
+                  {(compte.prenom || compte.nom) ? (
                     <p className="font-bold text-brand-text">
                       {[compte.prenom, compte.nom].filter(Boolean).join(' ')}
                     </p>
+                  ) : (
+                    <p className="text-[12.5px] italic text-brand-text/35">Nom non renseigné</p>
                   )}
                   <a href={`mailto:${compte.email}`} className="break-all text-brand-interactive hover:underline">
                     {compte.email}
