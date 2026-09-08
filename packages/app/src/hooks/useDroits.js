@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchOffres, fetchMesAbonnements } from '../lib/estimationApi.js';
+import { fetchOffres, fetchMesAbonnements, estAdministrateur } from '../lib/estimationApi.js';
 import { calculerDroits, statutDuCompte } from '../utils/offres.js';
 
 /**
@@ -17,6 +17,7 @@ import { calculerDroits, statutDuCompte } from '../utils/offres.js';
 export function useDroits(projectId = null) {
   const [plans, setPlans] = useState([]);
   const [abonnements, setAbonnements] = useState([]);
+  const [estAdmin, setEstAdmin] = useState(false);
   const [chargement, setChargement] = useState(true);
 
   const [rafraichissement, setRafraichissement] = useState(0);
@@ -34,26 +35,31 @@ export function useDroits(projectId = null) {
 
   useEffect(() => {
     let annule = false;
-    Promise.all([fetchOffres(), fetchMesAbonnements()]).then(([p, a]) => {
+    Promise.all([fetchOffres(), fetchMesAbonnements(), estAdministrateur()]).then(([p, a, admin]) => {
       if (annule) return;
       setPlans(p);
       setAbonnements(a);
+      setEstAdmin(admin === true);
       setChargement(false);
     });
     return () => { annule = true; };
   }, [rafraichissement]);
 
   const droits = useMemo(
-    () => calculerDroits({ abonnements, plans, projectId }),
-    [abonnements, plans, projectId],
+    () => calculerDroits({ abonnements, plans, projectId, estAdmin }),
+    [abonnements, plans, projectId, estAdmin],
   );
-  const statut = useMemo(() => statutDuCompte(abonnements, plans), [abonnements, plans]);
+  const statut = useMemo(
+    () => (estAdmin ? 'ADMIN' : statutDuCompte(abonnements, plans)),
+    [abonnements, plans, estAdmin],
+  );
 
   return {
     droits,
     plans,
     abonnements,
     statut,
+    estAdmin,
     chargement,
     recharger,
     peut: (droit) => droits[droit] === true,

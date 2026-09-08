@@ -177,6 +177,20 @@ export async function estAdministrateur() {
   return data === true;
 }
 
+/**
+ * Les chiffres du tableau de bord d'administration.
+ *
+ * Tout est compté par la base : le navigateur n'a le droit de lire ni
+ * `auth.users`, ni les paiements des autres, et cela ne changera pas. Un
+ * compte ordinaire reçoit `null` — pas une erreur, il n'a pas à apprendre
+ * qu'un écran d'administration existe.
+ */
+export async function fetchStatistiquesAdmin() {
+  const { data, error } = await supabase.rpc('statistiques_admin');
+  if (error) throw error;
+  return data;
+}
+
 export async function creerTarif(tarif) {
   const { data, error } = await supabase.from('construction_rates').insert(tarif).select().single();
   if (error) throw error;

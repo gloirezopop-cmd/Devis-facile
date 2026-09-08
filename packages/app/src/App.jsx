@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import Layout from './components/layout/Layout.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import EstimationBudget from './pages/EstimationBudget.jsx';
+import Admin from './pages/Admin.jsx';
 import AdminTarifs from './pages/AdminTarifs.jsx';
 import Metre from './pages/Metre.jsx';
 import Parametres from './pages/Parametres.jsx';
@@ -78,7 +79,13 @@ export default function App() {
               <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/estimation" element={<EstimationBudget />} />
-                {/* Pas de garde de rôle : voir l'avertissement en tête de AdminTarifs.jsx. */}
+                {/* Ces deux pages ne sont pas gardées par une route : c'est la
+                    base qui refuse de répondre à un compte non administrateur
+                    (RLS sur `construction_rates`, `est_admin()` dans
+                    `statistiques_admin`). Elles s'affichent alors vides, ce qui
+                    est le comportement voulu — un utilisateur curieux n'y
+                    trouve rien. */}
+                <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/tarifs" element={<AdminTarifs />} />
 
                 {/* Le parcours guidé (Structure -> Métré -> Résultats -> Devis)

@@ -27,13 +27,11 @@ const FORMULAIRE_VIDE = {
 /**
  * Administration des tarifs de construction.
  *
- * ⚠️ Cette page n'est protégée que par la connexion (comme tout le reste de
- * l'application) — pas par un rôle « administrateur ». L'application n'a
- * aujourd'hui aucune notion de rôle : n'importe quel compte connecté qui
- * atteint cette URL peut modifier les tarifs de tous les pays. La politique
- * RLS de schema_estimation.sql applique la même règle côté base de données.
- * Un vrai contrôle d'accès nécessite une colonne de rôle (par exemple sur une
- * table `profiles`) vérifiée à la fois ici et dans les politiques RLS.
+ * L'accès est décidé par la base, pas par cette page : depuis
+ * schema_verrouillage.sql, `construction_rates` est sous une politique RLS
+ * qui exige `est_admin()` (colonne `profiles.is_admin`). Un compte ordinaire
+ * qui atteint cette URL voit une page vide et ne peut rien écrire — l'écran
+ * n'est pas la barrière, PostgreSQL l'est.
  */
 export default function AdminTarifs() {
   const toast = useToast();

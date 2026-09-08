@@ -1,8 +1,9 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import Icone from '../ui/Icone.jsx';
-import { NAVIGATION } from './navigation.js';
+import { NAVIGATION, NAVIGATION_ADMIN } from './navigation.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useEstAdmin } from '../../hooks/useEstAdmin.js';
 
 /**
  * Navigation principale. Rendue deux fois : fixe sur ordinateur (Sidebar),
@@ -12,6 +13,8 @@ import { useAuth } from '../../context/AuthContext.jsx';
 export function ContenuNavigation({ onNavigate }) {
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
+  const estAdmin = useEstAdmin();
+  const sections = estAdmin ? [...NAVIGATION, NAVIGATION_ADMIN] : NAVIGATION;
 
   const handleAuthAction = async () => {
     if (session) {
@@ -37,7 +40,7 @@ export function ContenuNavigation({ onNavigate }) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 pb-4">
-        {NAVIGATION.map((section) => (
+        {sections.map((section) => (
           <div key={section.titre} className="mb-5">
             <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-white/40">
               {section.titre}

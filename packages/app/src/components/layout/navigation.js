@@ -29,5 +29,18 @@ export const NAVIGATION = [
   },
 ];
 
+/**
+ * Section réservée au fondateur. Ajoutée à la navigation seulement lorsque la
+ * base répond `est_admin() = true` — un lien masqué n'est pas une protection,
+ * la vraie barrière est côté PostgreSQL (RLS et `statistiques_admin()`).
+ */
+export const NAVIGATION_ADMIN = {
+  titre: 'Administration',
+  liens: [
+    { to: '/admin', label: 'Statistiques', icone: 'bar-chart', exact: true },
+    { to: '/admin/tarifs', label: 'Tarifs de référence', icone: 'credit-card' },
+  ],
+};
+
 /** Routes réellement construites. Les autres passent par EmptyState. */
-export const ROUTES_ACTIVES = new Set(['/', '/dashboard', '/estimation', '/metre', '/devis', '/parametres', '/projets', '/apprendre', '/sujets']);
+export const ROUTES_ACTIVES = new Set(['/', '/dashboard', '/estimation', '/metre', '/devis', '/parametres', '/projets', '/apprendre', '/sujets', '/admin', '/admin/tarifs']);

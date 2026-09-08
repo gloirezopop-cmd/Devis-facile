@@ -128,9 +128,25 @@ export function statutDuCompte(abonnements = [], plans = [], maintenant = new Da
  * entier. Les droits s'additionnent : un compte qui cumulerait deux formules
  * obtient l'union, jamais l'intersection.
  */
-export function calculerDroits({ abonnements = [], plans = [], projectId = null, maintenant = new Date() } = {}) {
+export function calculerDroits({
+  abonnements = [], plans = [], projectId = null, maintenant = new Date(), estAdmin = false,
+} = {}) {
   const droits = { ...droitsVides(), ...DROITS_GRATUITS };
   const planDe = (id) => plans.find((p) => p.id === id);
+
+  // Un administrateur reçoit l'union de tous les droits que les formules
+  // existantes savent accorder — sans abonnement, sans paiement simulé. La
+  // liste n'est pas écrite ici : une formule qui gagnera un droit demain le
+  // lui accordera aussi. C'est le miroir exact de `droits_utilisateur()` en
+  // base, qui reste la seule autorité ; ceci n'ouvre que l'interface.
+  if (estAdmin) {
+    for (const plan of plans) {
+      for (const [droit, accorde] of Object.entries(plan.entitlements || {})) {
+        if (accorde) droits[droit] = true;
+      }
+    }
+    return droits;
+  }
 
   for (const abonnement of abonnements) {
     if (!abonnementEstActif(abonnement, maintenant)) continue;
