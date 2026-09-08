@@ -48,6 +48,7 @@ export function preparerSaisiePourMoteur(niveau, state) {
     remblai: sanitize((state.remblais || []).filter(c => c.niveauId === niveau.id)),
     sousPavement: sanitize((state.sousPavements || []).filter(s => s.niveauId === niveau.id)),
     nivellement: sanitize((state.nivellement || []).filter(n => n.niveauId === niveau.id)),
+    terrassementGrandeSurface: sanitize((state.terrassementGrandeSurface || []).filter(t => t.niveauId === niveau.id)),
     carrelage: sanitize((state.carrelages || []).filter(c => c.niveauId === niveau.id)),
     enduits: sanitize((state.enduits || []).filter(e => e.niveauId === niveau.id)),
     peinture: sanitize((state.peintures || []).filter(p => p.niveauId === niveau.id)),

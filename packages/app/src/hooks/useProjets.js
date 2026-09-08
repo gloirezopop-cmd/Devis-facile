@@ -10,7 +10,7 @@ import useLocalStorageState from './useLocalStorageState.js';
  */
 const CLES_PROJET = [
   'niveaux', 'niveauActifId',
-  'fouilles', 'betonProprete', 'fouilleFilante', 'nivellement',
+  'fouilles', 'betonProprete', 'fouilleFilante', 'nivellement', 'terrassementGrandeSurface',
   'semelles', 'longrines', 'colonnes', 'maconneries', 'escaliers',
   'soubassements', 'moellons', 'chapeEgalisations', 'sousPavements',
   'carrelages', 'enduits', 'peintures', 'faiences', 'autresOuvrages',

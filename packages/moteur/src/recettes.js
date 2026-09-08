@@ -58,7 +58,7 @@ export function obtenirDecompositionOuvrage(blocId, bloc, regles = {}) {
   }
 
   // --- 1.5 FOISONNEMENT DES DEBLAIS ---
-  if (['fouilles', 'fouilleFilante'].includes(blocId) && volume > 0) {
+  if (['fouilles', 'fouilleFilante', 'terrassementGrandeSurface'].includes(blocId) && volume > 0) {
     // Meme coefficient que le classeur v7 (CT_TASSEMENT = 1,3, Parametres!C74).
     const cf = PARAMETRES.coefficients.coefficientTassement || 1.30;
     const deblaisFoisonne = volume * cf;

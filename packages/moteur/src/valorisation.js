@@ -195,8 +195,14 @@ export function nombreEnLettres(n) {
  */
 export function genererSousDetailPrix(blocId, blocDonnees, regles, bibliothequePrix) {
   // Terrassement : PU forfaitaire
-  if (['fouilles', 'fouillesPuits', 'remblai', 'fouilleFilante', 'nivellement', 'evacuation', 'deblais'].includes(blocId)) {
-    const puKey = (blocId === 'fouilles' || blocId === 'fouillesPuits' || blocId === 'fouilleFilante' || blocId === 'deblais')
+  if (['fouilles', 'fouillesPuits', 'remblai', 'fouilleFilante', 'nivellement', 'evacuation', 'deblais', 'terrassementGrandeSurface'].includes(blocId)) {
+    // Le terrassement a grande surface est provisoirement valorise au prix de
+    // la fouille en tranchee : c'est le meme ouvrage de deblai. Si l'execution
+    // a l'engin doit avoir son propre prix unitaire, il faudra ajouter la
+    // ligne correspondante a la bibliotheque de prix — un chiffre que seul le
+    // metreur possede, pas une valeur a inventer ici.
+    const puKey = (blocId === 'fouilles' || blocId === 'fouillesPuits' || blocId === 'fouilleFilante'
+      || blocId === 'deblais' || blocId === 'terrassementGrandeSurface')
       ? 'fouilleTrancheeM3'
       : (blocId === 'remblai' || blocId === 'nivellement') ? 'remblaiSousDallageM3' : 'evacuationDeblaisM3';
     const pu = bibliothequePrix[puKey] || PARAMETRES.prixUnitaires[puKey] || 0;

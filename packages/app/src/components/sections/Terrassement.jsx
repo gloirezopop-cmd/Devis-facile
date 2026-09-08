@@ -8,11 +8,17 @@ import LigneOuvrage from '../ui/LigneOuvrage.jsx';
 import InputSaisie from '../ui/InputSaisie.jsx';
 import ValeurCalculee from '../ui/ValeurCalculee.jsx';
 
-const BLOCS_TERRASSEMENT = ['Fouilles en puits', 'Fouilles en rigole', "Nivellement de l'emprise"];
+const BLOCS_TERRASSEMENT = [
+  'Fouilles en puits', 'Fouilles en rigole', 'Terrassement à grande surface', "Nivellement de l'emprise",
+];
 
 export default function Terrassement() {
   const state = useProjet();
-  const { fouilles, setFouilles, fouilleFilante, setFouilleFilante, nivellement, setNivellement, addRow, removeRow, updateRow, niveauActifId, reglesPersonnalisees } = state;
+  const {
+    fouilles, setFouilles, fouilleFilante, setFouilleFilante, nivellement, setNivellement,
+    terrassementGrandeSurface, setTerrassementGrandeSurface,
+    addRow, removeRow, updateRow, niveauActifId, reglesPersonnalisees,
+  } = state;
   const { metreParNiveau } = useMetre();
 
   const idx = metreParNiveau.findIndex(m => m.niveauId === niveauActifId);
@@ -105,6 +111,43 @@ export default function Terrassement() {
                 value={getBloc('fouilleFilante').lignes[index]?.valeur}
                 unite="m³"
                 trace={getBloc('fouilleFilante').lignes[index]?.trace}
+              />
+            </div>
+          </LigneOuvrage>
+        ))}
+      </CarteBloc>
+
+      {/* Le déblai en masse, exécuté à l'engin. Même mesure qu'une fouille en
+          rigole — longueur × largeur × profondeur — mais sur une emprise bien
+          plus vaste, et son volume entre dans les déblais. Bloc distinct des
+          fouilles parce que l'engin ne se facture pas comme la pioche. */}
+      <CarteBloc
+        titre="Terrassement à grande surface"
+        onAdd={() => addRow(terrassementGrandeSurface, setTerrassementGrandeSurface, { niveauId: niveauActifId, longueur: '', largeur: '', profondeur: '' }, 'TGS')}
+        addLabel="Ajouter un terrassement à grande surface"
+        totalValeur={getBloc('terrassementGrandeSurface').total}
+        totalUnite={getBloc('terrassementGrandeSurface').unite}
+        totalLabel="Quantité de déblais"
+      >
+        {terrassementGrandeSurface.filter(x => x.niveauId === niveauActifId).map((t, index) => (
+          <LigneOuvrage
+            key={t.id} repere={t.repere} titre="Terrassement à l'engin"
+            onRemove={terrassementGrandeSurface.filter(x => x.niveauId === niveauActifId).length > 1
+              ? () => removeRow(terrassementGrandeSurface, setTerrassementGrandeSurface, t.id) : null}
+            avertissement={getAvertissementLocal('terrassementGrandeSurface', index)}
+          >
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <InputSaisie label="Longueur" value={t.longueur} onChange={(v) => updateRow(terrassementGrandeSurface, setTerrassementGrandeSurface, t.id, 'longueur', v)} unite="m" />
+              <InputSaisie label="Largeur" value={t.largeur} onChange={(v) => updateRow(terrassementGrandeSurface, setTerrassementGrandeSurface, t.id, 'largeur', v)} unite="m" />
+              <InputSaisie label="Profondeur" value={t.profondeur} onChange={(v) => updateRow(terrassementGrandeSurface, setTerrassementGrandeSurface, t.id, 'profondeur', v)} unite="m" />
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-devis-border grid grid-cols-2 gap-4">
+              <ValeurCalculee
+                label="Volume de déblais (m³)"
+                value={getBloc('terrassementGrandeSurface').lignes[index]?.valeur}
+                unite="m³"
+                trace={getBloc('terrassementGrandeSurface').lignes[index]?.trace}
               />
             </div>
           </LigneOuvrage>

@@ -134,6 +134,20 @@ const BLOCS = {
     trace: (l) => `Volume = ${net(l.longueur, 2)}m (L) × ${net(l.largeur, 2)}m (l) × ${net(l.profondeur, 2)}m (h) = ${net(l.longueur * l.largeur * l.profondeur, 3)} m³`
   },
 
+  // Le deblai en masse, celui qu'on execute a l'engin. Le calcul est celui
+  // d'une fouille en tranchee — c'est la meme mesure, avec une largeur bien
+  // plus vaste — et son volume entre dans les deblais, comme les fouilles.
+  // Bloc distinct malgre le calcul identique : l'engin n'a pas le prix
+  // unitaire de la pioche, et le devis doit pouvoir les separer.
+  terrassementGrandeSurface: {
+    libelle: 'Terrassement à grande surface',
+    unite: 'm3',
+    requis: ['longueur', 'largeur', 'profondeur'],
+    formule: 'L x l x h',
+    calcul: (l) => l.longueur * l.largeur * l.profondeur,
+    trace: (l) => `Volume = ${net(l.longueur, 2)}m (L) × ${net(l.largeur, 2)}m (l) × ${net(l.profondeur, 2)}m (h) = ${net(l.longueur * l.largeur * l.profondeur, 3)} m³`
+  },
+
   nivellement: {
     libelle: 'Nivellement de l\'emprise',
     unite: 'm3',

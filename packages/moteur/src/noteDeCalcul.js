@@ -148,7 +148,9 @@ export function genererNoteDeCalcul(saisie = {}, regles = {}) {
       total_brut: bloc.total || 0,
       total_arrondi: bloc.total || 0,
       motif_arrondi: 'Arrondi standard à 2 décimales pour l\'affichage du devis',
-      label_resultat: (blocId === 'fouilles' || blocId === 'fouilleFilante') ? 'Quantité de déblais' : 'Résultat',
+      label_resultat: ['fouilles', 'fouilleFilante', 'terrassementGrandeSurface'].includes(blocId)
+        ? 'Quantité de déblais'
+        : 'Résultat',
       lignes: [],
       decomposition_materiaux: [],
       armatures: null,

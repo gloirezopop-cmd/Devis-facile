@@ -31,6 +31,7 @@ export function ProjetProvider({ children }) {
   const [fouilleFilante, setFouilleFilante] = useLocalStorageState('df_fouilleFilante_v3', []);
 
   const [nivellement, setNivellement] = useLocalStorageState('df_nivellement_v3', []);
+  const [terrassementGrandeSurface, setTerrassementGrandeSurface] = useLocalStorageState('df_terrassementGrandeSurface_v3', []);
 
   const [semelles, setSemelles] = useLocalStorageState('df_semelles_v3', []);
   const [amorces, setAmorces] = useLocalStorageState('df_amorces_v3', []);
@@ -176,7 +177,7 @@ export function ProjetProvider({ children }) {
   // SUPABASE SYNC LOGIC
   // -----------------------------------------------------
   const gatherProjectData = () => ({
-    niveaux, fouilles, betonProprete, fouilleFilante, nivellement,
+    niveaux, fouilles, betonProprete, fouilleFilante, nivellement, terrassementGrandeSurface,
     semelles, amorces, longrines, colonnes, maconneries, escaliers, soubassements,
     moellons, dallages, remblais, sousPavements, carrelages, enduits,
     peintures, faiences, autresOuvrages, dalles, plancherHourdis12,
@@ -190,6 +191,7 @@ export function ProjetProvider({ children }) {
     if(data.betonProprete) setBetonProprete(data.betonProprete);
     if(data.fouilleFilante) setFouilleFilante(data.fouilleFilante);
     if(data.nivellement) setNivellement(data.nivellement);
+    if(data.terrassementGrandeSurface) setTerrassementGrandeSurface(data.terrassementGrandeSurface);
     if(data.semelles) setSemelles(data.semelles);
     if(data.amorces) setAmorces(data.amorces);
     if(data.longrines) setLongrines(data.longrines);
@@ -241,7 +243,7 @@ export function ProjetProvider({ children }) {
     <ProjetContext.Provider value={{
       ongletActif, setOngletActif, niveaux, setNiveaux, niveauActifId, setNiveauActifId,
       fouilles, setFouilles, betonProprete, setBetonProprete, fouilleFilante, setFouilleFilante,
-      nivellement, setNivellement, semelles, setSemelles, amorces, setAmorces, longrines, setLongrines,
+      nivellement, setNivellement, terrassementGrandeSurface, setTerrassementGrandeSurface, semelles, setSemelles, amorces, setAmorces, longrines, setLongrines,
       colonnes, setColonnes, maconneries, setMaconneries, linteaux, setLinteaux, escaliers, setEscaliers,
       soubassements, setSoubassements, moellons, setMoellons, dallages, setDallages, remblais, setRemblais,
       sousPavements, setSousPavements, carrelages, setCarrelages, enduits, setEnduits,
