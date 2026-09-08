@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
 import { formaterNombre } from '../../utils/format.js';
 
-export default function ValeurCalculee({ label, value, unite, trace, overrideValue, onOverrideChange }) {
+/**
+ * `libellesEntrees` renomme, à l'affichage seulement, les variables de la
+ * trace : une fouille en puits se mesure par ses côtés a et b, alors que la
+ * donnée s'appelle toujours `longueur`/`largeur` en base et dans le moteur.
+ * Renommer la donnée elle-même invaliderait les projets déjà enregistrés.
+ */
+export default function ValeurCalculee({
+  label, value, unite, trace, overrideValue, onOverrideChange, libellesEntrees = {},
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [showTrace, setShowTrace] = useState(false);
   
@@ -76,7 +84,7 @@ export default function ValeurCalculee({ label, value, unite, trace, overrideVal
                   {trace.entrees && Object.keys(trace.entrees).length > 0
                     ? Object.entries(trace.entrees).map(([k, v]) => (
                         <span key={k} className="bg-white px-2 py-1 rounded border border-gray-200 text-xs">
-                          <span className="text-gray-500">{k}:</span> <strong className="text-devis-saisie">{v}</strong>
+                          <span className="text-gray-500">{libellesEntrees[k] || k}:</span> <strong className="text-devis-saisie">{v}</strong>
                         </span>
                       ))
                     : <span className="text-gray-400 italic">Aucune variable</span>

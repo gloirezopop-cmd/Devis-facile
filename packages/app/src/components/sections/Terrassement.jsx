@@ -52,8 +52,13 @@ export default function Terrassement() {
             avertissement={getAvertissementLocal('fouilles', index)}
           >
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <InputSaisie label="Longueur" value={f.longueur} onChange={(v) => updateRow(fouilles, setFouilles, f.id, 'longueur', v)} unite="m" />
-              <InputSaisie label="Largeur" value={f.largeur} onChange={(v) => updateRow(fouilles, setFouilles, f.id, 'largeur', v)} unite="m" />
+              {/* Un puits se mesure par ses deux côtés, pas par une longueur
+                  et une largeur — celles-ci ne veulent dire quelque chose que
+                  pour une fouille en rigole, qui a son propre bloc plus bas.
+                  Les clés de données restent `longueur`/`largeur` : les renommer
+                  invaliderait les projets déjà enregistrés. */}
+              <InputSaisie label="Côté a" value={f.longueur} onChange={(v) => updateRow(fouilles, setFouilles, f.id, 'longueur', v)} unite="m" />
+              <InputSaisie label="Côté b" value={f.largeur} onChange={(v) => updateRow(fouilles, setFouilles, f.id, 'largeur', v)} unite="m" />
               <InputSaisie label="Profondeur" value={f.profondeur} onChange={(v) => updateRow(fouilles, setFouilles, f.id, 'profondeur', v)} unite="m" />
               <InputSaisie label="Nombre" value={f.nombre} onChange={(v) => updateRow(fouilles, setFouilles, f.id, 'nombre', v)} unite="u" />
             </div>
@@ -64,6 +69,7 @@ export default function Terrassement() {
                 value={getBloc('fouilles').lignes[index]?.valeur}
                 unite="m³"
                 trace={getBloc('fouilles').lignes[index]?.trace}
+                libellesEntrees={{ longueur: 'côté a', largeur: 'côté b' }}
                 overrideValue={f.override_volume}
                 onOverrideChange={(v) => updateRow(fouilles, setFouilles, f.id, 'override_volume', v)}
               />

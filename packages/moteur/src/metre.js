@@ -107,10 +107,13 @@ function _coffrageAmorceIntegree(l) {
 
 const BLOCS = {
   fouilles: {
-    libelle: 'Fouilles en rigoles et en puits',
+    libelle: 'Fouilles en puits',
     unite: 'm3',
+    // Les clés restent `longueur`/`largeur` — les projets déjà enregistrés les
+    // portent — mais un puits se mesure par ses deux côtés : la formule
+    // affichée le dit, comme le formulaire de saisie.
     requis: ['longueur', 'largeur', 'profondeur'],
-    formule: 'N x L x l x h',
+    formule: 'N x a x b x h',
     calcul: (l) => nombre(l.nombre) * l.longueur * l.largeur * l.profondeur,
   },
 
