@@ -7,6 +7,7 @@ import {
 } from '../../utils/offres.js';
 import { tracer } from '../../lib/estimationApi.js';
 import { supabase } from '../../lib/supabaseClient.js';
+import { messageErreurFonction } from '../../lib/messageErreurFonction.js';
 import { useDroits } from '../../hooks/useDroits.js';
 import CarteFormule from './CarteFormule.jsx';
 import ProgressionEtude from './ProgressionEtude.jsx';
@@ -46,10 +47,11 @@ export default function EcranVerrou({
     });
 
     if (error || data?.error) {
+      const message = await messageErreurFonction(error, data);
       setEnCours(false);
       setErreur({
         plan: p,
-        message: data?.error || "Le paiement est momentanément indisponible. Réessayez dans un instant.",
+        message: message || "Le paiement est momentanément indisponible. Réessayez dans un instant.",
       });
       return;
     }

@@ -5,6 +5,7 @@ import { LIBELLES_DEVISE } from '../../utils/estimation.js';
 import { getRecommendedOffer, libellePeriode, rangDuPlan } from '../../utils/offres.js';
 import { tracer } from '../../lib/estimationApi.js';
 import { supabase } from '../../lib/supabaseClient.js';
+import { messageErreurFonction } from '../../lib/messageErreurFonction.js';
 import CarteFormule from './CarteFormule.jsx';
 import ProgressionEtude from './ProgressionEtude.jsx';
 
@@ -58,10 +59,11 @@ export default function Paywall({ offres, abonnements = [], source = 'ESTIMATEUR
     });
 
     if (error || data?.error) {
+      const message = await messageErreurFonction(error, data);
       setEnCours(null);
       setErreur({
         plan,
-        message: data?.error || "Le paiement est momentanément indisponible. Réessayez dans un instant.",
+        message: message || "Le paiement est momentanément indisponible. Réessayez dans un instant.",
       });
       return;
     }
