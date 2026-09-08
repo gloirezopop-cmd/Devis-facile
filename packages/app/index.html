@@ -1,7 +1,13 @@
 <!doctype html>
-<html lang="en">
+<!-- `lang="fr"` et `translate="no"` ne sont pas cosmétiques : la page se
+     déclarait en anglais tout en étant écrite en français, ce qui déclenchait
+     la traduction automatique de Chrome sur mobile. Traduire réécrit les
+     nœuds de texte dans le dos de React, qui plante ensuite sur
+     « removeChild : le nœud à supprimer n'est pas un enfant de ce nœud ». -->
+<html lang="fr" translate="no">
   <head>
     <meta charset="UTF-8" />
+    <meta name="google" content="notranslate" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
