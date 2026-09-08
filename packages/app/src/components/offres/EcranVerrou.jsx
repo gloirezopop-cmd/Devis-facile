@@ -6,6 +6,7 @@ import {
   DROIT_PAR_SOURCE, MESSAGES_PAR_SOURCE, planQuiDebloque, libellePeriode, calculerDroits,
 } from '../../utils/offres.js';
 import { tracer } from '../../lib/estimationApi.js';
+import { supabase } from '../../lib/supabaseClient.js';
 import { useDroits } from '../../hooks/useDroits.js';
 import CarteFormule from './CarteFormule.jsx';
 import ProgressionEtude from './ProgressionEtude.jsx';
@@ -25,14 +26,46 @@ import ProgressionEtude from './ProgressionEtude.jsx';
 export default function EcranVerrou({
   source, titre, description, plans = [], abonnements = [], onFermer = null,
 }) {
-  const [choisi, setChoisi] = useState(null);
+  // Même flux que Paywall.jsx : le serveur crée l'intention, appelle Chariow,
+  // et renvoie l'adresse de paiement à laquelle rediriger. Rien n'est
+  // accordé ici — seul le webhook, une fois la signature de Chariow
+  // vérifiée, accorde l'accès (CHARIOW_INTEGRATION_SPEC.md).
+  const [enCours, setEnCours] = useState(false);
+  const [erreur, setErreur] = useState(null);
   const droitRequis = DROIT_PAR_SOURCE[source] || DROIT_PAR_SOURCE.ESTIMATEUR;
   const plan = planQuiDebloque(plans, droitRequis);
   const droits = calculerDroits({ abonnements, plans });
 
-  const choisir = (p) => {
-    setChoisi(p);
+  const choisir = async (p) => {
+    setErreur(null);
+    setEnCours(true);
     tracer('offer_selected', { plan_id: p?.id, price: p?.price, source });
+
+    const { data, error } = await supabase.functions.invoke('chariow-checkout', {
+      body: { plan: p.id },
+    });
+
+    if (error || data?.error) {
+      setEnCours(false);
+      setErreur({
+        plan: p,
+        message: data?.error || "Le paiement est momentanément indisponible. Réessayez dans un instant.",
+      });
+      return;
+    }
+
+    if (data?.checkout_url) {
+      window.location.href = data.checkout_url;
+      return;
+    }
+
+    if (data?.redirect) {
+      window.location.href = data.redirect;
+      return;
+    }
+
+    setEnCours(false);
+    setErreur({ plan: p, message: 'Réponse de paiement inattendue.' });
   };
 
   return (
@@ -65,8 +98,9 @@ export default function EcranVerrou({
             plans={plans}
             misEnAvant
             badge={null}
-            libelleAction={`M'abonner — ${plan.name}`}
+            libelleAction={enCours ? 'Redirection vers le paiement…' : `M'abonner — ${plan.name}`}
             onChoisir={choisir}
+            disabled={enCours}
           />
         </div>
       ) : (
@@ -75,15 +109,15 @@ export default function EcranVerrou({
         </p>
       )}
 
-      {choisi && (
+      {erreur && (
         <div className="mt-6 flex items-start gap-3 rounded-xl border border-devis-averifier/30 bg-amber-50 p-5 text-left">
           <Icone nom="alert-circle" size={20} className="mt-0.5 shrink-0 text-devis-averifier" />
           <div className="text-[13px] leading-relaxed text-brand-text/75">
-            <p className="font-bold text-brand-text">Le paiement en ligne n'est pas encore ouvert.</p>
+            <p className="font-bold text-brand-text">Le paiement n'a pas pu démarrer.</p>
             <p className="mt-1">
-              Votre choix — {choisi.name}, {formaterNombre(choisi.price, true)}{' '}
-              {LIBELLES_DEVISE[choisi.currency] || choisi.currency} {libellePeriode(choisi)} — a été
-              enregistré. Votre travail reste en place et sera accessible dès l'ouverture des paiements.
+              {erreur.message} Votre choix — {erreur.plan.name}, {formaterNombre(erreur.plan.price, true)}{' '}
+              {LIBELLES_DEVISE[erreur.plan.currency] || erreur.plan.currency} {libellePeriode(erreur.plan)} —
+              n'a pas été débité, et votre projet reste enregistré tel quel.
             </p>
           </div>
         </div>

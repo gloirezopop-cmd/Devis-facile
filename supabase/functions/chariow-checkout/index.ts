@@ -12,6 +12,35 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { clientAdmin, activerAcces } from '../_shared/chariow.ts';
 
+// Chariow exige prénom/nom/téléphone (§ POST /v1/checkout de sa doc — absent
+// du pseudo-code original de CHARIOW_INTEGRATION_SPEC.md). Le formulaire
+// d'inscription (Login.jsx) les collecte déjà et les stocke dans
+// `user_metadata` sous forme d'un indicatif + numéro concaténés
+// (ex. "+225XXXXXXXXXX") ; il faut les re-séparer ici, car Chariow attend
+// `phone.country_code` en ISO 3166-1 alpha-2 (« CI »), pas l'indicatif
+// téléphonique (« +225 »). Liste synchronisée avec le tableau PAYS de
+// Login.jsx.
+const INDICATIFS_VERS_ISO: Record<string, string> = {
+  '+225': 'CI', '+221': 'SN', '+237': 'CM', '+243': 'CD', '+241': 'GA',
+  '+228': 'TG', '+229': 'BJ', '+226': 'BF', '+242': 'CG', '+223': 'ML',
+  '+222': 'MR', '+224': 'GN', '+235': 'TD', '+236': 'CF', '+257': 'BI',
+  '+250': 'RW', '+261': 'MG', '+212': 'MA', '+213': 'DZ', '+216': 'TN',
+  '+230': 'MU', '+234': 'NG', '+233': 'GH', '+254': 'KE', '+27': 'ZA',
+  '+509': 'HT', '+227': 'NE', '+33': 'FR', '+32': 'BE', '+41': 'CH',
+  '+44': 'GB', '+1': 'US',
+};
+
+function separerTelephone(brut: unknown): { number: string; country_code: string } | null {
+  if (typeof brut !== 'string') return null;
+  const indicatif = Object.keys(INDICATIFS_VERS_ISO)
+    .sort((a, b) => b.length - a.length)
+    .find((code) => brut.startsWith(code));
+  if (!indicatif) return null;
+  const number = brut.slice(indicatif.length).replace(/\D/g, '');
+  if (!number) return null;
+  return { number, country_code: INDICATIFS_VERS_ISO[indicatif] };
+}
+
 function reponse(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {
     status,
@@ -36,6 +65,18 @@ Deno.serve(async (req) => {
   });
   const { data: { user }, error: erreurUser } = await clientAppelant.auth.getUser();
   if (erreurUser || !user) return reponse(401, { error: 'Authentification requise' });
+
+  // Chariow refuse tout checkout sans prénom, nom et téléphone — vérifié ici
+  // plutôt que de laisser Chariow renvoyer une 422 incompréhensible pour
+  // l'utilisateur.
+  const prenom = typeof user.user_metadata?.first_name === 'string' ? user.user_metadata.first_name.trim() : '';
+  const nom = typeof user.user_metadata?.last_name === 'string' ? user.user_metadata.last_name.trim() : '';
+  const telephone = separerTelephone(user.user_metadata?.phone);
+  if (!prenom || !nom || !telephone) {
+    return reponse(409, {
+      error: 'Complétez votre profil (prénom, nom, téléphone) avant de payer.',
+    });
+  }
 
   // ── 2. Quelle formule ? ──
   let corps: { plan?: unknown };
@@ -91,6 +132,9 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         product_id: plan.chariow_product_id,
         email: user.email,
+        first_name: prenom,
+        last_name: nom,
+        phone: telephone,
         payment_currency: plan.currency,
         redirect_url: `${appUrl}/paiement/succes?intent=${intent.id}`,
         // Le pont avec le webhook : ces trois valeurs reviennent telles
@@ -102,13 +146,15 @@ Deno.serve(async (req) => {
         },
       }),
     });
-  } catch {
+  } catch (erreurReseau) {
+    console.error('chariow-checkout: fetch vers Chariow a échoué', erreurReseau);
     await admin.from('payment_intents').update({ status: 'error' }).eq('id', intent.id);
     return reponse(502, { error: 'Paiement indisponible, réessayez.' });
   }
 
   const corpsChariow = await reponseChariow.json().catch(() => null);
   if (!reponseChariow.ok || !corpsChariow) {
+    console.error('chariow-checkout: réponse Chariow non-ok', reponseChariow.status, corpsChariow);
     await admin.from('payment_intents').update({ status: 'error' }).eq('id', intent.id);
     return reponse(502, { error: 'Paiement indisponible, réessayez.' });
   }
