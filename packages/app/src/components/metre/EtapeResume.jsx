@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useMetre } from '../../hooks/useMetre.js';
 import { useProjet } from '../../context/ProjetContext.jsx';
-import { genererResumeProjet, genererResumeChantier } from '@devis-facile/moteur';
+import { genererResumeChantier } from '@devis-facile/moteur';
 import { construireTableauResume } from '../../utils/tableauResume.js';
 import { exporterResumePDF, exporterResumeWord } from '../../utils/exportsResume.js';
 import { ErrorBoundary } from '../ui/ErrorBoundary.jsx';
@@ -23,9 +23,6 @@ export default function EtapeResume() {
   const { peut } = useDroits();
   const peutExporter = peut('can_export_calculation_note');
 
-  // L'export PDF/Word garde son format par niveau, inchangé par cette demande.
-  const summaryData = useMemo(() => genererResumeProjet(metreParNiveau, regles), [metreParNiveau, regles]);
-
   /**
    * L'écran, lui, suit l'ordre du chantier — Terrassement, Fondation,
    * Élévation, Plancher, Toiture, Finitions — et non plus étage par étage.
@@ -38,10 +35,15 @@ export default function EtapeResume() {
   /** La même matière, mise à plat au format du classeur : un ouvrage, puis ses matériaux. */
   const lignes = useMemo(() => construireTableauResume(resumeChantier), [resumeChantier]);
 
-  /** Le total par matériau, tous lots confondus — le bon de commande. */
+  /**
+   * Le bon de commande, additionné à partir des mêmes lignes que celles
+   * affichées sous chaque ouvrage. L'ancien récapitulatif venait d'un second
+   * calcul, qui inventait une entrée par repère d'armature — « FER Ø AMORCE
+   * PRINCIPALE 1 12 » — et comptait le fer deux fois, en unités puis en barres.
+   */
   const recapitulatif = useMemo(
-    () => Object.values(summaryData.totals.materials).filter((m) => m.quantite > 0),
-    [summaryData],
+    () => (resumeChantier.recapitulatifGlobal || []).filter((m) => m.quantite > 0),
+    [resumeChantier],
   );
 
   // Les exports partent de la même liste que l'écran : ils ne peuvent donc pas

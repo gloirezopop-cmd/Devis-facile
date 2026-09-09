@@ -122,6 +122,9 @@ export function ProjetProvider({ children }) {
   });
 
   const [devisExcelSnapshot, setDevisExcelSnapshot] = useLocalStorageState('df_devisExcelSnapshot_v3', null);
+  // L'empreinte du devis au moment ou la version Excel en a ete tiree : elle
+  // permet de dire que la feuille date d'avant la derniere modification du metre.
+  const [devisExcelSignature, setDevisExcelSignature] = useLocalStorageState('df_devisExcelSignature_v3', null);
 
   const bibliothequePrixNumerique = useMemo(() => {
     const biblio = {};
@@ -187,7 +190,7 @@ export function ProjetProvider({ children }) {
     moellons, dallages, remblais, sousPavements, carrelages, enduits,
     peintures, faiences, autresOuvrages, dalles, plancherHourdis12,
     plancherHourdis16, charpentes, couverturesToles, terrasses,
-    taux, majorations, parametresProjet, bibliothequePrix, labelsPrix, devisExcelSnapshot
+    taux, majorations, parametresProjet, bibliothequePrix, labelsPrix, devisExcelSnapshot, devisExcelSignature
   });
 
   const loadProjectData = (data) => {
@@ -225,6 +228,7 @@ export function ProjetProvider({ children }) {
     if(data.bibliothequePrix) setBibliothequePrix(data.bibliothequePrix);
     if(data.labelsPrix) setLabelsPrix(data.labelsPrix);
     if(data.devisExcelSnapshot !== undefined) setDevisExcelSnapshot(data.devisExcelSnapshot);
+    if(data.devisExcelSignature !== undefined) setDevisExcelSignature(data.devisExcelSignature);
   };
 
   const saveProjectToCloud = async (customName = null) => {
@@ -257,6 +261,7 @@ export function ProjetProvider({ children }) {
       charpentes, setCharpentes, couverturesToles, setCouverturesToles, terrasses, setTerrasses,
       taux, setTaux, majorations, setMajorations, parametresProjet, setParametresProjet,
       bibliothequePrix, setBibliothequePrix, labelsPrix, setLabelsPrix, devisExcelSnapshot, setDevisExcelSnapshot,
+      devisExcelSignature, setDevisExcelSignature,
       bibliothequePrixNumerique, reglesPersonnalisees,
       addRow, removeRow, updateRow, defaultAcierHyp,
       

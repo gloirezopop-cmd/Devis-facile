@@ -6,6 +6,7 @@ import { useDevis } from '../hooks/useDevis.js';
 import { useProjets } from '../hooks/useProjets.js';
 import TableurDevis from '../components/sections/TableurDevis.jsx';
 import { generateWorkbookData } from '../utils/univerAdapter.js';
+import { signatureDevis } from '../utils/signatureDevis.js';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary.jsx';
 import Icone from '../components/ui/Icone.jsx';
 
@@ -17,16 +18,40 @@ import Icone from '../components/ui/Icone.jsx';
 export default function EditeurAvance() {
   const navigate = useNavigate();
   const tableurRef = React.useRef(null);
-  const { taux, parametresProjet, bibliothequePrix, setDevisExcelSnapshot, devisExcelSnapshot } = useProjet();
+  const {
+    taux, parametresProjet, bibliothequePrix,
+    devisExcelSnapshot, setDevisExcelSnapshot,
+    devisExcelSignature, setDevisExcelSignature,
+  } = useProjet();
   const { devisParticulier, devisEntreprise } = useDevis();
   const { sauvegarder } = useProjets();
   const toast = useToast();
 
+  const signatureActuelle = React.useMemo(
+    () => signatureDevis(devisParticulier, devisEntreprise),
+    [devisParticulier, devisEntreprise],
+  );
+  // Rouvrir une feuille enregistree avec un autre metre, c'est repartir de
+  // l'ancien chiffrage sans le savoir : le devis a l'ecran et celui du classeur
+  // divergent alors, et c'est le classeur qu'on imprime.
+  const perime = Boolean(devisExcelSnapshot) && devisExcelSignature !== signatureActuelle;
+
+  const repartirDuDevisAJour = () => {
+    setDevisExcelSnapshot(null);
+    setDevisExcelSignature(null);
+    toast('Feuille régénérée à partir du devis à jour.');
+  };
+
+  // La feuille est une photographie du devis : on garde l'empreinte de ce
+  // qu'elle photographiait, pour savoir plus tard si elle a vieilli.
+  const memoriser = () => {
+    if (!tableurRef.current) return;
+    setDevisExcelSnapshot(tableurRef.current.getSnapshot());
+    setDevisExcelSignature(signatureDevis(devisParticulier, devisEntreprise));
+  };
+
   const handleEnregistrer = () => {
-    if (tableurRef.current) {
-      const snapshot = tableurRef.current.getSnapshot();
-      setDevisExcelSnapshot(snapshot);
-    }
+    memoriser();
     // Délai pour laisser le state se propager avant sauvegarde (qui lit le context)
     setTimeout(() => {
       sauvegarder(parametresProjet?.reference);
@@ -46,9 +71,7 @@ export default function EditeurAvance() {
         <div className="flex gap-2">
           <button
             onClick={() => {
-              if (tableurRef.current) {
-                setDevisExcelSnapshot(tableurRef.current.getSnapshot());
-              }
+              memoriser();
               navigate('/metre?etape=5');
             }}
             className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-md border border-brand-primary/15 bg-white px-4 text-[13px] font-bold text-brand-text/70 hover:bg-black/[0.03]"
@@ -66,12 +89,30 @@ export default function EditeurAvance() {
         </div>
       </div>
 
-      <div className="mb-3 flex items-start gap-2 rounded-md border border-devis-averifier/30 bg-amber-50 px-3 py-2 text-[12.5px] text-brand-text/70">
-        <Icone nom="help-circle" size={15} className="mt-0.5 shrink-0 text-devis-averifier" />
-        <span>
-          Cliquez sur <strong>Enregistrer le Projet</strong> pour sauvegarder vos modifications Excel dans le Cloud. Vous les retrouverez dans l'onglet "Projets".
-        </span>
-      </div>
+      {perime ? (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-devis-averifier/40 bg-amber-50 px-3 py-2.5">
+          <div className="flex items-start gap-2 text-[12.5px] text-brand-text/75">
+            <Icone nom="alert-circle" size={15} className="mt-0.5 shrink-0 text-devis-averifier" />
+            <span>
+              <strong>Cette feuille date d’avant vos derniers calculs.</strong> Elle a été enregistrée
+              avec un métré ou des prix différents : elle vous montre l’ancien chiffrage, pas celui du Résumé.
+            </span>
+          </div>
+          <button
+            onClick={repartirDuDevisAJour}
+            className="shrink-0 rounded-md border border-devis-averifier/40 bg-white px-4 py-2 text-[12.5px] font-bold text-brand-text hover:bg-black/[0.03]"
+          >
+            Repartir du devis à jour
+          </button>
+        </div>
+      ) : (
+        <div className="mb-3 flex items-start gap-2 rounded-md border border-devis-averifier/30 bg-amber-50 px-3 py-2 text-[12.5px] text-brand-text/70">
+          <Icone nom="help-circle" size={15} className="mt-0.5 shrink-0 text-devis-averifier" />
+          <span>
+            Cliquez sur <strong>Enregistrer le Projet</strong> pour sauvegarder vos modifications Excel dans le Cloud. Vous les retrouverez dans l'onglet "Projets".
+          </span>
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-brand-primary/10 bg-white">
         <ErrorBoundary>

@@ -266,6 +266,10 @@ function grouperLotsLibres(lignes) {
   const parLot = new Map();
   for (const ligne of lignes) {
     if (!ligne) continue;
+    // Une ligne sans désignation est un lot qu'on vient d'ouvrir et qu'on n'a
+    // pas encore rempli. La montrer comme « Tâche sans nom — 1 u » salit le
+    // résumé et, pire, le devis. Elle attend sagement dans le métré.
+    if (!ligne.designation || ligne.designation === 'Tâche sans nom') continue;
     const nom = (ligne.lot || 'Autres ouvrages').trim() || 'Autres ouvrages';
     if (!parLot.has(nom)) parLot.set(nom, { id: `libre_${parLot.size + 1}`, titre: nom, lignes: [] });
     parLot.get(nom).lignes.push({
@@ -362,5 +366,35 @@ export function genererResumeChantier(saisie = {}, regles = {}) {
 
   const lotsLibres = grouperLotsLibres(blocs.autresOuvrages?.lignes || []);
 
-  return { titres, lotsLibres, avertissements };
+  return { titres, lotsLibres, recapitulatifGlobal: recapituler(titres), avertissements };
+}
+
+/**
+ * Le bon de commande : ce qu'il faut acheter en tout, tous lots confondus.
+ *
+ * Il additionne exactement les mêmes lignes que celles affichées sous chaque
+ * ouvrage — donc plus moyen qu'il annonce un tonnage que le détail ne montre
+ * pas. Le regroupement se fait par identifiant ET par unité : le sable en
+ * tonnes et le sable en m³ ne s'additionnent pas, parce qu'ils ne s'additionnent
+ * pas dans la réalité non plus.
+ */
+function recapituler(titres) {
+  const parCle = new Map();
+
+  const ajouter = (mat) => {
+    if (!mat || !(mat.quantite > 0)) return;
+    const id = mat.id || mat.id_materiau;
+    if (!id) return;
+    const cle = `${id}|${mat.unite || ''}`;
+    if (!parCle.has(cle)) parCle.set(cle, { id, nom: mat.nom, unite: mat.unite || 'u', quantite: 0 });
+    const entree = parCle.get(cle);
+    entree.quantite = net(entree.quantite + mat.quantite);
+  };
+
+  for (const titre of titres) {
+    for (const poste of titre.postes) for (const mat of poste.materiaux || []) ajouter(mat);
+    for (const mat of titre.autresPostes || []) ajouter(mat);
+  }
+
+  return [...parCle.values()];
 }

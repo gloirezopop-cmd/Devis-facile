@@ -7,6 +7,7 @@ import { useProjets } from '../../hooks/useProjets.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import TableauDevis from '../sections/TableauDevis.jsx';
 import { lireDevisDuClasseur } from '../../utils/univerLecture.js';
+import { signatureDevis } from '../../utils/signatureDevis.js';
 import { ErrorBoundary } from '../ui/ErrorBoundary.jsx';
 import { formaterNombre } from '../../utils/format.js';
 import Icone from '../ui/Icone.jsx';
@@ -20,7 +21,11 @@ import LogoProjet from '../ui/LogoProjet.jsx';
  */
 export default function EtapeDevis() {
   const [vue, setVue] = useState('entreprise');
-  const { parametresProjet, setParametresProjet, devisExcelSnapshot, setDevisExcelSnapshot } = useProjet();
+  const {
+    parametresProjet, setParametresProjet,
+    devisExcelSnapshot, setDevisExcelSnapshot,
+    devisExcelSignature, setDevisExcelSignature,
+  } = useProjet();
   const { devisEntreprise, devisParticulier } = useDevis();
   const { exportPDF, exportExcel } = useExport();
   const { sauvegarder, sauvegarderSous } = useProjets();
@@ -49,6 +54,21 @@ export default function EtapeDevis() {
       ? devisExcel?.entreprise || devisEntreprise
       : devisExcel?.particulier || devisParticulier;
   const excelActif = Boolean(devisExcel?.[vue === 'entreprise' ? 'entreprise' : 'particulier']);
+
+  // La feuille Excel est une photographie du devis. Si le métré, les prix ou
+  // les règles ont bougé depuis, elle montre l'ancien chiffrage — et comme
+  // c'est elle qu'on rouvre, l'ancien gagne en silence.
+  const signatureActuelle = useMemo(
+    () => signatureDevis(devisParticulier, devisEntreprise),
+    [devisParticulier, devisEntreprise],
+  );
+  const excelPerime = Boolean(devisExcelSnapshot) && devisExcelSignature !== signatureActuelle;
+
+  const repartirDuDevisAJour = () => {
+    setDevisExcelSnapshot(null);
+    setDevisExcelSignature(null);
+    toast('Le devis a été régénéré à partir de votre métré.');
+  };
 
   const infoProjet = {
     maitreOuvrage: parametresProjet?.maitreOuvrage || '',
@@ -104,29 +124,51 @@ export default function EtapeDevis() {
       </div>
 
       {devisExcelSnapshot && (
-        <div className="mb-4 flex items-center justify-between rounded-md border border-brand-primary/20 bg-brand-primary/5 px-4 py-3">
+        <div
+          className={`mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border px-4 py-3 ${
+            excelPerime
+              ? 'border-devis-averifier/40 bg-amber-50'
+              : 'border-brand-primary/20 bg-brand-primary/5'
+          }`}
+        >
           <div className="flex items-center gap-3">
-            <Icone nom="check-circle" size={18} className="text-brand-primary" />
+            <Icone
+              nom={excelPerime ? 'alert-circle' : 'check-circle'}
+              size={18}
+              className={excelPerime ? 'text-devis-averifier' : 'text-brand-primary'}
+            />
             <div>
-              <p className="text-[13px] font-bold text-brand-text">Version Excel personnalisée active</p>
+              <p className="text-[13px] font-bold text-brand-text">
+                {excelPerime ? 'Cette version Excel date d’avant vos derniers calculs' : 'Version Excel personnalisée active'}
+              </p>
               <p className="text-[12px] text-brand-text/60">
-                {excelActif
-                  ? "Les quantités et les prix ci-dessous sont ceux de votre feuille Excel. Le PDF et l'impression les reprennent."
-                  : "Cette feuille n'a pas pu être relue — le devis calculé par le métré est affiché en attendant."}
+                {excelPerime
+                  ? "Le métré, les prix ou les règles ont changé depuis. Ce qui s'affiche est l'ancien chiffrage — régénérez pour repartir du devis à jour."
+                  : excelActif
+                    ? "Les quantités et les prix ci-dessous sont ceux de votre feuille Excel. Le PDF et l'impression les reprennent."
+                    : "Cette feuille n'a pas pu être relue — le devis calculé par le métré est affiché en attendant."}
               </p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              if (window.confirm("Êtes-vous sûr de vouloir supprimer les modifications manuelles et revenir au devis automatique ?")) {
-                setDevisExcelSnapshot(null);
-                toast('Le devis automatique a été restauré.');
-              }
-            }}
-            className="text-[12px] font-bold text-red-500 hover:text-red-700 underline"
-          >
-            Réinitialiser
-          </button>
+          {excelPerime ? (
+            <button
+              onClick={repartirDuDevisAJour}
+              className="shrink-0 rounded-md border border-devis-averifier/40 bg-white px-4 py-2 text-[12.5px] font-bold text-brand-text hover:bg-black/[0.03]"
+            >
+              Régénérer depuis le métré
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                if (window.confirm('Êtes-vous sûr de vouloir supprimer les modifications manuelles et revenir au devis automatique ?')) {
+                  repartirDuDevisAJour();
+                }
+              }}
+              className="text-[12px] font-bold text-red-500 underline hover:text-red-700"
+            >
+              Réinitialiser
+            </button>
+          )}
         </div>
       )}
 
