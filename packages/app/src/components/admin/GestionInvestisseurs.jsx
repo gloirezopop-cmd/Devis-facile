@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import Icone from '../ui/Icone.jsx';
+// `nommerInvestisseur` n'est pas appelé ici : `inviterInvestisseur` nomme
+// directement quand le compte existe déjà, et retient l'adresse sinon. Un seul
+// bouton couvre donc les deux cas.
 import {
   fetchInvestisseurs, fetchInvitations,
-  nommerInvestisseur, retirerInvestisseur,
-  inviterInvestisseur, annulerInvitation,
+  retirerInvestisseur, inviterInvestisseur, annulerInvitation,
 } from '../../lib/estimationApi.js';
 
 /**
