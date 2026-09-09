@@ -5,6 +5,58 @@ import { calculerTerrassement } from './terrassement.js';
 
 const renseigne = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0;
 
+/**
+ * Les agglos sortent des recettes sous leur identifiant de recette
+ * (`agglos_creux`, `agglos_pleins`), alors que la bibliothèque de prix les
+ * connaît sous `blocs` et `blocs_pleins`. Faute de cette correspondance, le
+ * Devis Particulier ne portait aucune ligne d'agglos : sur un mur de 30 m,
+ * 1 110 agglos apparaissaient au Résumé et zéro au devis — le matériau
+ * principal d'une maçonnerie, absent de la facture.
+ */
+const PRIX_DES_AGGLOS = { agglos_creux: 'blocs', agglos_pleins: 'blocs_pleins' };
+
+export function agglosDepuisRecettes(recettes) {
+  const sortie = {};
+  for (const [cleRecette, idPrix] of Object.entries(PRIX_DES_AGGLOS)) {
+    const r = recettes[cleRecette];
+    if (!r) continue;
+    const quantite = r.quantiteCommande !== undefined ? r.quantiteCommande
+                   : r.quantite !== undefined ? r.quantite : r.quantiteNette;
+    if (quantite > 0) sortie[idPrix] = (sortie[idPrix] || 0) + quantite;
+  }
+  return sortie;
+}
+
+/**
+ * Les fournitures de base d'un jeu de recettes, dans la forme plate que le
+ * devis consomme.
+ *
+ * Isolée ici parce qu'elle doit pouvoir s'appliquer à un sous-ensemble de
+ * blocs — ceux d'un seul lot — et non seulement au projet entier.
+ */
+export function materiauxDeBase(recettes) {
+  const materiaux = {
+    ciment: (recettes.ciment?.quantiteCommande || 0) + (recettes.cimentMortierMoellon?.quantiteCommande || 0),
+    gravier: recettes.gravier?.quantiteNette || 0,
+    sable: (recettes.sable?.quantiteNette || 0) + (recettes.sableMortierMoellon?.quantiteNette || 0),
+    eau: (recettes.eau?.quantite || 0) + (recettes.eauMortierMoellon?.quantite || 0),
+    moellon: recettes.moellon?.quantiteNette || 0,
+    planches: recettes.planches?.quantiteCommande || 0,
+    chevrons: recettes.chevrons?.quantiteCommande || 0,
+    clous: recettes.clous?.quantiteCommande || 0,
+    filLigature: recettes.filLigature?.quantiteNette || 0,
+    volumeBois: 0,
+  };
+
+  if (materiaux.planches > 0 || materiaux.chevrons > 0) {
+    // Planches : L 3.00, larg 0.30, ep 0.03 = 0.027 m3
+    // Chevrons : L 3.00, larg 0.08, ep 0.08 = 0.0192 m3
+    materiaux.volumeBois = (materiaux.planches * 3 * 0.30 * 0.03) + (materiaux.chevrons * 3 * 0.08 * 0.08);
+  }
+
+  return { ...materiaux, ...agglosDepuisRecettes(recettes) };
+}
+
 export function genererResumeFondation(saisie, regles) {
   const result = calculerMetre(saisie, regles);
   const blocs = result.blocs;
@@ -33,25 +85,7 @@ export function genererResumeFondation(saisie, regles) {
   };
 
   // 2. Matériaux totaux
-  const recettes = calculerRecettes(blocs, regles);
-  const materiaux = {
-    ciment: (recettes.ciment?.quantiteCommande || 0) + (recettes.cimentMortierMoellon?.quantiteCommande || 0),
-    gravier: recettes.gravier?.quantiteNette || 0,
-    sable: (recettes.sable?.quantiteNette || 0) + (recettes.sableMortierMoellon?.quantiteNette || 0),
-    eau: (recettes.eau?.quantite || 0) + (recettes.eauMortierMoellon?.quantite || 0),
-    moellon: recettes.moellon?.quantiteNette || 0,
-    planches: recettes.planches?.quantiteCommande || 0,
-    chevrons: recettes.chevrons?.quantiteCommande || 0,
-    clous: recettes.clous?.quantiteCommande || 0,
-    filLigature: recettes.filLigature?.quantiteNette || 0,
-    volumeBois: 0
-  };
-
-  if (materiaux.planches > 0 || materiaux.chevrons > 0) {
-    // Planches : L 3.00, larg 0.30, ep 0.03 = 0.027 m3
-    // Chevrons : L 3.00, larg 0.08, ep 0.08 = 0.0192 m3
-    materiaux.volumeBois = (materiaux.planches * 3 * 0.30 * 0.03) + (materiaux.chevrons * 3 * 0.08 * 0.08);
-  }
+  const materiaux = materiauxDeBase(calculerRecettes(blocs, regles));
 
   // 3. Aciers
   const aciersLignes = [];
@@ -183,7 +217,7 @@ export function genererResumeElevation(blocs, regles) {
      return acc;
   }, {});
   
-  materiaux = { ...cimentSacs };
+  materiaux = { ...cimentSacs, ...agglosDepuisRecettes(recettes) };
   
   // Coffrage : planches, chevrons, clous
   if (surfaceCoffrage > 0) {

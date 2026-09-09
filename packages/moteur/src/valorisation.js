@@ -1,9 +1,10 @@
 import { calculerRecettes } from './recettes.js';
 import { _internes as moteurInternes } from './metre.js';
 import { PARAMETRES } from './parametres.js';
-import { 
-  genererResumeFondation, 
-  genererResumeElevation, 
+import {
+  materiauxDeBase,
+  genererResumeFondation,
+  genererResumeElevation,
   genererResumeFinition, 
   genererResumePlancher, 
   genererResumeToiture 
@@ -66,7 +67,14 @@ const BLOCS_PARTICULIER = {
   betonProprete: 'fondation',
   semelles: 'fondation',
   longrines: 'fondation',
+  // `calculerMetre()` produit le soubassement sous DEUX cles : `murSoubassement`,
+  // que les recettes ne connaissent pas, et `soubassement`, qui porte reellement
+  // les agglos pleins et le mortier. Seule la premiere etait rattachee a la
+  // fondation ; la seconde tombait donc dans le lot Finition par defaut, ou le
+  // resume des finitions ne regarde pas les agglos — 494 agglos pleins
+  // disparaissaient du devis sur un soubassement de 40 m.
   murSoubassement: 'fondation',
+  soubassement: 'fondation',
   moellon: 'fondation',
   dallage: 'fondation',
   sousPavement: 'fondation',
@@ -398,7 +406,11 @@ export function genererDevisParticulier(input, regles, bibliothequePrix, bibliot
     for (const [blocId, blocDonnees] of Object.entries(metre.blocs)) {
       if (!blocDonnees || (!blocDonnees.total && !blocDonnees.lignes)) continue;
       const cat = BLOCS_PARTICULIER[blocId] || 'finition';
-      if (cat === 'terrassement' || cat === 'fondation') continue;
+      // Le terrassement se chiffre au forfait et au m3, pas en fournitures :
+      // il n'a rien a faire dans ce regroupement. La fondation, elle, y entre
+      // desormais — son lot doit pouvoir calculer ses recettes sur ses propres
+      // blocs plutot que sur ceux du projet entier.
+      if (cat === 'terrassement') continue;
       if (!blocsParCategorie[cat]) blocsParCategorie[cat] = {};
 
       if (blocId === 'autresOuvrages' || blocId === 'armatures') {
@@ -481,7 +493,20 @@ export function genererDevisParticulier(input, regles, bibliothequePrix, bibliot
     }
 
     if (lot === 'fondation' && resumeFondation) {
-      materiauxDuLot = resumeFondation.materiaux;
+      // `genererResumeFondation()` recalcule TOUT le projet : ses materiaux
+      // contenaient donc aussi le ciment du mortier de maconnerie et celui de
+      // l'enduit. Le lot Fondation les facturait, puis les lots Elevation et
+      // Finition les facturaient a nouveau — le meme sac paye deux fois (127
+      // sacs au lieu de 87 sur un cas a un seul niveau). Les fournitures du lot
+      // se calculent donc sur les blocs de fondation seuls.
+      //
+      // Ses volumes de terrassement et ses aciers restent pris au resume : les
+      // premiers sont deja globaux par nature, les seconds n'ont jamais lu que
+      // les semelles et les longrines.
+      materiauxDuLot = {
+        ...materiauxDeBase(calculerRecettes(blocsParCategorie.fondation || {}, regles)),
+        filLigature: resumeFondation.materiaux.filLigature,
+      };
       aciersDuLot    = resumeFondation.aciers;
     } else {
       const blocsDuLot = blocsParCategorie[lot];
