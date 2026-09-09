@@ -1,0 +1,244 @@
+/*
+ * L'en-tête de la page d'accueil.
+ *
+ * Mobile d'abord : le menu est replié derrière un bouton, et se déploie en
+ * panneau. À partir de 768 px il redevient une barre horizontale — c'est le
+ * même balisage dans les deux cas, seul l'affichage change, si bien qu'il n'y a
+ * jamais deux menus à tenir à jour.
+ */
+
+.entete {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(20, 48, 77, 0.08);
+  transition: box-shadow 260ms ease, background-color 260ms ease;
+}
+
+/* Au défilement, la barre se pose : l'ombre apparaît, le fond se ferme.
+   Le drapeau vient du composant, qui écoute le défilement. */
+.pose {
+  background-color: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 8px 24px -18px rgba(20, 48, 77, 0.9);
+}
+
+.barre {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .barre {
+    padding: 0 1.5rem;
+  }
+}
+
+/* ── Le logo ── */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: #14304d;
+}
+
+.marque {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background-color: #14304d;
+  color: #f2994a;
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.logo:hover .marque {
+  transform: rotate(-8deg) scale(1.06);
+}
+
+.nomMarque {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+@media (min-width: 400px) {
+  .nomMarque {
+    font-size: 1.2rem;
+  }
+}
+
+/* ── Le bouton du menu, visible seulement en petit écran ── */
+.bascule {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  padding: 0 10px;
+  border: 1px solid rgba(20, 48, 77, 0.14);
+  border-radius: 10px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.trait {
+  display: block;
+  height: 2px;
+  width: 100%;
+  border-radius: 2px;
+  background-color: #14304d;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;
+}
+
+/* Les trois traits deviennent une croix — sans changer de balisage. */
+.ouvert .trait:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.ouvert .trait:nth-child(2) {
+  opacity: 0;
+}
+.ouvert .trait:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ── La navigation ── */
+.navigation {
+  display: none;
+}
+
+.navigation.deploye {
+  display: block;
+  position: absolute;
+  top: 64px;
+  left: 0;
+  right: 0;
+  padding: 0.75rem 1rem 1.25rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid rgba(20, 48, 77, 0.08);
+  box-shadow: 0 18px 30px -24px rgba(20, 48, 77, 0.9);
+  animation: deplier 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes deplier {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.lien {
+  display: block;
+  padding: 0.85rem 0.5rem;
+  color: #14304d;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+}
+
+.lien:hover {
+  background-color: rgba(20, 48, 77, 0.05);
+}
+
+.actionEntete {
+  margin-top: 0.5rem;
+}
+
+/* ── À partir de la tablette : barre horizontale, plus de bouton ── */
+@media (min-width: 768px) {
+  .bascule {
+    display: none;
+  }
+
+  .navigation,
+  .navigation.deploye {
+    display: block;
+    position: static;
+    padding: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+    animation: none;
+  }
+
+  .liste {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.75rem;
+  }
+
+  .lien {
+    position: relative;
+    padding: 0.35rem 0;
+    border-radius: 0;
+  }
+
+  .lien:hover {
+    background: none;
+  }
+
+  /* Le trait qui se déplie sous le libellé au survol. */
+  .lien::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    height: 2px;
+    width: 100%;
+    background-color: #f2994a;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .lien:hover::after,
+  .lien:focus-visible::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  .actionEntete {
+    margin-top: 0;
+  }
+}
+
+.lien:focus-visible,
+.bascule:focus-visible,
+.logo:focus-visible {
+  outline: 3px solid #2f6fde;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entete,
+  .marque,
+  .trait,
+  .lien::after {
+    transition-duration: 1ms;
+  }
+  .navigation.deploye {
+    animation: none;
+  }
+}

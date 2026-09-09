@@ -74,6 +74,11 @@ export default function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<HomeRoute />} />
+              {/* La page d'accueil, toujours accessible. Sans elle, un compte
+                  connecte ne peut plus jamais la voir : « / » le renvoie
+                  aussitot vers son tableau de bord, ce qui est le bon
+                  comportement pour lui mais empeche de relire la page. */}
+              <Route path="/accueil" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               
               <Route element={<PrivateRoute><Layout /></PrivateRoute>}>

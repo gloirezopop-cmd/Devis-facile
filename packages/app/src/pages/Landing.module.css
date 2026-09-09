@@ -1,0 +1,25 @@
+/*
+ * La page d'accueil.
+ *
+ * L'application entière est composée en Times New Roman (voir tailwind.config).
+ * La page publique s'en écarte volontairement : c'est la première chose qu'un
+ * visiteur voit sur un téléphone, et une police de labeur y est plus lisible en
+ * petit corps qu'un romain à empattements. Le reste de l'application, lui, garde
+ * son caractère de document.
+ */
+
+.page {
+  min-height: 100vh;
+  /* `dvh` suit la barre d'adresse des navigateurs mobiles ; le `vh` au-dessus
+     reste comme repli pour ceux qui ne la connaissent pas. */
+  min-height: 100dvh;
+  background-color: #ffffff;
+  color: #1b1f27;
+  font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Les ancres du menu ne doivent pas passer sous l'en-tête collant. */
+.page :global(section[id]) {
+  scroll-margin-top: 76px;
+}

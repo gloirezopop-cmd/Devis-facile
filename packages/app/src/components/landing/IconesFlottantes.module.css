@@ -1,0 +1,102 @@
+/*
+ * Les pastilles qui flottent autour de l'aperçu du produit.
+ *
+ * Elles ne décorent pas au hasard : chacune nomme une étape réelle du parcours
+ * — métré, calcul, devis, impression. Une icône qui ne dit rien est du bruit.
+ *
+ * Le mouvement est volontairement lent et de faible amplitude (6 px, 7 à 11 s).
+ * Une animation d'accueil doit se remarquer une fois, puis se laisser oublier ;
+ * au-delà, elle gêne la lecture du texte à côté.
+ */
+
+.zone {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pastille {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(20, 48, 77, 0.08);
+  box-shadow: 0 12px 26px -16px rgba(20, 48, 77, 0.85);
+  color: #14304d;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+  /* `--retard` décale chaque pastille pour qu'elles ne montent jamais ensemble. */
+  animation: flotter 9s ease-in-out infinite;
+  animation-delay: var(--retard, 0s);
+}
+
+.icone {
+  display: inline-flex;
+  color: #f2994a;
+}
+
+@keyframes flotter {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* ── Placements ──
+   En dessous de 768 px, deux pastilles seulement et collées aux bords : sur un
+   téléphone, quatre badges par-dessus l'image la rendent illisible. */
+.hautGauche {
+  top: 6%;
+  left: -2%;
+  animation-duration: 8s;
+}
+
+.hautDroite {
+  top: 14%;
+  right: -2%;
+  animation-duration: 10s;
+}
+
+.basGauche {
+  display: none;
+  bottom: 16%;
+  left: 2%;
+  animation-duration: 11s;
+}
+
+.basDroite {
+  display: none;
+  bottom: 7%;
+  right: 4%;
+  animation-duration: 7s;
+}
+
+@media (min-width: 768px) {
+  .pastille {
+    font-size: 0.82rem;
+    padding: 0.6rem 1rem;
+  }
+  .basGauche,
+  .basDroite {
+    display: inline-flex;
+  }
+  .hautGauche {
+    left: -4%;
+  }
+  .hautDroite {
+    right: -4%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pastille {
+    animation: none;
+  }
+}

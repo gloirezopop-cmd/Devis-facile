@@ -1,0 +1,87 @@
+/*
+ * L'enveloppe commune des sections de la page d'accueil : largeur, respiration
+ * et en-tête. Écrite une fois, elle garantit que deux sections ne dérivent pas
+ * l'une par rapport à l'autre au fil des retouches.
+ */
+
+.section {
+  padding: 3.5rem 0;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: 5rem 0;
+  }
+}
+
+.clair {
+  background-color: #ffffff;
+}
+
+.sombre {
+  background-color: #f6f7f9;
+}
+
+.contenu {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .contenu {
+    padding: 0 1.5rem;
+  }
+}
+
+.entete {
+  max-width: 40rem;
+  margin: 0 auto 2.5rem;
+  text-align: center;
+}
+
+.surtitre {
+  margin: 0 0 0.6rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #f2994a;
+}
+
+.titre {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.5rem, 4.5vw, 2.15rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: #14304d;
+}
+
+.chapeau {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: rgba(27, 31, 39, 0.65);
+}
+
+/* ── La grille des cartes ── */
+.grille {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .grille {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grille {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}

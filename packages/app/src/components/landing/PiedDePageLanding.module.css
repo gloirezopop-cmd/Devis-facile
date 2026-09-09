@@ -1,0 +1,109 @@
+/*
+ * Le pied de page, et juste au-dessus le dernier appel à l'action — la place
+ * d'un visiteur qui a tout lu et n'a pas encore cliqué.
+ */
+
+.rappel {
+  padding: 3rem 1rem;
+  background: linear-gradient(135deg, #14304d 0%, #0d2038 100%);
+  color: #ffffff;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .rappel {
+    padding: 4rem 1.5rem;
+  }
+}
+
+.rappelTitre {
+  margin: 0 auto 0.75rem;
+  max-width: 30rem;
+  font-size: clamp(1.4rem, 4.5vw, 2rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+.rappelTexte {
+  margin: 0 auto 1.75rem;
+  max-width: 34rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.rappelAction {
+  display: flex;
+  justify-content: center;
+}
+
+.pied {
+  padding: 2rem 1rem;
+  background-color: #ffffff;
+  border-top: 1px solid rgba(20, 48, 77, 0.08);
+}
+
+.pieContenu {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .pieContenu {
+    flex-direction: row;
+    justify-content: space-between;
+    text-align: left;
+  }
+}
+
+.marque {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #14304d;
+  font-weight: 700;
+}
+
+.jetonMarque {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background-color: #14304d;
+  color: #f2994a;
+}
+
+.liensPied {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lienPied {
+  color: rgba(27, 31, 39, 0.6);
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+
+.lienPied:hover {
+  color: #14304d;
+  text-decoration: underline;
+}
+
+.mention {
+  margin: 0;
+  font-size: 0.82rem;
+  color: rgba(27, 31, 39, 0.4);
+}

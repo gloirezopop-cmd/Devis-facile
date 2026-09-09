@@ -1,0 +1,107 @@
+/*
+ * Les trois étapes du parcours.
+ *
+ * Sur téléphone elles s'empilent, reliées par un filet vertical ; à partir de
+ * 768 px elles se rangent en ligne. Le numéro est porté par un pseudo-élément :
+ * il ne doit pas être lu à voix haute par-dessus le titre de l'étape, que le
+ * lecteur d'écran annonce déjà dans l'ordre.
+ */
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.75rem;
+  counter-reset: etape;
+}
+
+@media (min-width: 768px) {
+  .liste {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+}
+
+.etape {
+  position: relative;
+  counter-increment: etape;
+  padding-left: 3.75rem;
+}
+
+@media (min-width: 768px) {
+  .etape {
+    padding-left: 0;
+    padding-top: 3.75rem;
+    text-align: center;
+  }
+}
+
+.etape::before {
+  content: counter(etape);
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #14304d;
+  color: #f2994a;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+@media (min-width: 768px) {
+  .etape::before {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* Le filet qui relie une étape à la suivante. Il s'arrête à la dernière :
+   un trait qui part dans le vide laisse croire qu'il manque une étape. */
+.etape:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 52px;
+  left: 21px;
+  bottom: -1.75rem;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(20, 48, 77, 0.2), rgba(20, 48, 77, 0));
+}
+
+@media (min-width: 768px) {
+  .etape:not(:last-child)::after {
+    top: 21px;
+    left: calc(50% + 30px);
+    right: -1rem;
+    bottom: auto;
+    width: auto;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(20, 48, 77, 0.2), rgba(20, 48, 77, 0));
+  }
+}
+
+.titreEtape {
+  margin: 0 0 0.4rem;
+  padding-top: 0.6rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #14304d;
+}
+
+@media (min-width: 768px) {
+  .titreEtape {
+    padding-top: 0;
+  }
+}
+
+.detail {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: rgba(27, 31, 39, 0.68);
+}
