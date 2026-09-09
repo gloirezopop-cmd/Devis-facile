@@ -36,10 +36,33 @@ begin
 end $$;
 
 -- ⚠️ Remplacez l'adresse si le compte fondateur n'est pas celui-là.
+--
+-- Deux passes, et ce n'est pas une précaution inutile : `profiles.email` est
+-- une copie, remplie par le déclencheur d'inscription. Elle peut être nulle
+-- pour un compte créé avant ce déclencheur, ou différer si l'adresse a changé
+-- depuis. L'adresse qui fait foi est celle de `auth.users`. Sans la seconde
+-- passe, l'UPDATE ne trouve aucune ligne, ne dit rien — et l'écran
+-- d'administration masque la section Investisseurs sans expliquer pourquoi.
+
 update public.profiles
    set est_fondateur = true,
        is_admin      = true
  where lower(email) = lower('gloirezopop@gmail.com');
+
+update public.profiles p
+   set est_fondateur = true,
+       is_admin      = true
+  from auth.users u
+ where u.id = p.id
+   and lower(u.email) = lower('gloirezopop@gmail.com');
+
+-- Tant qu'à faire, on remet la copie d'aplomb : elle sert aux recherches par
+-- adresse dans `nommer_investisseur()`.
+update public.profiles p
+   set email = u.email
+  from auth.users u
+ where u.id = p.id
+   and (p.email is null or lower(p.email) is distinct from lower(u.email));
 
 -- ─── 2. Qui est le fondateur ────────────────────────────────────────────────
 
@@ -472,16 +495,27 @@ grant execute on function public.comptes_admin() to authenticated;
 
 -- ─── 11. Contrôle ───────────────────────────────────────────────────────────
 --
--- Attendu : votre ligne avec `est_fondateur` à true, et les huit fonctions.
+-- L'éditeur SQL de Supabase n'affiche QUE le résultat de la dernière requête.
+-- Le contrôle est donc regroupé en une seule, sinon on ne voit que la liste des
+-- fonctions et l'on croit tout en ordre alors que la ligne fondateur manque.
+--
+-- Attendu, sur la ligne de votre compte :
+--   est_fondateur = true, is_admin = true, fonctions_installees = 8
 
-select p.email, p.is_admin, p.est_fondateur, p.part_investissement
-  from public.profiles p
- where lower(p.email) = lower('gloirezopop@gmail.com');
-
-select routine_name
-  from information_schema.routines
- where routine_schema = 'public'
-   and routine_name in ('est_fondateur', 'nommer_investisseur', 'retirer_investisseur',
-                        'investisseurs_admin', 'inviter_investisseur', 'invitations_admin',
-                        'annuler_invitation', 'mes_revenus_investisseur')
- order by routine_name;
+select
+  u.email                                   as compte,
+  p.is_admin,
+  p.est_fondateur,
+  p.part_investissement,
+  (select count(*) from information_schema.routines
+    where routine_schema = 'public'
+      and routine_name in ('est_fondateur', 'nommer_investisseur', 'retirer_investisseur',
+                           'investisseurs_admin', 'inviter_investisseur', 'invitations_admin',
+                           'annuler_invitation', 'mes_revenus_investisseur')) as fonctions_installees,
+  case
+    when p.est_fondateur then 'Tout est en ordre : la section Investisseurs doit apparaitre.'
+    else 'Ce compte n''est PAS fondateur — corrigez l''adresse en tete de ce script, puis relancez.'
+  end as diagnostic
+from auth.users u
+left join public.profiles p on p.id = u.id
+where lower(u.email) = lower('gloirezopop@gmail.com');

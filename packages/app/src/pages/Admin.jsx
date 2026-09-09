@@ -185,6 +185,27 @@ export default function Admin() {
         </div>
       )}
 
+      {/* Un écran qui masque une section sans rien dire laisse chercher pour
+          rien. Ce compte est administrateur — il voit ce tableau de bord —
+          mais la base ne le reconnaît pas comme fondateur : on le dit. */}
+      {!estFondateur && !mesRevenus && (
+        <div className="mb-8 flex items-start gap-3 rounded-xl border border-devis-averifier/30 bg-amber-50 p-5">
+          <Icone nom="alert-circle" size={20} className="mt-0.5 shrink-0 text-devis-averifier" />
+          <div className="text-[13px] leading-relaxed text-brand-text/75">
+            <p className="font-bold text-brand-text">
+              Ce compte est administrateur, mais pas reconnu comme fondateur.
+            </p>
+            <p className="mt-1">
+              La section <strong>Investisseurs</strong>, le chiffre d'affaires et la liste des
+              comptes lui sont donc masqués. Si c'est bien votre compte principal, exécutez
+              <code className="mx-1 rounded bg-black/5 px-1">maj_investisseurs.sql</code>
+              dans Supabase — sa dernière requête affiche un diagnostic en clair — puis
+              actualisez cette page.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Sa part, en clair, pour l'investisseur — jamais le total dont elle sort. */}
       {!estFondateur && mesRevenus && (
         <div className="mb-8 rounded-xl border border-brand-primary/15 bg-brand-primary/[0.04] p-5">
