@@ -1,14 +1,9 @@
 import { calculerRecettes } from './recettes.js';
 import { _internes as moteurInternes } from './metre.js';
 import { PARAMETRES } from './parametres.js';
-import {
-  materiauxDeBase,
-  genererResumeFondation,
-  genererResumeElevation,
-  genererResumeFinition, 
-  genererResumePlancher, 
-  genererResumeToiture 
-} from './resume.js';
+import { genererResumeFondation } from './resume.js';
+import { genererResumeChantier } from './resumeChantier.js';
+import { fournituresParLot, ouvragesParLot } from './devisDepuisResume.js';
 
 const { net } = moteurInternes;
 
@@ -52,12 +47,21 @@ export const TITRES_LOTS_PARTICULIER = LOTS_DEVIS_PARTICULIER.reduce((acc, lot) 
   return acc;
 }, { ...LOTS_HORS_SPECIFICATION });
 
+/**
+ * Les lots du Devis Entreprise, dans l'ordre du chantier — le meme que celui du
+ * Resume, dont ils sont tires. `rdc`, `etage1` et `second_oeuvre` sont les
+ * anciens identifiants, gardes pour que les projets deja enregistres retrouvent
+ * un titre au lieu d'afficher leur cle brute.
+ */
 export const TITRES_LOTS_ENTREPRISE = {
   terrassement: "TERRASSEMENTS ET PREPARATION DU CHANTIER",
   fondation: "I - FONDATION",
+  elevation: "II - ELEVATION",
+  plancher: "III - PLANCHER / DALLE",
+  toiture: "IV - TOITURE (charpente, couverture ou terrasse)",
+  finition: "V - FINITION",
   rdc: "II - RDC",
   etage1: "III - ETAGE 1",
-  toiture: "IV - TOITURE (charpente-couverture ou terrasse accessible)",
   second_oeuvre: "V - SECOND OEUVRE (forfaits a completer)"
 };
 
@@ -397,6 +401,8 @@ export function genererDevisParticulier(input, regles, bibliothequePrix, bibliot
   const tauxArchi     = taux.honorairesArchi !== undefined ? taux.honorairesArchi : 0.08;
   const tauxInge      = taux.honorairesInge  !== undefined ? taux.honorairesInge  : 0.08;
 
+  const ordreLots = [];
+
   const blocsParCategorie = {
     terrassement: {}, fondation: {}, elevation: {}, plancher: {}, charpente: {}, couverture: {}, toiture_terrasse: {}, finition: {}
   };
@@ -434,6 +440,11 @@ export function genererDevisParticulier(input, regles, bibliothequePrix, bibliot
     resumeFondation = genererResumeFondation(saisieGlobale, regles);
   }
 
+  // Le Resume est la source : c'est lui qui dit quels lots existent, quels
+  // ouvrages les composent et quelles fournitures chacun consomme. Le devis ne
+  // fait que le lire — il ne redecoupe rien pour son compte.
+  const resumeChantier = genererResumeChantier(saisieGlobale, regles);
+
   const devisParLot    = {};
   let   totalMateriaux = 0;
   const ordreParticulier = LOTS_DEVIS_PARTICULIER.map((l) => l.id);
@@ -465,120 +476,46 @@ export function genererDevisParticulier(input, regles, bibliothequePrix, bibliot
     ],
   };
 
+  // Les trois premiers lots ne se chiffrent pas en fournitures : l'installation
+  // est un forfait, les deblais et les remblais se paient au m3 de terre. Ils
+  // gardent donc leur traitement propre.
   for (const lot of ordreParticulier) {
-    let lignes          = [];
-    let sousTotal       = 0;
-    let materiauxDuLot  = {};
-    let aciersDuLot     = null;
+    if (!lignesForfaitaires[lot]) continue;
+    const lignes = [];
+    let sousTotal = 0;
 
-    if (lignesForfaitaires[lot]) {
-      for (const modele of lignesForfaitaires[lot]) {
-        if (!modele.quantite) continue;
-        const pu = bibliothequePrix[modele.id] !== undefined ? bibliothequePrix[modele.id]
-                 : PARAMETRES.prixUnitaires[modele.id] !== undefined ? PARAMETRES.prixUnitaires[modele.id] : 0;
-        const pt = net(modele.quantite * pu);
-        lignes.push({
-          id: modele.id,
-          designation: bibliothequeLibelles[modele.id] || modele.designation,
-          unite: modele.unite, quantite: modele.quantite, pu: pu, pt: pt,
-          avertissements: pu === 0 ? ['Prix manquant'] : [],
-        });
-        sousTotal += pt;
-      }
-      if (lignes.length > 0) {
-        devisParLot[lot] = { titre: TITRES_LOTS_PARTICULIER[lot], lignes: lignes, sousTotal: Math.round(sousTotal) };
-        totalMateriaux  += sousTotal;
-      }
-      continue;
-    }
-
-    if (lot === 'fondation' && resumeFondation) {
-      // `genererResumeFondation()` recalcule TOUT le projet : ses materiaux
-      // contenaient donc aussi le ciment du mortier de maconnerie et celui de
-      // l'enduit. Le lot Fondation les facturait, puis les lots Elevation et
-      // Finition les facturaient a nouveau — le meme sac paye deux fois (127
-      // sacs au lieu de 87 sur un cas a un seul niveau). Les fournitures du lot
-      // se calculent donc sur les blocs de fondation seuls.
-      //
-      // Ses volumes de terrassement et ses aciers restent pris au resume : les
-      // premiers sont deja globaux par nature, les seconds n'ont jamais lu que
-      // les semelles et les longrines.
-      materiauxDuLot = {
-        ...materiauxDeBase(calculerRecettes(blocsParCategorie.fondation || {}, regles)),
-        filLigature: resumeFondation.materiaux.filLigature,
-      };
-      aciersDuLot    = resumeFondation.aciers;
-    } else {
-      const blocsDuLot = blocsParCategorie[lot];
-      if (!blocsDuLot || Object.keys(blocsDuLot).length === 0) continue;
-
-      if (lot === 'elevation') {
-        const r = genererResumeElevation(blocsDuLot, regles);
-        materiauxDuLot = r.materiaux; aciersDuLot = r.aciers;
-      } else if (lot === 'finition') {
-        materiauxDuLot = genererResumeFinition(blocsDuLot, regles).materiaux;
-      } else if (lot === 'plancher') {
-        const r = genererResumePlancher(blocsDuLot, regles);
-        materiauxDuLot = r.materiaux; aciersDuLot = r.aciers;
-      } else if (lot === 'charpente' || lot === 'couverture' || lot === 'toiture_terrasse') {
-        const blocsToiture = Object.assign({}, blocsParCategorie['charpente'], blocsParCategorie['couverture'], blocsParCategorie['toiture_terrasse']);
-        if (Object.keys(blocsToiture).length === 0) continue;
-        const r = genererResumeToiture(blocsToiture, regles);
-        materiauxDuLot = r.materiaux; aciersDuLot = r.aciers;
-        blocsParCategorie['couverture']      = {};
-        blocsParCategorie['toiture_terrasse'] = {};
-      }
-    }
-
-    for (const [id, m] of Object.entries(materiauxDuLot)) {
-      let quantite = m && m.quantiteCommande !== undefined ? m.quantiteCommande
-                   : m && m.quantite         !== undefined ? m.quantite : m;
-      if (!quantite || quantite === 0) continue;
-      if (id === 'volumeBois') continue;
-      if (id === 'eau' && !(regles && regles.parametresProjet && regles.parametresProjet.inclureEau)) continue;
-
-      let unite = (typeof m === 'object' && m && m.unite) ? m.unite : 'u';
-      if (typeof m !== 'object') {
-        if      (id === 'ciment')                                          unite = 'sac';
-        else if (id === 'eau')                    { unite = 'm3'; quantite = quantite / 1000; }
-        else if (id === 'sable' || id === 'gravier')                       unite = 't';
-        else if (id === 'clous' || id === 'filLigature')                   unite = 'kg';
-        else if (id === 'cimentColle' || id === 'peinture_latex' || id === 'peinture_chaux') unite = 'kg';
-        else if (id === 'peinture_classique')                              unite = 'L';
-        else                                                               unite = 'u';
-      }
-
-      let pu = (bibliothequePrix[id] !== undefined ? bibliothequePrix[id] : PARAMETRES.prixUnitaires[id] !== undefined ? PARAMETRES.prixUnitaires[id] : 0);
-      if ((id === 'eau' || id === 'eauM3') && unite === 'L') pu = pu / 1000;
-
-      const pt = net(quantite * pu);
-      const avertissements = pu === 0 ? ['Prix manquant'] : [];
-      lignes.push({ id: id, designation: bibliothequeLibelles[id] || id, unite: unite, quantite: quantite, pu: pu, pt: pt, avertissements: avertissements });
+    for (const modele of lignesForfaitaires[lot]) {
+      if (!modele.quantite) continue;
+      const pu = bibliothequePrix[modele.id] !== undefined ? bibliothequePrix[modele.id]
+               : PARAMETRES.prixUnitaires[modele.id] !== undefined ? PARAMETRES.prixUnitaires[modele.id] : 0;
+      const pt = net(modele.quantite * pu);
+      lignes.push({
+        id: modele.id,
+        designation: bibliothequeLibelles[modele.id] || modele.designation,
+        unite: modele.unite, quantite: modele.quantite, pu: pu, pt: pt,
+        avertissements: pu === 0 ? ['Prix manquant'] : [],
+      });
       sousTotal += pt;
-    }
-
-    if (aciersDuLot && aciersDuLot.lignes && aciersDuLot.lignes.length > 0) {
-      for (const acierLigne of aciersDuLot.lignes) {
-        if (!acierLigne.nombreBarres12m) continue;
-        const quantite  = acierLigne.nombreBarres12m;
-        const type      = PARAMETRES.nuancesAcier && PARAMETRES.nuancesAcier[acierLigne.nuance] ? PARAMETRES.nuancesAcier[acierLigne.nuance].type : 'HA';
-        const idAcier   = 'acier' + type + '_' + acierLigne.diametre;
-        const pu        = (bibliothequePrix[idAcier] !== undefined ? bibliothequePrix[idAcier] : PARAMETRES.prixUnitaires[idAcier] !== undefined ? PARAMETRES.prixUnitaires[idAcier] : 0);
-        const pt        = net(quantite * pu);
-        const avertissements = pu === 0 ? ['Prix manquant'] : [];
-        lignes.push({
-          id: idAcier,
-          designation: 'Armature - ' + (acierLigne.repere || acierLigne.designation || idAcier),
-          unite: 'barre 12 m', quantite: quantite, pu: pu, pt: pt, avertissements: avertissements
-        });
-        sousTotal += pt;
-      }
     }
 
     if (lignes.length > 0) {
       devisParLot[lot] = { titre: TITRES_LOTS_PARTICULIER[lot], lignes: lignes, sousTotal: Math.round(sousTotal) };
-      totalMateriaux   += sousTotal;
+      ordreLots.push(lot);
+      totalMateriaux  += sousTotal;
     }
+  }
+
+  // Tout le reste vient du Resume, lot par lot. Les fournitures d'un lot y sont
+  // regroupees et sommees entre elles seulement : le ciment de la fondation ne
+  // rejoint jamais celui de l'elevation. C'est la regle que l'ancien code
+  // enfreignait, en donnant au lot Fondation les recettes du projet entier.
+  const inclureEau = Boolean(regles && regles.parametresProjet && regles.parametresProjet.inclureEau);
+  const fournitures = fournituresParLot(resumeChantier, bibliothequePrix, bibliothequeLibelles, inclureEau);
+
+  for (const lotId of fournitures.ordre) {
+    devisParLot[lotId] = fournitures.lots[lotId];
+    ordreLots.push(lotId);
+    totalMateriaux += fournitures.lots[lotId].sousTotal;
   }
 
   // Les cinq frais se calculent tous sur le TOTAL des lots, conformement a la
@@ -597,6 +534,9 @@ export function genererDevisParticulier(input, regles, bibliothequePrix, bibliot
 
   return {
     lots: devisParLot,
+    // L'ordre du Resume fait foi : les sorties (ecran, PDF, XLSX, tableur) le
+    // suivent au lieu de rejouer chacune leur propre classement.
+    ordreLots,
     cascade: {
       totalMateriaux:   Math.round(totalMateriaux),
       tauxImprevus:     tauxImprevus,
@@ -619,32 +559,31 @@ export function genererDevisParticulier(input, regles, bibliothequePrix, bibliot
 
 // ─── Devis Entreprise ─────────────────────────────────────────────────────────
 
+/**
+ * Devis Entreprise : les ouvrages elementaires du Resume, lot par lot.
+ *
+ * Il ne regroupe pas de fournitures et n'en fait jamais des lignes : « Beton
+ * arme dose a 350 kg/m3 — 20 m3 » reste un ouvrage, avec son dosage dans la
+ * designation et le metre que le Resume affiche. Son ciment, son sable et son
+ * fer appartiennent au Devis Particulier, pas ici.
+ *
+ * Les sept forfaits « second oeuvre a completer » que cette fonction inventait
+ * (menuiseries, plomberie, electricite, peinture...) ont disparu : ils
+ * n'existaient dans aucun calcul, et faisaient desormais double emploi avec les
+ * lots que l'utilisateur ajoute lui-meme et qui, eux, portent de vraies
+ * quantites.
+ */
 export function genererDevisEntreprise(input, regles, bibliothequePrix, bibliothequeLibelles) {
   if (!bibliothequeLibelles) bibliothequeLibelles = {};
-  let niveauxMetre = Array.isArray(input) ? input : [{ niveau: { id: 'all', nom: 'Projet' }, saisie: {}, metre: { blocs: input } }];
+  const niveauxMetre = Array.isArray(input) ? input : [{ niveau: { id: 'all', nom: 'Projet' }, saisie: {}, metre: { blocs: input } }];
 
   const tauxTVA = (regles && regles.taux && regles.taux.tva !== undefined) ? regles.taux.tva : 0.18;
 
-  const devisParNiveau = {};
-  let totalGrosOeuvre   = 0;
-  let totalSecondOeuvre = 0;
+  const saisieGlobale = fusionnerSaisies(niveauxMetre);
+  const resumeChantier = genererResumeChantier(saisieGlobale, regles);
 
-  let saisieGlobale = fusionnerSaisies(niveauxMetre);
-
-  let resumeFondation = null;
-  if (Object.keys(saisieGlobale).length > 0) {
-    resumeFondation = genererResumeFondation(saisieGlobale, regles);
-  }
-
-  // Terrassement et fondation se construisent AVANT la boucle des niveaux, et
-  // une seule fois. Places dans la boucle sous un `if (!devisParNiveau.fondation)`,
-  // ils etaient sautes des qu'un niveau portant l'id « fondation » etait traite
-  // en premier : le lot creait la cle, et la garde le declarait donc deja fait.
-  // Le devis dependait alors de l'ordre des niveaux, en silence.
-  //
-  // Les blocs sont pris sur l'ensemble du projet, pas sur le premier niveau
-  // rencontre : un ouvrage de fondation saisi sur un autre niveau doit quand
-  // meme porter ses ratios d'acier et de coffrage.
+  // Les blocs de tout le projet, pour que le sous-detail de prix d'un ouvrage
+  // dispose de ses ratios d'acier et de coffrage.
   const blocsGlobaux = {};
   for (const { metre } of niveauxMetre) {
     if (!metre || !metre.blocs) continue;
@@ -659,136 +598,49 @@ export function genererDevisEntreprise(input, regles, bibliothequePrix, biblioth
     }
   }
 
-  {
-    devisParNiveau['terrassement'] = { nom: TITRES_LOTS_ENTREPRISE.terrassement, lignes: [], sousTotal: 0 };
-    devisParNiveau['fondation']    = { nom: TITRES_LOTS_ENTREPRISE.fondation,    lignes: [], sousTotal: 0 };
+  const ouvrages = ouvragesParLot(resumeChantier, {
+    blocs: blocsGlobaux,
+    sousDetail: (blocId, blocDonnees) => genererSousDetailPrix(blocId, blocDonnees, regles, bibliothequePrix),
+  });
 
-    {
-      if (resumeFondation) {
-        const v = resumeFondation.volumes;
+  const devisParNiveau = {};
+  let totalGrosOeuvre   = 0;
+  let totalSecondOeuvre = 0;
 
-        // Forfait fixe, sans quantite mesuree — installation et repli du materiel
-        // de chantier. Le prix existait deja dans PARAMETRES.prixUnitaires
-        // (ameneeEtRepliForfait) mais n'etait jamais emis dans aucun devis.
-        // Reference : Devis_Entreprise!A8 du classeur, poste n 1 du terrassement.
-        const puInstallation = bibliothequePrix['ameneeEtRepliForfait'] || PARAMETRES.prixUnitaires.ameneeEtRepliForfait || 0;
-        // Meme garde-fou que le Devis Particulier : pas de forfait sur un
-        // projet ou rien n'a encore ete mesure.
-        if (puInstallation > 0 && projetComporteDesOuvrages(niveauxMetre)) {
-          devisParNiveau['terrassement'].lignes.push({
-            id: 'ameneeEtRepliForfait', designation: 'Installation et repli de chantier', unite: 'ens',
-            quantite: 1, pu: puInstallation, pt: puInstallation, avertissements: []
-          });
-          devisParNiveau['terrassement'].sousTotal += puInstallation;
-          totalGrosOeuvre += puInstallation;
-        }
+  // Le gros oeuvre s'arrete a la toiture ; finitions et lots ajoutes par
+  // l'utilisateur forment le second oeuvre.
+  const GROS_OEUVRE = new Set(['terrassement', 'fondation', 'elevation', 'plancher', 'toiture']);
 
-        const terrassements = [
-          { id: 'fouillesPuits',  nom: 'Fouilles en puits',              qte: v.fouillesPuits,  unite: 'm3' },
-          { id: 'fouilleFilante', nom: 'Fouilles en tranchee',           qte: v.fouilleFilante, unite: 'm3' },
-          { id: 'remblai',        nom: 'Remblais sous dallage',          qte: v.remblais,       unite: 'm3' },
-          { id: 'evacuation',     nom: 'Evacuation des deblais',         qte: v.evacuation,     unite: 'm3' }
-        ];
-        for (const item of terrassements) {
-          if (item.qte > 0) {
-            const sd = genererSousDetailPrix(item.id, null, regles, bibliothequePrix);
-            const pt = Math.round(item.qte * sd.prixVenteUnitaire);
-            devisParNiveau['terrassement'].lignes.push({
-              id: item.id, designation: item.nom, unite: item.unite,
-              quantite: item.qte, pu: sd.prixVenteUnitaire, pt: pt, sousDetail: sd, avertissements: sd.avertissements
-            });
-            devisParNiveau['terrassement'].sousTotal += pt;
-            totalGrosOeuvre += pt;
-          }
-        }
-
-        // Ordre repris de Devis_Entreprise!A15:A22 du classeur de reference :
-        // le mur de soubassement cloture la fondation, il ne la precede pas.
-        const fondations = [
-          { id: 'betonProprete',    nom: 'Beton de proprete dose 150',                   qte: v.betonProprete,    unite: 'm3' },
-          { id: 'semelles',         nom: 'Beton arme - Semelles isolees + Amorces',      qte: v.semelles,         unite: 'm3' },
-          { id: 'longrines',        nom: 'Beton arme - Longrines',                        qte: v.longrines,        unite: 'm3' },
-          { id: 'moellon',          nom: 'Fondation en moellon',                          qte: v.moellon,          unite: 'm3' },
-          { id: 'dallage', nom: "Dallage en béton",                      qte: v.dallage, unite: 'm3' },
-          { id: 'sousPavement',     nom: 'Beton de sous-pavement dose 250',              qte: v.sousPavement,     unite: 'm3' },
-          { id: 'murSoubassement',  nom: 'Mur de soubassement (agglos)',                  qte: v.murSoubassement,  unite: 'm2' }
-        ];
-        for (const item of fondations) {
-          if (item.qte > 0) {
-            const blocDonnees = blocsGlobaux[item.id] || null;
-            const sd = genererSousDetailPrix(item.id, blocDonnees, regles, bibliothequePrix);
-            const pt = Math.round(item.qte * sd.prixVenteUnitaire);
-            devisParNiveau['fondation'].lignes.push({
-              id: item.id, designation: item.nom, unite: item.unite,
-              quantite: item.qte, pu: sd.prixVenteUnitaire, pt: pt, sousDetail: sd, avertissements: sd.avertissements
-            });
-            devisParNiveau['fondation'].sousTotal += pt;
-            totalGrosOeuvre += pt;
-          }
-        }
-      }
-    }
+  for (const lotId of ouvrages.ordre) {
+    const lot = ouvrages.lots[lotId];
+    devisParNiveau[lotId] = lot;
+    if (GROS_OEUVRE.has(lotId)) totalGrosOeuvre += lot.sousTotal;
+    else totalSecondOeuvre += lot.sousTotal;
   }
 
-  for (const { niveau, metre } of niveauxMetre) {
-    if (!metre || !metre.blocs) continue;
-
-    const niveauKey = niveau.id === 'all' ? 'rdc' : niveau.id;
-    if (!devisParNiveau[niveauKey]) {
-      devisParNiveau[niveauKey] = {
-        nom: TITRES_LOTS_ENTREPRISE[niveauKey] || niveau.nom,
-        lignes: [], sousTotal: 0
+  // L'installation de chantier est un forfait, pas un ouvrage mesure : elle ne
+  // figure pas au Resume mais doit rester en tete du devis.
+  if (ouvrages.ordre.length > 0) {
+    const pu = bibliothequePrix['ameneeEtRepliForfait'] !== undefined
+      ? Number(bibliothequePrix['ameneeEtRepliForfait']) || 0
+      : Number(PARAMETRES.prixUnitaires['ameneeEtRepliForfait']) || 0;
+    const ligne = {
+      id: 'ameneeEtRepliForfait',
+      designation: bibliothequeLibelles['ameneeEtRepliForfait'] || 'Installation et repli de chantier',
+      unite: 'ens', quantite: 1, pu, pt: pu,
+      avertissements: pu === 0 ? ['Prix manquant'] : [],
+    };
+    if (devisParNiveau['terrassement']) {
+      devisParNiveau['terrassement'].lignes.unshift(ligne);
+      devisParNiveau['terrassement'].sousTotal += pu;
+    } else {
+      devisParNiveau['terrassement'] = {
+        nom: TITRES_LOTS_ENTREPRISE.terrassement, titre: TITRES_LOTS_ENTREPRISE.terrassement,
+        lignes: [ligne], sousTotal: pu,
       };
+      ouvrages.ordre.unshift('terrassement');
     }
-
-    for (const [blocId, blocDonnees] of Object.entries(metre.blocs)) {
-      // `calculerMetre()` rend un objet pour CHAQUE bloc connu, mesure ou non,
-      // avec `lignes: []` quand rien n'est saisi — un tableau vide est veridique
-      // en JS, donc `!blocDonnees.lignes` ne filtre jamais rien. Sans le test
-      // explicite sur `total`, un devis Entreprise affichait une ligne prix
-      // (P.U. calcule sur un "faux bloc" d'une unite) pour tout ouvrage jamais
-      // mesure — colonnes, ceintures, linteaux, escalier a chaque etage.
-      if (!blocDonnees || !(blocDonnees.total > 0)) continue;
-      const catGlobal = BLOCS_PARTICULIER[blocId];
-      if (catGlobal === 'terrassement' || catGlobal === 'fondation') continue;
-      if (blocId === 'autresOuvrages' || blocId === 'armatures') continue;
-
-      const sd = genererSousDetailPrix(blocId, blocDonnees, regles, bibliothequePrix);
-      if (sd.prixVenteUnitaire > 0 || sd.avertissements.length > 0) {
-        const quantite    = blocDonnees.total;
-        const pt          = Math.round(quantite * sd.prixVenteUnitaire);
-        const designation = bibliothequeLibelles[blocId] || blocDonnees.libelle || blocId;
-        devisParNiveau[niveauKey].lignes.push({
-          id: blocId, designation: designation, unite: blocDonnees.unite, quantite: quantite,
-          pu: sd.prixVenteUnitaire, pt: pt, sousDetail: sd, avertissements: sd.avertissements
-        });
-        devisParNiveau[niveauKey].sousTotal += pt;
-        totalGrosOeuvre += pt;
-      }
-    }
-  }
-
-  devisParNiveau['second_oeuvre'] = { nom: TITRES_LOTS_ENTREPRISE.second_oeuvre, lignes: [], sousTotal: 0 };
-  const forfaits = [
-    { id: 'menuiseries',           nom: 'Menuiseries (portes, fenetres, volets)' },
-    { id: 'plomberie',             nom: 'Plomberie - Installation sanitaire'      },
-    { id: 'electricite',           nom: 'Electricite - Reseau et appareillage'    },
-    { id: 'revetement',            nom: 'Revetement sol et murs (carrelage, faience)' },
-    { id: 'peinture_forfait',      nom: 'Peinture - Interieure et exterieure'     },
-    { id: 'amenagement_exterieur', nom: 'Amenagement exterieur (cloture, allees)' },
-    { id: 'etancheite',            nom: 'Etancheite terrasse'                     }
-  ];
-  for (const f of forfaits) {
-    const pu = bibliothequePrix[f.id] || 0;
-    devisParNiveau['second_oeuvre'].lignes.push({
-      id: f.id,
-      designation: bibliothequeLibelles[f.id] || f.nom,
-      unite: 'ens', quantite: 1, pu: pu, pt: pu,
-      etat: 'saisie',
-      avertissements: pu === 0 ? ['Prix a saisir'] : []
-    });
-    devisParNiveau['second_oeuvre'].sousTotal += pu;
-    totalSecondOeuvre += pu;
+    totalGrosOeuvre += pu;
   }
 
   const totalHT   = totalGrosOeuvre + totalSecondOeuvre;
@@ -797,6 +649,8 @@ export function genererDevisEntreprise(input, regles, bibliothequePrix, biblioth
 
   return {
     niveaux: devisParNiveau,
+    // L'ordre du Resume fait foi, jusque dans le PDF et le tableur.
+    ordreLots: ouvrages.ordre,
     cascade: {
       totalGrosOeuvre:   Math.round(totalGrosOeuvre),
       totalSecondOeuvre: Math.round(totalSecondOeuvre),

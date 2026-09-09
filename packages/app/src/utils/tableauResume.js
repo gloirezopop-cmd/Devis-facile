@@ -32,45 +32,6 @@ function romain(n) {
  *  porte déjà l'ordre par sa position, le chiffre y ferait doublon. */
 const sansNumero = (titre) => String(titre).replace(/^\s*\d+\.\s*/, '');
 
-/** L'ordre du classeur : le sable et le gravier d'abord, le ciment ensuite. */
-const ORDRE_BETON = ['sable', 'gravier', 'ciment', 'eau'];
-
-/**
- * Les matériaux d'un poste, dans l'ordre où on les commande.
- * Le fer est compté en barres de 12 m — c'est ainsi qu'il s'achète — et son
- * poids reste indiqué à côté, parce que c'est lui qui sert au prix.
- */
-function materiauxDuPoste(poste) {
-  const lignes = [];
-
-  if (poste.beton) {
-    for (const categorie of ORDRE_BETON) {
-      const mat = poste.beton[categorie];
-      if (mat && mat.quantite > 0) lignes.push({ libelle: mat.nom, unite: mat.unite, quantite: mat.quantite });
-    }
-  }
-
-  for (const agglo of poste.agglos || []) {
-    if (agglo.quantite > 0) lignes.push({ libelle: agglo.nom, unite: agglo.unite, quantite: agglo.quantite });
-  }
-
-  for (const acier of poste.aciers || []) {
-    if (!(acier.barres12m > 0)) continue;
-    lignes.push({
-      libelle: `Fers de ${acier.diametre}`,
-      unite: 'U',
-      quantite: acier.barres12m,
-      precision: `${acier.poids} kg`,
-    });
-  }
-
-  if (poste.filAttache > 0) {
-    lignes.push({ libelle: "Fil d'attache", unite: 'kg', quantite: poste.filAttache });
-  }
-
-  return lignes;
-}
-
 /**
  * @param {object} resume  sortie de genererResumeChantier()
  * @returns {Array} lignes prêtes à afficher : bandeau | ouvrage | materiau
@@ -89,8 +50,13 @@ export function construireTableauResume(resume) {
 
     for (const poste of titre.postes) {
       ouvrage(poste.nom, poste.unite, poste.volume);
-      materiauxDuPoste(poste).forEach((mat, i) => {
-        lignes.push({ type: 'materiau', numero: i + 1, ...mat });
+      // `poste.materiaux` est la liste que le moteur construit une fois pour
+      // toutes : le Devis Particulier lit exactement la meme.
+      (poste.materiaux || []).forEach((mat, i) => {
+        lignes.push({
+          type: 'materiau', numero: i + 1,
+          libelle: mat.nom, unite: mat.unite, quantite: mat.quantite, precision: mat.precision,
+        });
       });
     }
 

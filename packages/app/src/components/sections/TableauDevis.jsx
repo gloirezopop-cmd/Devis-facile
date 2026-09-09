@@ -29,12 +29,15 @@ export default function TableauDevis({ devis, type = 'particulier' }) {
     }, 150);
   };
 
-  // Les lots connus d'abord, dans l'ordre du classeur ; les niveaux ajoutes par
-  // l'utilisateur (etage 2, 3...) ensuite, dans leur ordre de creation.
-  const ordre = [
-    ...Object.keys(titres).filter((id) => groupes[id]),
-    ...Object.keys(groupes).filter((id) => !(id in titres)),
-  ];
+  // Le devis porte l'ordre du Résumé : on le suit tel quel. À défaut (version
+  // Excel relue, projet enregistré avant), on retombe sur les lots connus
+  // d'abord, puis ceux que l'utilisateur a ajoutés, dans leur ordre de création.
+  const ordre = Array.isArray(devis?.ordreLots) && devis.ordreLots.length > 0
+    ? devis.ordreLots.filter((id) => groupes[id])
+    : [
+        ...Object.keys(titres).filter((id) => groupes[id]),
+        ...Object.keys(groupes).filter((id) => !(id in titres)),
+      ];
 
   const lignesTotales = ordre.reduce((n, id) => n + (groupes[id]?.lignes?.length || 0), 0);
 

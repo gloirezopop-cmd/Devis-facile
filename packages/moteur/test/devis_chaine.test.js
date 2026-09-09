@@ -53,24 +53,44 @@ describe('Chaine metre -> devis', () => {
     );
   });
 
-  test('les lots suivent l ordre chronologique du classeur', () => {
+  /**
+   * L'ordre des lots vient desormais du Resume, qui suit le chantier :
+   * installation, terres, fondation, elevation, plancher, toiture, finition.
+   *
+   * Ce test verifiait l'ordre de `LOTS_DEVIS_PARTICULIER`, ou la finition
+   * precede la charpente — un heritage de la liste du classeur, contraire a
+   * l'ordre reel des travaux : on couvre avant d'enduire. C'est le Resume qui
+   * fait foi, et `devis.ordreLots` le transporte jusqu'aux sorties.
+   */
+  test('les lots suivent l ordre du chantier, celui du Resume', () => {
     const devis = genererDevisParticulier(construireEntree(), REGLES_DEFAUT, {}, {});
 
-    const ordreAttendu = Object.keys(TITRES_LOTS_PARTICULIER);
-    const ordreObtenu = Object.keys(devis.lots);
-    const rang = (lot) => ordreAttendu.indexOf(lot);
+    assert.ok(Array.isArray(devis.ordreLots), 'le devis doit porter son ordre de lots');
+    assert.deepStrictEqual(
+      Object.keys(devis.lots),
+      devis.ordreLots,
+      "les lots doivent sortir dans l'ordre que le devis annonce",
+    );
 
-    for (let i = 1; i < ordreObtenu.length; i++) {
+    const rang = (lot) => devis.ordreLots.indexOf(lot);
+    const presents = devis.ordreLots.filter((id) => ['fondation', 'elevation', 'plancher', 'charpente', 'finition'].includes(id));
+
+    for (let i = 1; i < presents.length; i++) {
+      const attendu = ['fondation', 'elevation', 'plancher', 'charpente', 'finition'];
       assert.ok(
-        rang(ordreObtenu[i - 1]) < rang(ordreObtenu[i]),
-        `Le lot « ${ordreObtenu[i]} » sort avant « ${ordreObtenu[i - 1] }», hors de l'ordre du classeur.`,
+        attendu.indexOf(presents[i - 1]) < attendu.indexOf(presents[i]),
+        `Le lot « ${presents[i]} » sort avant « ${presents[i - 1]} », hors de l'ordre du chantier.`,
       );
     }
 
-    // Fondation avant elevation avant plancher avant couverture avant finition.
-    assert.ok(rang('fondation') < rang('elevation'), 'fondation avant elevation');
-    assert.ok(rang('elevation') < rang('plancher'), 'elevation avant plancher');
-    assert.ok(rang('plancher') < rang('finition'), 'plancher avant finition');
+    if (devis.lots.fondation && devis.lots.elevation) {
+      assert.ok(rang('fondation') < rang('elevation'), 'fondation avant elevation');
+    }
+    // Tous les lots annonces existent bien.
+    for (const id of devis.ordreLots) {
+      assert.ok(devis.lots[id], `le lot annonce « ${id} » doit exister`);
+      assert.ok(TITRES_LOTS_PARTICULIER[id] || devis.lots[id].titre, `le lot « ${id} » doit porter un titre`);
+    }
   });
 
   test('le prix saisi par l utilisateur atteint bien la ligne du devis', () => {

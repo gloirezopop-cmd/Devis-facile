@@ -33,12 +33,80 @@ function pourcentage(taux) {
 }
 
 /**
+ * Le bordereau du Devis Particulier quand l'ordre des lots est donne — c'est le
+ * cas depuis que les deux devis sortent du Resume. Les frais et le total
+ * general ferment la liste, comme dans la version historique.
+ */
+function bordereauSelonOrdre(devis, ordre) {
+  const rangs = [];
+  let numeroLot = 0;
+
+  for (const lotId of ordre) {
+    const contenu = devis.lots[lotId];
+    if (!contenu || !contenu.lignes || contenu.lignes.length === 0) continue;
+
+    numeroLot += 1;
+    rangs.push({ type: 'lot', numero: String(numeroLot), libelle: contenu.titre || contenu.nom || lotId, lotId });
+
+    contenu.lignes.forEach((ligne, index) => {
+      rangs.push({
+        type: 'ligne',
+        numero: `${numeroLot}.${index + 1}`,
+        lotId,
+        id: ligne.id,
+        designation: ligne.designation,
+        unite: ligne.unite,
+        quantite: ligne.quantite,
+        pu: ligne.pu,
+        pt: ligne.pt,
+        avertissements: ligne.avertissements || [],
+      });
+    });
+
+    rangs.push({ type: 'sousTotal', libelle: 'SOUS TOTAL', lotId, montant: contenu.sousTotal });
+  }
+
+  if (rangs.length === 0) return rangs;
+
+  const cascade = devis.cascade || {};
+  rangs.push({ type: 'total', libelle: 'TOTAL', montant: cascade.totalMateriaux || 0 });
+
+  let numeroFrais = numeroLot;
+  for (const frais of FRAIS_PARTICULIER) {
+    numeroFrais += 1;
+    rangs.push({
+      type: 'frais',
+      numero: String(numeroFrais),
+      libelle: frais.libelle + pourcentage(cascade[frais.tauxCle]),
+      taux: cascade[frais.tauxCle],
+      montant: cascade[frais.cle] || 0,
+    });
+  }
+
+  rangs.push({
+    type: 'totalGeneral',
+    libelle: 'TOTAL GÉNÉRAL',
+    montant: cascade.totalGeneral || 0,
+    enToutesLettres: devis.enToutesLettres || '',
+  });
+
+  return rangs;
+}
+
+/**
  * @param {object} devis  sortie de genererDevisParticulier()
  * @returns {Array} lignes pretes a afficher
  */
 export function construireBordereauParticulier(devis) {
   const rangs = [];
   if (!devis || !devis.lots) return rangs;
+
+  // Le devis vient du Resume, qui porte deja l'ordre du chantier : le rejouer
+  // ici a partir d'une liste locale ferait remonter la fondation avant le
+  // terrassement des que les deux listes divergeraient.
+  if (Array.isArray(devis.ordreLots) && devis.ordreLots.length > 0) {
+    return bordereauSelonOrdre(devis, devis.ordreLots);
+  }
 
   // Les dix lots de la specification, puis tout lot supplementaire que le
   // moteur aurait produit, numerote a la suite. Les frais commencent apres le
@@ -133,9 +201,12 @@ export function construireBordereauEntreprise(devis, ordreNiveaux = []) {
   const rangs = [];
   if (!devis || !devis.niveaux) return rangs;
 
+  // Même raison que pour le Particulier : l'ordre du Résumé prime sur toute
+  // liste tenue à part.
+  const reference = Array.isArray(devis.ordreLots) && devis.ordreLots.length > 0 ? devis.ordreLots : ordreNiveaux;
   const ids = [
-    ...ordreNiveaux.filter((id) => devis.niveaux[id]),
-    ...Object.keys(devis.niveaux).filter((id) => !ordreNiveaux.includes(id)),
+    ...reference.filter((id) => devis.niveaux[id]),
+    ...Object.keys(devis.niveaux).filter((id) => !reference.includes(id)),
   ];
 
   let numeroLot = 0;

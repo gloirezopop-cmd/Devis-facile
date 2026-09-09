@@ -2,6 +2,7 @@ import { calculerMetre, _internes as metreInternes } from './metre.js';
 import { obtenirDecompositionOuvrage } from './recettes.js';
 import { calculerTerrassement } from './terrassement.js';
 import { filDeLigature } from './armature.js';
+import { PARAMETRES } from './parametres.js';
 
 const { net } = metreInternes;
 
@@ -106,6 +107,66 @@ const NOMS_AUTRES_POSTES = {
 
 const CATEGORIES_BETON = ['ciment', 'sable', 'gravier', 'eau'];
 
+/** L'ordre du classeur : le sable et le gravier d'abord, le ciment ensuite. */
+const ORDRE_BETON = ['sable', 'gravier', 'ciment', 'eau'];
+
+/**
+ * Les recettes nomment les agglos `agglos_creux` / `agglos_pleins`, la
+ * bibliothèque de prix les connaît sous `blocs` / `blocs_pleins`. Le Résumé
+ * porte l'identifiant de prix pour que le devis puisse chiffrer la ligne.
+ */
+const PRIX_DES_AGGLOS = { agglos_creux: 'blocs', agglos_pleins: 'blocs_pleins' };
+
+/** L'identifiant sous lequel la bibliothèque de prix connaît une barre d'acier. */
+function idPrixAcier(nuance, diametre) {
+  const type = PARAMETRES.nuancesAcier?.[nuance]?.type || 'HA';
+  return `acier${type}_${diametre}`;
+}
+
+/**
+ * La liste ordonnée des fournitures d'un poste, chacune avec l'identifiant qui
+ * permet de la chiffrer.
+ *
+ * C'est cette liste que lisent l'écran Résumé ET le Devis Particulier : une
+ * seule définition de « quels matériaux pour cet ouvrage », donc aucun moyen
+ * que les deux se contredisent.
+ */
+function materiauxDuPoste({ beton, agglos, autres, aciers, filAttache }) {
+  const lignes = [];
+
+  for (const categorie of ORDRE_BETON) {
+    const mat = beton[categorie];
+    if (mat && mat.quantite > 0) {
+      lignes.push({ id: mat.id, nom: mat.nom, unite: mat.unite, quantite: mat.quantite });
+    }
+  }
+
+  for (const agglo of agglos) {
+    if (agglo.quantite > 0) lignes.push({ ...agglo });
+  }
+
+  for (const autre of autres) {
+    if (autre.quantite > 0) lignes.push({ ...autre });
+  }
+
+  for (const acier of aciers) {
+    if (!(acier.barres12m > 0)) continue;
+    lignes.push({
+      id: acier.idPrix,
+      nom: `Fers de ${acier.diametre}`,
+      unite: 'barre 12 m',
+      quantite: acier.barres12m,
+      precision: `${acier.poids} kg`,
+    });
+  }
+
+  if (filAttache > 0) {
+    lignes.push({ id: 'filLigature', nom: "Fil d'attache", unite: 'kg', quantite: filAttache });
+  }
+
+  return lignes;
+}
+
 /** Construit un poste en fusionnant, si besoin, plusieurs blocs du métré (semelles + amorces). */
 function construirePoste(spec, blocs, regles) {
   const blocsUtiles = spec.ids
@@ -118,6 +179,7 @@ function construirePoste(spec, blocs, regles) {
 
   const beton = {};
   const agglos = [];
+  const autres = [];
   const autresPostes = [];
   const aciersParDiametre = new Map();
   let poidsAcierTotal = 0;
@@ -127,13 +189,28 @@ function construirePoste(spec, blocs, regles) {
     for (const mat of decomp) {
       if (CATEGORIES_BETON.includes(mat.categorie)) {
         if (!beton[mat.categorie]) {
-          beton[mat.categorie] = { nom: mat.nom, unite: mat.unite, quantite: 0, dosage: mat.donnees?.dosage };
+          beton[mat.categorie] = {
+            id: mat.id_materiau, nom: mat.nom, unite: mat.unite, quantite: 0, dosage: mat.donnees?.dosage,
+          };
         }
         beton[mat.categorie].quantite = net(beton[mat.categorie].quantite + mat.valeur_arrondie);
       } else if (mat.categorie === 'bois' || mat.categorie === 'clous') {
         autresPostes.push(mat);
       } else if (typeof mat.categorie === 'string' && mat.categorie.startsWith('agglos')) {
-        agglos.push({ nom: mat.nom, unite: mat.unite, quantite: mat.valeur_arrondie });
+        agglos.push({
+          id: PRIX_DES_AGGLOS[mat.id_materiau] || mat.id_materiau,
+          nom: mat.nom, unite: mat.unite, quantite: mat.valeur_arrondie,
+        });
+      } else if (mat.categorie !== 'acier') {
+        // Carrelage, faïence, peinture, tôles, plinthes… Ces fournitures
+        // n'entraient dans aucune des trois familles ci-dessus et étaient donc
+        // simplement perdues : ni au Résumé, ni au devis.
+        //
+        // L'acier reste exclu : il arrive déjà par `detailsArmatures`, regroupé
+        // par diamètre et compté en barres de 12 m. Le laisser passer ici le
+        // ferait figurer deux fois — une fois par nappe, une fois par barre —
+        // et doublerait le fil de ligature.
+        autres.push({ id: mat.id_materiau, nom: mat.nom, unite: mat.unite, quantite: mat.valeur_arrondie });
       }
     }
 
@@ -141,7 +218,9 @@ function construirePoste(spec, blocs, regles) {
       for (const ligne of bloc.lignes || []) {
         for (const a of ligne.detailsArmatures || []) {
           if (!aciersParDiametre.has(a.diametre)) {
-            aciersParDiametre.set(a.diametre, { diametre: a.diametre, poids: 0, barres12m: 0 });
+            aciersParDiametre.set(a.diametre, {
+              diametre: a.diametre, idPrix: idPrixAcier(a.nuance, a.diametre), poids: 0, barres12m: 0,
+            });
           }
           const entree = aciersParDiametre.get(a.diametre);
           entree.poids += a.poids || 0;
@@ -153,18 +232,25 @@ function construirePoste(spec, blocs, regles) {
   }
 
   const dosage = CATEGORIES_BETON.map((c) => beton[c]?.dosage).find(Boolean) || null;
+  const aciers = [...aciersParDiametre.values()]
+    .sort((a, b) => a.diametre - b.diametre)
+    .map((a) => ({ diametre: a.diametre, idPrix: a.idPrix, poids: net(a.poids), barres12m: a.barres12m }));
+  const filAttache = poidsAcierTotal > 0 ? filDeLigature(poidsAcierTotal) : 0;
 
   return {
     id: spec.ids.join('_'),
+    // Les blocs d'origine : c'est par eux que le Devis Entreprise retrouve le
+    // sous-detail de prix de l'ouvrage.
+    blocIds: blocsUtiles.map(({ id }) => id),
     nom: spec.nom(dosage),
+    dosage,
     volume,
     unite,
+    materiaux: materiauxDuPoste({ beton, agglos, autres, aciers, filAttache }),
     beton: Object.keys(beton).length > 0 ? beton : null,
     agglos,
-    aciers: [...aciersParDiametre.values()]
-      .sort((a, b) => a.diametre - b.diametre)
-      .map((a) => ({ diametre: a.diametre, poids: net(a.poids), barres12m: a.barres12m })),
-    filAttache: poidsAcierTotal > 0 ? filDeLigature(poidsAcierTotal) : 0,
+    aciers,
+    filAttache,
     autresPostes,
   };
 }
@@ -187,6 +273,9 @@ function grouperLotsLibres(lignes) {
       designation: ligne.designation,
       unite: ligne.unite,
       quantite: ligne.quantite,
+      // Le prix vient de l'utilisateur : aucune bibliothèque ne peut le
+      // connaître pour un ouvrage qu'il vient d'inventer.
+      pu: ligne.pu || 0,
     });
   }
   return [...parLot.values()];
@@ -198,6 +287,7 @@ function agregerAutresPostes(entrees) {
   for (const mat of entrees) {
     if (!parId.has(mat.id_materiau)) {
       parId.set(mat.id_materiau, {
+        id: mat.id_materiau,
         id_materiau: mat.id_materiau,
         nom: NOMS_AUTRES_POSTES[mat.id_materiau] || mat.nom,
         unite: mat.unite,
@@ -249,10 +339,12 @@ export function genererResumeChantier(saisie = {}, regles = {}) {
 
   if (terrassement.deblais.volumeNet > 0 || terrassement.remblais.volumeTasse > 0) {
     parTitre.terrassement.postes.push(
-      { id: 'deblai', nom: 'Déblai', volume: net(terrassement.deblais.volumeFoisonne), unite: 'm³',
-        beton: null, agglos: [], aciers: [], filAttache: 0 },
-      { id: 'remblai', nom: 'Remblai', volume: net(terrassement.remblais.volumeTasse), unite: 'm³',
-        beton: null, agglos: [], aciers: [], filAttache: 0 },
+      { id: 'deblai', blocIds: ['fouilleTrancheeM3'], nom: 'Déblai', dosage: null,
+        volume: net(terrassement.deblais.volumeFoisonne), unite: 'm³',
+        materiaux: [], beton: null, agglos: [], aciers: [], filAttache: 0 },
+      { id: 'remblai', blocIds: ['remblaiSousDallageM3'], nom: 'Remblai', dosage: null,
+        volume: net(terrassement.remblais.volumeTasse), unite: 'm³',
+        materiaux: [], beton: null, agglos: [], aciers: [], filAttache: 0 },
     );
   }
 
