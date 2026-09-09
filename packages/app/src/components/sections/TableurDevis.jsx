@@ -39,7 +39,7 @@ const HAUTEUR_MINIMALE = 240;
 /** Ce qu'on laisse respirer sous le tableur, pour ne pas le coller au bord. */
 const MARGE_BASSE = 12;
 
-const TableurDevis = forwardRef(({ initialData, readOnly = false }, ref) => {
+const TableurDevis = forwardRef(({ initialData }, ref) => {
   const univerRef = useRef(null);
   const containerRef = useRef(null);
   const isInitialized = useRef(false);
@@ -50,8 +50,6 @@ const TableurDevis = forwardRef(({ initialData, readOnly = false }, ref) => {
   const [hauteurDisponible, setHauteurDisponible] = useState(null);
 
   useEffect(() => {
-    if (readOnly) return undefined;
-
     const vue = window.visualViewport;
 
     const mesurer = () => {
@@ -84,7 +82,7 @@ const TableurDevis = forwardRef(({ initialData, readOnly = false }, ref) => {
       window.removeEventListener('orientationchange', mesurer);
       window.removeEventListener('scroll', mesurer);
     };
-  }, [readOnly]);
+  }, []);
 
   useImperativeHandle(ref, () => ({
     getSnapshot: () => {
@@ -167,7 +165,7 @@ const TableurDevis = forwardRef(({ initialData, readOnly = false }, ref) => {
       }
       isInitialized.current = false;
     };
-  }, [initialData, readOnly]);
+  }, [initialData]);
 
   if (errorMsg) {
     return <div className="p-4 text-red-500 font-bold border border-red-500 rounded bg-red-50">Erreur Univer: {errorMsg}</div>;
@@ -178,25 +176,10 @@ const TableurDevis = forwardRef(({ initialData, readOnly = false }, ref) => {
       ref={containerRef}
       style={{
         width: '100%',
-        height: readOnly
-          ? '100%'
-          : (hauteurDisponible ? `${hauteurDisponible}px` : 'calc(100vh - 100px)'),
-        minHeight: readOnly ? '600px' : 'auto',
+        height: hauteurDisponible ? `${hauteurDisponible}px` : 'calc(100vh - 100px)',
       }}
-      className={`univer-container ${readOnly ? 'univer-readonly' : ''}`}
-    >
-      {readOnly && (
-        <style dangerouslySetInnerHTML={{__html: `
-          .univer-readonly .univer-toolbar { display: none !important; }
-          .univer-readonly .univer-sheet-bar { display: none !important; }
-          .univer-readonly .univer-formula-bar { display: none !important; }
-          .univer-readonly .univer-header { display: none !important; }
-          .univer-readonly .univer-workbench { top: 0 !important; }
-          /* Bloquer l'interaction si on veut juste un affichage */
-          .univer-readonly .univer-render-canvas { pointer-events: none !important; }
-        `}} />
-      )}
-    </div>
+      className="univer-container"
+    />
   );
 });
 

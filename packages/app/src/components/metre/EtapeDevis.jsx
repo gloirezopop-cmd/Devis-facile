@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProjet } from '../../context/ProjetContext.jsx';
 import { useDevis } from '../../hooks/useDevis.js';
@@ -6,7 +6,7 @@ import { useExport } from '../../hooks/useExport.js';
 import { useProjets } from '../../hooks/useProjets.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import TableauDevis from '../sections/TableauDevis.jsx';
-import TableurDevis from '../sections/TableurDevis.jsx';
+import { lireDevisDuClasseur } from '../../utils/univerLecture.js';
 import { ErrorBoundary } from '../ui/ErrorBoundary.jsx';
 import { formaterNombre } from '../../utils/format.js';
 import Icone from '../ui/Icone.jsx';
@@ -27,6 +27,28 @@ export default function EtapeDevis() {
   const toast = useToast();
 
   const dateJour = new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  // La feuille modifiee dans l'editeur est relue vers la meme forme de devis
+  // que celle du moteur. L'ecran, le PDF et le XLSX repartent donc tous du
+  // meme objet : ce qu'on voit ici est exactement ce qui s'imprime.
+  const devisExcel = useMemo(
+    () =>
+      devisExcelSnapshot
+        ? {
+            particulier: lireDevisDuClasseur(devisExcelSnapshot, 'particulier'),
+            entreprise: lireDevisDuClasseur(devisExcelSnapshot, 'entreprise'),
+          }
+        : null,
+    [devisExcelSnapshot],
+  );
+
+  // Une feuille illisible (renommee, videe) ne doit pas effacer le devis :
+  // on retombe alors sur celui que le metre a calcule.
+  const devisActif =
+    vue === 'entreprise'
+      ? devisExcel?.entreprise || devisEntreprise
+      : devisExcel?.particulier || devisParticulier;
+  const excelActif = Boolean(devisExcel?.[vue === 'entreprise' ? 'entreprise' : 'particulier']);
 
   const infoProjet = {
     maitreOuvrage: parametresProjet?.maitreOuvrage || '',
@@ -87,7 +109,11 @@ export default function EtapeDevis() {
             <Icone nom="check-circle" size={18} className="text-brand-primary" />
             <div>
               <p className="text-[13px] font-bold text-brand-text">Version Excel personnalisée active</p>
-              <p className="text-[12px] text-brand-text/60">Ce devis affiche les couleurs et modifications manuelles faites dans l'éditeur avancé.</p>
+              <p className="text-[12px] text-brand-text/60">
+                {excelActif
+                  ? "Les quantités et les prix ci-dessous sont ceux de votre feuille Excel. Le PDF et l'impression les reprennent."
+                  : "Cette feuille n'a pas pu être relue — le devis calculé par le métré est affiché en attendant."}
+              </p>
             </div>
           </div>
           <button
@@ -105,25 +131,24 @@ export default function EtapeDevis() {
       )}
 
       <div className="mb-4 flex flex-wrap items-center gap-4">
-        {/* Toggle Particulier / Entreprise (hidden if snapshot active since snapshot contains both or specific edits) */}
-        {!devisExcelSnapshot && (
-          <div className="inline-flex rounded-lg bg-black/[0.04] p-1">
-            {[
-              ['particulier', 'Particulier'],
-              ['entreprise', 'Entreprise'],
-            ].map(([cle, libelle]) => (
-              <button
-                key={cle}
-                onClick={() => setVue(cle)}
-                className={`min-h-[40px] rounded px-4 text-[13px] font-bold transition-colors ${
-                  vue === cle ? 'bg-white text-brand-text shadow-sm' : 'text-brand-text/50 hover:text-brand-text'
-                }`}
-              >
-                {libelle}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Le classeur porte les deux feuilles : le choix reste offert meme
+            quand une version Excel est active. */}
+        <div className="inline-flex rounded-lg bg-black/[0.04] p-1">
+          {[
+            ['particulier', 'Particulier'],
+            ['entreprise', 'Entreprise'],
+          ].map(([cle, libelle]) => (
+            <button
+              key={cle}
+              onClick={() => setVue(cle)}
+              className={`min-h-[40px] rounded px-4 text-[13px] font-bold transition-colors ${
+                vue === cle ? 'bg-white text-brand-text shadow-sm' : 'text-brand-text/50 hover:text-brand-text'
+              }`}
+            >
+              {libelle}
+            </button>
+          ))}
+        </div>
 
         <MenuEnregistrer
           onEnregistrer={() => {
@@ -147,19 +172,13 @@ export default function EtapeDevis() {
         </Link>
         <div className="ml-auto">
           <MenuExport
-            disabled={vue === 'entreprise' ? !devisEntreprise?.total : !devisParticulier?.total}
+            disabled={!devisActif?.total}
             onExporterPDF={() => {
-              if (devisExcelSnapshot) {
-                toast("Veuillez utiliser la fonction d'impression depuis l'éditeur avancé pour imprimer votre version Excel colorée.");
-                return;
-              }
-              const devisActif = vue === 'entreprise' ? devisEntreprise : devisParticulier;
               if (!devisActif?.total) return toast('Aucun ouvrage à exporter pour le moment.', 'erreur');
               exportPDF(devisActif, vue, infoProjet);
               toast('Fichier PDF généré.');
             }}
             onExporterExcel={() => {
-              const devisActif = vue === 'entreprise' ? devisEntreprise : devisParticulier;
               if (!devisActif?.total) return toast('Aucun ouvrage à exporter pour le moment.', 'erreur');
               exportExcel(devisActif, vue, infoProjet);
               toast('Fichier Excel généré.');
@@ -169,16 +188,10 @@ export default function EtapeDevis() {
       </div>
 
       <ErrorBoundary>
-        {devisExcelSnapshot ? (
-          <div className="overflow-hidden rounded-lg border border-brand-primary/10 bg-white">
-             <TableurDevis initialData={devisExcelSnapshot} readOnly={true} />
-          </div>
-        ) : (
-          <TableauDevis devis={vue === 'entreprise' ? devisEntreprise : devisParticulier} type={vue} />
-        )}
+        <TableauDevis devis={devisActif} type={vue} />
       </ErrorBoundary>
 
-      {!devisExcelSnapshot && vue === 'entreprise' && devisEntreprise?.cascade && (
+      {!excelActif && vue === 'entreprise' && devisEntreprise?.cascade && (
         <div className="mt-4 flex justify-end">
           <table className="w-full max-w-xs text-[13.5px]">
             <tbody>
