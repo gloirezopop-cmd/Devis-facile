@@ -58,11 +58,17 @@ grant execute on function public.est_fondateur() to authenticated;
 
 -- ─── 3. Personne ne se nomme soi-même ───────────────────────────────────────
 --
--- `profiles` autorise chaque compte à modifier SA ligne (nom, téléphone…).
--- Sans ce garde-fou, n'importe qui pourrait donc s'écrire `is_admin = true` et
--- se donner l'application gratuitement, voire une part du chiffre d'affaires.
--- Ce déclencheur refuse toute modification d'un privilège qui ne vient pas du
--- fondateur.
+-- Aujourd'hui, `profiles` ne porte qu'une politique de LECTURE : personne ne
+-- peut écrire dans sa propre ligne, donc personne ne peut se déclarer
+-- administrateur. Ce déclencheur n'est donc pas une réparation, c'est une
+-- seconde serrure.
+--
+-- Elle a sa raison d'être : le jour où l'on voudra laisser chacun corriger son
+-- nom ou son téléphone, il faudra bien accorder une politique d'écriture sur
+-- cette table — et ce jour-là, `is_admin` et `part_investissement` deviendraient
+-- modifiables par leur propriétaire sans que rien ne le signale. Le déclencheur
+-- tient indépendamment des politiques : quoi qu'on ouvre plus tard, un privilège
+-- ne se pose que par le fondateur.
 --
 -- `auth.uid() is null` = exécution depuis l'éditeur SQL ou une clé de service :
 -- c'est vous, dans ce même script. On laisse passer, sinon la ligne 4 de ce
