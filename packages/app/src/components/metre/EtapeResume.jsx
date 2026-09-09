@@ -38,12 +38,20 @@ export default function EtapeResume() {
   /** La même matière, mise à plat au format du classeur : un ouvrage, puis ses matériaux. */
   const lignes = useMemo(() => construireTableauResume(resumeChantier), [resumeChantier]);
 
+  /** Le total par matériau, tous lots confondus — le bon de commande. */
+  const recapitulatif = useMemo(
+    () => Object.values(summaryData.totals.materials).filter((m) => m.quantite > 0),
+    [summaryData],
+  );
+
+  // Les exports partent de la même liste que l'écran : ils ne peuvent donc pas
+  // montrer autre chose que ce que l'utilisateur vient de lire.
   const handleExportPDF = () => {
-    exporterResumePDF(summaryData, projet.parametresProjet);
+    exporterResumePDF(lignes, projet.parametresProjet, recapitulatif);
   };
 
   const handleExportWord = () => {
-    exporterResumeWord(summaryData, projet.parametresProjet);
+    exporterResumeWord(lignes, projet.parametresProjet, recapitulatif);
   };
 
   // Virgule décimale et espace des milliers : le classeur d'origine écrit
@@ -191,7 +199,7 @@ export default function EtapeResume() {
         </div>
 
         {/* RÉCAPITULATIF GLOBAL — ce qu'il faut commander en tout, tous lots confondus. */}
-        {Object.values(summaryData.totals.materials).filter((m) => m.quantite > 0).length > 0 && (
+        {recapitulatif.length > 0 && (
           <section className="mt-8 overflow-hidden rounded-xl border border-brand-secondary/20 bg-brand-secondary/[0.02]">
             <div className="border-b border-brand-secondary/20 bg-brand-secondary/[0.05] px-5 py-4">
               <h3 className="text-[15px] font-bold text-brand-secondary">
@@ -200,9 +208,7 @@ export default function EtapeResume() {
             </div>
             <div className="p-5">
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-                {Object.values(summaryData.totals.materials)
-                  .filter((m) => m.quantite > 0)
-                  .map((t, i) => (
+                {recapitulatif.map((t, i) => (
                     <div
                       key={`global-${i}`}
                       className="rounded-lg border border-brand-secondary/10 bg-white p-4 shadow-sm"

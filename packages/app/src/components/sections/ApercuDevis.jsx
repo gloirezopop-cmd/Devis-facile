@@ -1,6 +1,10 @@
 import React, { useRef } from 'react';
 import { useExport } from '../../hooks/useExport.js';
-import jsPDF from 'jspdf';
+// jspdf 4 : le constructeur n'est plus l'export par defaut.
+// jspdf-autotable 5 : `doc.autoTable` n'existe plus, seule la forme
+// fonctionnelle `autoTable(doc, ...)` subsiste.
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
@@ -40,7 +44,7 @@ export default function ApercuDevis({ univerData }) {
       tableRows.push(row);
     }
 
-    doc.autoTable({
+    autoTable(doc, {
       body: tableRows,
       startY: 30,
       theme: 'grid',

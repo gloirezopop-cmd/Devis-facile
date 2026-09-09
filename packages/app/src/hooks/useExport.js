@@ -1,5 +1,12 @@
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+// jspdf 4 n'expose plus le constructeur en export par defaut — `import jsPDF
+// from 'jspdf'` y rend un objet, et `new jsPDF(...)` levait « jsPDF is not a
+// constructor » des le premier clic sur « Exporter en PDF ».
+import { jsPDF } from 'jspdf';
+// jspdf-autotable 5 n'accroche plus `autoTable` au prototype de jsPDF :
+// `doc.autoTable(...)` y est `undefined`, et tout export PDF echouait en
+// silence, le clic ne produisant aucun fichier. La forme fonctionnelle
+// `autoTable(doc, ...)` est celle que la v5 expose.
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { formaterNombre } from '../utils/format.js';
 
@@ -116,7 +123,7 @@ export function exporterDevisPDF(devis, type = 'particulier', infoProjet = {}) {
     ]);
   });
 
-  doc.autoTable({
+  autoTable(doc, {
     head: [cols],
     body: rows,
     startY: 52,

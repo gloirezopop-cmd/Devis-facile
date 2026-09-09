@@ -1,5 +1,7 @@
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+// jspdf-autotable 5 : `doc.autoTable` n'existe plus, seule la forme
+// fonctionnelle `autoTable(doc, ...)` subsiste.
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 const titresLots = {
@@ -46,7 +48,7 @@ export function exportPDF(devisData, type) {
       { content: lotData.sousTotal.toLocaleString('fr-FR'), styles: { fontStyle: 'bold' } }
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: startY,
       head: head,
       body: body,
@@ -140,7 +142,7 @@ export function exportNoteDeCalculPDF(noteDeCalcul, infoProjet = {}) {
         String(l.valeur_arrondie),
       ]);
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: startY,
         head: head,
         body: body,
