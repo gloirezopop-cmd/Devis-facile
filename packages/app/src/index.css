@@ -21,6 +21,16 @@
    `display` : cacher un ancêtre en `display:none` emporterait le devis avec
    lui, alors qu'ici seuls les pixels disparaissent, pas la mise en page. */
 @media print {
+  /* Un ancêtre qui rogne (`overflow: hidden`) ou qui fixe sa hauteur coupe la
+     zone du devis, positionnée en absolu juste en dessous. */
+  html,
+  body,
+  #root {
+    overflow: visible !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
   body * {
     visibility: hidden;
   }
@@ -42,12 +52,44 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+  /* Le conteneur qui defile a l'ecran ne defile pas sur le papier : il coupe.
+     C'est ce qui tronquait la colonne P.T. et donc le montant total. */
+  .zone-impression .overflow-x-auto,
+  .zone-impression .overflow-hidden {
+    overflow: visible !important;
+  }
+
+  /* La feuille porte des largeurs de colonnes en pixels (60, 300, 70, 90, 110,
+     130 : 760 px en tout) et une mise en page figee. Sur une A4 en portrait, la
+     zone imprimable fait environ 186 mm — le tableau debordait donc par la
+     droite, emportant les montants. On rend la main au navigateur : largeurs
+     automatiques, reparties sur la largeur de la page. */
   .zone-impression table {
     width: 100% !important;
     min-width: 0 !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    font-size: 9pt !important;
   }
+  .zone-impression col {
+    width: auto !important;
+  }
+  .zone-impression td,
+  .zone-impression th {
+    padding: 2px 4px !important;
+    overflow-wrap: anywhere;
+  }
+
+  /* Une ligne coupee en deux entre deux pages est illisible ; un tableau
+     long, lui, doit pouvoir continuer page suivante. */
+  .zone-impression tr,
+  .zone-impression img {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   @page {
     size: A4 portrait;
-    margin: 12mm;
+    margin: 10mm;
   }
 }
