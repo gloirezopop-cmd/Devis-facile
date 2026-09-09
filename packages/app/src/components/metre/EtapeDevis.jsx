@@ -6,6 +6,7 @@ import { useExport } from '../../hooks/useExport.js';
 import { useProjets } from '../../hooks/useProjets.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import TableauDevis from '../sections/TableauDevis.jsx';
+import ApercuFeuilleExcel from '../sections/ApercuFeuilleExcel.jsx';
 import { lireDevisDuClasseur } from '../../utils/univerLecture.js';
 import { signatureDevis } from '../../utils/signatureDevis.js';
 import { ErrorBoundary } from '../ui/ErrorBoundary.jsx';
@@ -90,7 +91,7 @@ export default function EtapeDevis() {
   );
 
   return (
-    <div>
+    <div className="zone-impression">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4 rounded-lg border border-brand-primary/10 bg-white p-5">
         <div className="flex items-start gap-4">
           <LogoProjet />
@@ -125,7 +126,7 @@ export default function EtapeDevis() {
 
       {devisExcelSnapshot && (
         <div
-          className={`mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border px-4 py-3 ${
+          className={`sans-impression mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border px-4 py-3 ${
             excelPerime
               ? 'border-devis-averifier/40 bg-amber-50'
               : 'border-brand-primary/20 bg-brand-primary/5'
@@ -172,7 +173,7 @@ export default function EtapeDevis() {
         </div>
       )}
 
-      <div className="mb-4 flex flex-wrap items-center gap-4">
+      <div className="sans-impression mb-4 flex flex-wrap items-center gap-4">
         {/* Le classeur porte les deux feuilles : le choix reste offert meme
             quand une version Excel est active. */}
         <div className="inline-flex rounded-lg bg-black/[0.04] p-1">
@@ -212,7 +213,16 @@ export default function EtapeDevis() {
           <Icone nom="edit" size={15} />
           {devisExcelSnapshot ? 'Modifier encore dans Excel' : 'Modifier le devis'}
         </Link>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {/* L'impression du navigateur est le seul chemin qui conserve les
+              couleurs de la feuille : le PDF, lui, refait sa mise en page. */}
+          <button
+            onClick={() => window.print()}
+            className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-brand-primary/15 px-3 text-[13px] font-bold text-brand-text/70 hover:bg-black/[0.03]"
+          >
+            <Icone nom="file-text" size={15} />
+            Imprimer
+          </button>
           <MenuExport
             disabled={!devisActif?.total}
             onExporterPDF={() => {
@@ -230,7 +240,13 @@ export default function EtapeDevis() {
       </div>
 
       <ErrorBoundary>
-        <TableauDevis devis={devisActif} type={vue} />
+        {/* Quand une version Excel est active, on rend la feuille elle-même :
+            couleurs, fusions, largeurs et gras posés dans l'éditeur survivent
+            au retour. Les chiffres, eux, ont déjà été relus dans `devisActif`,
+            que le PDF et le XLSX consomment. */}
+        {devisExcelSnapshot
+          ? <ApercuFeuilleExcel classeur={devisExcelSnapshot} feuille={vue} />
+          : <TableauDevis devis={devisActif} type={vue} />}
       </ErrorBoundary>
 
       {!excelActif && vue === 'entreprise' && devisEntreprise?.cascade && (
