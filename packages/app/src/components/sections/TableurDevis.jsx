@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Univer, LocaleType, LogLevel } from '@univerjs/core';
 import { defaultTheme } from '@univerjs/design';
 import { UniverDocsPlugin } from '@univerjs/docs';
@@ -34,10 +34,57 @@ import '@univerjs/docs-ui/lib/index.css';
 import '@univerjs/sheets-ui/lib/index.css';
 import '@univerjs/sheets-formula-ui/lib/index.css';
 
+/** En dessous, le tableur ne sert plus à rien : on ne descend jamais plus bas. */
+const HAUTEUR_MINIMALE = 240;
+/** Ce qu'on laisse respirer sous le tableur, pour ne pas le coller au bord. */
+const MARGE_BASSE = 12;
+
 const TableurDevis = forwardRef(({ initialData, readOnly = false }, ref) => {
   const univerRef = useRef(null);
   const containerRef = useRef(null);
   const isInitialized = useRef(false);
+  // Hauteur réellement disponible, mesurée. `100vh` ment sur téléphone : il
+  // ignore la barre d'adresse ET le clavier, si bien que la moitié basse du
+  // tableur — y compris la cellule en cours de saisie — se retrouve derrière
+  // le clavier, hors d'atteinte.
+  const [hauteurDisponible, setHauteurDisponible] = useState(null);
+
+  useEffect(() => {
+    if (readOnly) return undefined;
+
+    const vue = window.visualViewport;
+
+    const mesurer = () => {
+      const boite = containerRef.current?.getBoundingClientRect();
+      if (!boite) return;
+      // `visualViewport` est la seule mesure qui rétrécit à l'ouverture du
+      // clavier. `offsetTop` corrige le décalage quand le navigateur a fait
+      // défiler la page pour dégager le champ actif.
+      const hauteurVue = vue ? vue.height : window.innerHeight;
+      const decalage = vue ? vue.offsetTop : 0;
+      const hautDuTableur = boite.top - decalage;
+      const voulue = Math.max(HAUTEUR_MINIMALE, Math.round(hauteurVue - hautDuTableur - MARGE_BASSE));
+      // Redessiner le tableur coûte cher : on ne réagit qu'à un vrai
+      // changement, pas au tremblement d'un pixel pendant le défilement.
+      setHauteurDisponible((precedente) => (Math.abs((precedente ?? 0) - voulue) >= 4 ? voulue : precedente));
+    };
+
+    mesurer();
+
+    vue?.addEventListener('resize', mesurer);
+    vue?.addEventListener('scroll', mesurer);
+    window.addEventListener('resize', mesurer);
+    window.addEventListener('orientationchange', mesurer);
+    window.addEventListener('scroll', mesurer, { passive: true });
+
+    return () => {
+      vue?.removeEventListener('resize', mesurer);
+      vue?.removeEventListener('scroll', mesurer);
+      window.removeEventListener('resize', mesurer);
+      window.removeEventListener('orientationchange', mesurer);
+      window.removeEventListener('scroll', mesurer);
+    };
+  }, [readOnly]);
 
   useImperativeHandle(ref, () => ({
     getSnapshot: () => {
@@ -127,9 +174,15 @@ const TableurDevis = forwardRef(({ initialData, readOnly = false }, ref) => {
   }
 
   return (
-    <div 
-      ref={containerRef} 
-      style={{ width: '100%', height: readOnly ? '100%' : 'calc(100vh - 100px)', minHeight: readOnly ? '600px' : 'auto' }} 
+    <div
+      ref={containerRef}
+      style={{
+        width: '100%',
+        height: readOnly
+          ? '100%'
+          : (hauteurDisponible ? `${hauteurDisponible}px` : 'calc(100vh - 100px)'),
+        minHeight: readOnly ? '600px' : 'auto',
+      }}
       className={`univer-container ${readOnly ? 'univer-readonly' : ''}`}
     >
       {readOnly && (
