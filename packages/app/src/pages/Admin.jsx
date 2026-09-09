@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Icone from '../components/ui/Icone.jsx';
 import HistogrammeInscriptions from '../components/admin/HistogrammeInscriptions.jsx';
 import ListeComptes from '../components/admin/ListeComptes.jsx';
-import { fetchStatistiquesAdmin, fetchComptesAdmin } from '../lib/estimationApi.js';
+import GestionInvestisseurs from '../components/admin/GestionInvestisseurs.jsx';
+import { fetchStatistiquesAdmin, fetchComptesAdmin, fetchMesRevenus } from '../lib/estimationApi.js';
 
 /**
  * Le tableau de bord du fondateur.
@@ -20,6 +21,9 @@ import { fetchStatistiquesAdmin, fetchComptesAdmin } from '../lib/estimationApi.
 export default function Admin() {
   const [stats, setStats] = useState(null);
   const [comptes, setComptes] = useState([]);
+  // Ce qu'un investisseur voit de son placement. `null` pour le fondateur et
+  // pour tout compte sans part : la base ne renvoie rien dans ces cas-la.
+  const [mesRevenus, setMesRevenus] = useState(null);
   const [erreur, setErreur] = useState(null);
   const [chargement, setChargement] = useState(true);
   // Les chiffres sont relus à chaque ouverture de la page : une inscription
@@ -29,11 +33,12 @@ export default function Admin() {
 
   useEffect(() => {
     let annule = false;
-    Promise.all([fetchStatistiquesAdmin(), fetchComptesAdmin()])
-      .then(([s, c]) => {
+    Promise.all([fetchStatistiquesAdmin(), fetchComptesAdmin(), fetchMesRevenus()])
+      .then(([s, c, r]) => {
         if (annule) return;
         setStats(s);
         setComptes(Array.isArray(c) ? c : []);
+        setMesRevenus(r);
         setChargement(false);
       })
       .catch((e) => { if (!annule) { setErreur(e); setChargement(false); } });
@@ -60,6 +65,9 @@ export default function Admin() {
 
   const formules = stats.abonnements_par_formule || {};
   const maxFormule = Math.max(1, ...Object.values(formules).map(Number));
+  // Le fondateur est désigné par la base, jamais par cet écran : `est_fondateur`
+  // arrive dans la réponse, et les clés d'argent n'y figurent que pour lui.
+  const estFondateur = Boolean(stats.est_fondateur);
 
   return (
     <section className="mx-auto max-w-6xl py-2">
@@ -100,10 +108,17 @@ export default function Admin() {
           valeur={stats.projets_total} libelle="projets créés"
           detail={`+${nombre(stats.projets_7j)} cette semaine`} icone="folder"
         />
-        <Tuile
-          valeur={stats.recettes_totales} libelle="FCFA encaissés" monetaire
-          detail={`${nombre(stats.recettes_30j)} F sur 30 jours`} icone="credit-card"
-        />
+        {estFondateur ? (
+          <Tuile
+            valeur={stats.recettes_totales} libelle="FCFA encaissés" monetaire
+            detail={`${nombre(stats.recettes_30j)} F sur 30 jours`} icone="credit-card"
+          />
+        ) : mesRevenus ? (
+          <Tuile
+            valeur={mesRevenus.montant_total} libelle={`FCFA — votre part de ${mesRevenus.part} %`} monetaire
+            detail={`${nombre(mesRevenus.montant_30j)} F sur 30 jours`} icone="credit-card"
+          />
+        ) : null}
       </div>
 
       <div className="mb-8 grid gap-4 lg:grid-cols-3">
@@ -142,7 +157,7 @@ export default function Admin() {
 
           <dl className="mt-6 space-y-2 border-t border-brand-primary/10 pt-4 text-[13px]">
             <Ligne terme="Abonnés actifs" valeur={nombre(stats.abonnes_actifs)} />
-            <Ligne terme="Paiements encaissés" valeur={nombre(stats.paiements_reussis)} />
+            {estFondateur && <Ligne terme="Paiements encaissés" valeur={nombre(stats.paiements_reussis)} />}
             <Ligne terme="Actions enregistrées (7 j)" valeur={nombre(stats.evenements_7j)} />
           </dl>
         </div>
@@ -164,9 +179,37 @@ export default function Admin() {
         </div>
       )}
 
-      <div className="mb-8">
-        <ListeComptes comptes={comptes} />
-      </div>
+      {estFondateur && (
+        <div className="mb-8">
+          <GestionInvestisseurs partsAttribuees={stats.parts_attribuees} />
+        </div>
+      )}
+
+      {/* Sa part, en clair, pour l'investisseur — jamais le total dont elle sort. */}
+      {!estFondateur && mesRevenus && (
+        <div className="mb-8 rounded-xl border border-brand-primary/15 bg-brand-primary/[0.04] p-5">
+          <h3 className="mb-2 text-[13px] font-extrabold uppercase tracking-[0.1em] text-brand-text/50">
+            Votre participation
+          </h3>
+          <p className="text-[13.5px] leading-relaxed text-brand-text/75">
+            Vous détenez <strong className="text-brand-text">{mesRevenus.part} %</strong> du chiffre
+            d'affaires de Devis Facile BTP, ce qui représente à ce jour{' '}
+            <strong className="font-mono text-brand-text">{nombre(mesRevenus.montant_total)} FCFA</strong>,
+            dont <strong className="font-mono text-brand-text">{nombre(mesRevenus.montant_30j)} FCFA</strong> sur
+            les trente derniers jours.
+          </p>
+          <p className="mt-2 text-[12.5px] text-brand-text/45">
+            L'application vous est ouverte sans abonnement. Les montants sont calculés sur les
+            paiements réellement encaissés.
+          </p>
+        </div>
+      )}
+
+      {estFondateur && (
+        <div className="mb-8">
+          <ListeComptes comptes={comptes} />
+        </div>
+      )}
 
       <p className="text-[12.5px] leading-relaxed text-brand-text/45">
         Le nombre de <strong>visiteurs</strong> n'apparaît pas ici : l'application n'enregistre

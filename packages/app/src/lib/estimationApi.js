@@ -228,3 +228,70 @@ export async function supprimerTarif(id) {
   const { error } = await supabase.from('construction_rates').delete().eq('id', id);
   if (error) throw error;
 }
+
+// ─── Investisseurs ───────────────────────────────────────────────────────────
+//
+// Toutes ces fonctions vivent dans la base et vérifient elles-mêmes que
+// l'appelant est le fondateur. Ce fichier ne fait que les appeler : il ne
+// décide de rien, et un compte qui appellerait l'API directement se ferait
+// refuser au même endroit.
+
+/** La liste des investisseurs et leur part. Renvoie `null` à qui n'est pas le fondateur. */
+export async function fetchInvestisseurs() {
+  const { data, error } = await supabase.rpc('investisseurs_admin');
+  if (error) throw error;
+  return data;
+}
+
+/** Les invitations envoyées à des personnes qui n'ont pas encore de compte. */
+export async function fetchInvitations() {
+  const { data, error } = await supabase.rpc('invitations_admin');
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Nomme un compte existant investisseur, avec sa part.
+ * La base refuse si le compte n'existe pas, si la part sort de 0-100, ou si le
+ * total des parts dépasserait 100 %.
+ */
+export async function nommerInvestisseur(email, part) {
+  const { data, error } = await supabase.rpc('nommer_investisseur', { p_email: email, p_part: part });
+  if (error) throw error;
+  return data;
+}
+
+/** Retire la qualité d'investisseur : plus de part, et l'abonnement redevient dû. */
+export async function retirerInvestisseur(email) {
+  const { data, error } = await supabase.rpc('retirer_investisseur', { p_email: email });
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Invite une adresse qui n'a pas encore de compte. La part est retenue et
+ * s'applique toute seule à l'inscription. Si le compte existe déjà, la
+ * nomination est immédiate.
+ */
+export async function inviterInvestisseur(email, part) {
+  const { data, error } = await supabase.rpc('inviter_investisseur', { p_email: email, p_part: part });
+  if (error) throw error;
+  return data;
+}
+
+export async function annulerInvitation(email) {
+  const { data, error } = await supabase.rpc('annuler_invitation', { p_email: email });
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Ce qu'un investisseur voit de son placement : SA part et SON montant.
+ * Jamais le chiffre d'affaires dont ce montant est tiré — la fonction en base
+ * ne le renvoie pas, quelle que soit la façon dont on l'appelle.
+ */
+export async function fetchMesRevenus() {
+  const { data, error } = await supabase.rpc('mes_revenus_investisseur');
+  if (error) throw error;
+  return data;
+}
