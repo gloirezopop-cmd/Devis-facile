@@ -169,6 +169,29 @@ function construirePoste(spec, blocs, regles) {
   };
 }
 
+/**
+ * Les lots que le métré ne calcule pas : électricité, plomberie, plafond,
+ * ouvertures… Il n'existe pas de formule universelle pour eux — le nombre de
+ * points lumineux ne se déduit d'aucune dimension. L'utilisateur les saisit
+ * donc lui-même, et ils traversent le résumé tels quels, groupés par lot et
+ * dans l'ordre où il les a créés.
+ */
+function grouperLotsLibres(lignes) {
+  const parLot = new Map();
+  for (const ligne of lignes) {
+    if (!ligne) continue;
+    const nom = (ligne.lot || 'Autres ouvrages').trim() || 'Autres ouvrages';
+    if (!parLot.has(nom)) parLot.set(nom, { id: `libre_${parLot.size + 1}`, titre: nom, lignes: [] });
+    parLot.get(nom).lignes.push({
+      id: ligne.id,
+      designation: ligne.designation,
+      unite: ligne.unite,
+      quantite: ligne.quantite,
+    });
+  }
+  return [...parLot.values()];
+}
+
 /** Additionne les petites fournitures de tous les postes d'un même grand titre. */
 function agregerAutresPostes(entrees) {
   const parId = new Map();
@@ -245,5 +268,7 @@ export function genererResumeChantier(saisie = {}, regles = {}) {
     .filter((t) => t.postes.length > 0)
     .map(({ autresPostesBrut, ...t }) => ({ ...t, autresPostes: agregerAutresPostes(autresPostesBrut) }));
 
-  return { titres, avertissements };
+  const lotsLibres = grouperLotsLibres(blocs.autresOuvrages?.lignes || []);
+
+  return { titres, lotsLibres, avertissements };
 }

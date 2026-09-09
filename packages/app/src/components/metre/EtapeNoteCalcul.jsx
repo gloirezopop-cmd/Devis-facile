@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useDevis } from '../../hooks/useDevis.js';
 import { ErrorBoundary } from '../ui/ErrorBoundary.jsx';
 import Icone from '../ui/Icone.jsx';
@@ -224,6 +225,31 @@ export default function EtapeNoteCalcul() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Fin de la note : ce qui a été calculé s'arrête ici. Le reste du
+          bâtiment — électricité, plomberie, plafond — n'a pas de formule tirée
+          des dimensions, et faire semblant d'en avoir une donnerait un faux
+          chiffre avec l'allure d'un calcul. On le dit, et on ouvre la porte. */}
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-brand-primary/20 bg-brand-primary/[0.04] px-4 py-4">
+        <div className="flex items-start gap-3">
+          <Icone nom="help-circle" size={17} className="mt-0.5 shrink-0 text-brand-primary" />
+          <div>
+            <p className="text-[13.5px] font-bold text-brand-text">
+              Souhaitez-vous ajouter l'électricité, la plomberie, le plafond&nbsp;?
+            </p>
+            <p className="text-[12.5px] text-brand-text/60">
+              Ces lots ne se déduisent d'aucune dimension : leurs quantités dépendent de votre projet.
+              Ajoutez-les vous-même dans le métré — ils entreront ensuite dans le résumé et dans le devis.
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/metre?etape=2#ouvrages-supplementaires"
+          className="shrink-0 rounded-md border border-brand-primary/25 bg-white px-4 py-2 text-[12.5px] font-bold text-brand-primary hover:bg-brand-primary/5"
+        >
+          Ajouter ces lots
+        </Link>
       </div>
     </ErrorBoundary>
   );

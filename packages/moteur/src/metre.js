@@ -2460,10 +2460,17 @@ export function calculerMetre(saisie = {}, regles = {}) {
     total: totaliser(peinture, 'valeur')
   };
 
-  // Autres Ouvrages (Tâches Libres).
+  // Autres Ouvrages (Tâches Libres). Électricité, plomberie, plafond… : des
+  // lots que le métré ne sait pas calculer, faute de formule universelle.
+  // L'utilisateur les nomme, les range dans un lot et pose lui-même la
+  // quantité ; le moteur ne fait que les transporter jusqu'aux sorties.
+  // `materiauKey` est l'ancien champ du sélecteur de bibliothèque : les
+  // projets déjà enregistrés le portent encore, et l'oublier ferait
+  // réapparaître « Tâche sans nom » sur des lignes pourtant nommées.
   const autresLignes = (Array.isArray(saisie.autresOuvrages) ? saisie.autresOuvrages : []).map(o => ({
     id: o.id,
-    designation: o.designation || 'Tâche sans nom',
+    lot: (o.lot || '').trim() || 'Autres ouvrages',
+    designation: o.designation || o.materiauKey || 'Tâche sans nom',
     unite: o.unite || 'u',
     quantite: Number(o.quantite) || 0,
     pu: Number(o.pu) || 0
