@@ -43,17 +43,24 @@
   }
 }
 
-/* ── Variante pleine : l'action que l'on veut voir choisie ── */
+/* ── Variante pleine : l'action que l'on veut voir choisie ──
+   Le corail est celui du bouton affiché sur la tablette de la photo. C'est la
+   seule couleur chaude de la page : elle n'a donc rien contre quoi lutter.
+
+   Le libellé est écrit en encre, pas en blanc. Du blanc sur ce corail ne donne
+   que 2,7 de contraste — le texte le plus important de la page serait le plus
+   difficile à lire, et le premier à disparaître sur un écran au soleil.
+   L'encre sur le même corail en donne 6,2, sans toucher à la couleur. */
 .principal {
-  background-color: #f2994a;
-  color: #ffffff;
-  box-shadow: 0 10px 24px -10px rgba(242, 153, 74, 0.75);
+  background-color: var(--lp-corail);
+  color: var(--lp-encre);
+  box-shadow: 0 10px 24px -10px rgba(232, 131, 109, 0.75);
 }
 
 .principal:hover {
-  background-color: #e0893a;
+  background-color: var(--lp-corail-fonce);
   transform: translateY(-2px);
-  box-shadow: 0 16px 30px -12px rgba(242, 153, 74, 0.85);
+  box-shadow: 0 16px 30px -12px rgba(232, 131, 109, 0.85);
 }
 
 /* L'enfoncement doit être plus rapide que le relâchement : c'est ce qui donne
@@ -65,15 +72,16 @@
 
 /* ── Variante sobre : l'action secondaire, qui ne doit pas rivaliser ── */
 .secondaire {
-  background-color: #ffffff;
-  color: #14304d;
-  border-color: rgba(20, 48, 77, 0.14);
+  background-color: var(--lp-blanc);
+  color: var(--lp-encre);
+  border-color: var(--lp-filet-marque);
 }
 
 .secondaire:hover {
-  border-color: rgba(20, 48, 77, 0.38);
+  border-color: var(--lp-ciel);
+  color: var(--lp-ciel-encre);
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px -14px rgba(20, 48, 77, 0.5);
+  box-shadow: var(--lp-ombre-carte);
 }
 
 /* ── Le voile qui glisse au survol ── */
@@ -110,7 +118,7 @@
 }
 
 .secondaire .onde {
-  background-color: rgba(20, 48, 77, 0.16);
+  background-color: rgba(30, 127, 212, 0.16);
 }
 
 @keyframes onde {
@@ -132,7 +140,7 @@
 
 /* Le focus clavier doit rester visible : il ne se confond pas avec le survol. */
 .bouton:focus-visible {
-  outline: 3px solid #2f6fde;
+  outline: 3px solid var(--lp-ciel);
   outline-offset: 3px;
 }
 

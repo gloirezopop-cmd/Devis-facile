@@ -10,18 +10,26 @@
 .heros {
   position: relative;
   overflow: hidden;
-  background-color: #ffffff;
+  /* Le dégradé se termine sur le blanc chaud, qui est aussi le fond de la
+     section suivante : les deux se rejoignent sans arête visible. */
+  background: linear-gradient(180deg, var(--lp-blanc) 0%, var(--lp-papier) 100%);
 }
 
-/* La trame de fond, discrète — un papier millimétré, pas un décor. */
+/*
+ * Le fond reprend la lumière de la photo plutôt qu'un motif.
+ *
+ * Il portait auparavant un papier millimétré. C'était un décor de bureau
+ * d'études, pas celui de l'image : la photo n'a ni trame ni trait, elle a un
+ * ciel en haut et du bois chaud en bas. On pose donc les deux mêmes voiles —
+ * le bleu du ciel derrière l'aperçu, la chaleur du chêne à son pied — pour que
+ * la photo se pose dans la page au lieu d'y être collée.
+ */
 .trame {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(20, 48, 77, 0.14) 1px, transparent 1px);
-  background-size: 18px 18px;
-  opacity: 0.5;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  background:
+    radial-gradient(ellipse 72% 58% at 80% 4%, rgba(30, 127, 212, 0.16), transparent 68%),
+    radial-gradient(ellipse 62% 52% at 8% 96%, rgba(232, 131, 109, 0.13), transparent 70%);
   pointer-events: none;
 }
 
@@ -65,11 +73,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.4rem 0.9rem;
+  padding: 0.42rem 0.95rem;
   margin-bottom: 1.25rem;
   border-radius: 999px;
-  background-color: rgba(242, 153, 74, 0.12);
-  color: #14304d;
+  background-color: var(--lp-ciel-voile);
+  color: var(--lp-encre);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -80,7 +88,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background-color: #f2994a;
+  background-color: var(--lp-corail);
   animation: battement 2.4s ease-in-out infinite;
 }
 
@@ -95,14 +103,14 @@
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.02em;
-  color: #14304d;
+  color: var(--lp-encre);
 }
 
 /* Le trait sous le membre de phrase important : il se déplie au chargement,
    une fois, puis ne bouge plus. */
 .souligne {
   position: relative;
-  color: #f2994a;
+  color: var(--lp-corail-fonce);
   white-space: nowrap;
 }
 
@@ -114,7 +122,7 @@
   bottom: -0.08em;
   height: 0.14em;
   border-radius: 999px;
-  background-color: rgba(242, 153, 74, 0.28);
+  background-color: var(--lp-corail-voile);
   transform-origin: left;
   animation: deplierTrait 900ms 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -129,7 +137,7 @@
   max-width: 34rem;
   font-size: clamp(1rem, 2.6vw, 1.18rem);
   line-height: 1.65;
-  color: rgba(27, 31, 39, 0.72);
+  color: var(--lp-encre-douce);
 }
 
 @media (min-width: 1024px) {
@@ -168,7 +176,7 @@
 .preuves {
   margin: 2.25rem 0 0;
   padding: 1.25rem 0 0;
-  border-top: 1px solid rgba(20, 48, 77, 0.08);
+  border-top: 1px solid var(--lp-filet);
   list-style: none;
   display: flex;
   flex-wrap: wrap;
@@ -188,11 +196,11 @@
   gap: 0.45rem;
   font-size: 0.85rem;
   font-weight: 600;
-  color: rgba(27, 31, 39, 0.62);
+  color: var(--lp-encre-tenue);
 }
 
 .preuve svg {
-  color: #14634a;
+  color: var(--lp-menthe);
 }
 
 /* ── Colonne de droite : l'aperçu ── */
@@ -202,12 +210,20 @@
   padding: 1.75rem 1.25rem;
 }
 
+/*
+ * Le cadre de la photo.
+ *
+ * Un liseré blanc plutôt qu'une bordure grise : la photo est déjà bordée de
+ * ciel et de béton clair, un trait sombre l'aurait découpée du fond.
+ */
 .cadre {
   position: relative;
-  border-radius: 20px;
+  border-radius: var(--lp-rayon-large);
   overflow: hidden;
-  background-color: #eef1f5;
-  box-shadow: 0 30px 60px -30px rgba(20, 48, 77, 0.55);
+  background-color: var(--lp-sable);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.9),
+    var(--lp-ombre-relief);
   transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
   animation: monter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -239,7 +255,7 @@
   gap: 0.6rem;
   aspect-ratio: 16 / 10;
   padding: 1.5rem;
-  color: rgba(20, 48, 77, 0.45);
+  color: var(--lp-encre-tenue);
   font-size: 0.85rem;
   text-align: center;
 }

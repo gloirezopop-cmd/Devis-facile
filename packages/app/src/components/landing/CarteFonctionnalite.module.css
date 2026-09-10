@@ -4,21 +4,25 @@
  * Elle apparaît en montant légèrement quand elle entre dans l'écran, décalée
  * de quelques dizaines de millisecondes par rapport à sa voisine — c'est ce
  * décalage, et non la durée, qui donne l'impression d'une grille qui se pose.
+ *
+ * Pas de bordure grise : sur la photo, les cartes du tableau de bord sont
+ * détachées du fond par une ombre, jamais par un trait. On fait pareil, avec un
+ * liseré blanc qui suffit à les décoller du sable.
  */
 
 .carte {
   display: block;
   padding: 1.5rem;
-  border-radius: 18px;
-  background-color: #ffffff;
-  border: 1px solid rgba(20, 48, 77, 0.07);
-  box-shadow: 0 1px 2px rgba(20, 48, 77, 0.04);
+  border-radius: var(--lp-rayon);
+  background-color: var(--lp-blanc);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.9),
+    var(--lp-ombre-douce);
   opacity: 0;
   transform: translateY(16px);
   transition:
     opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 220ms ease,
     box-shadow 220ms ease;
   transition-delay: var(--retard, 0ms);
 }
@@ -29,8 +33,9 @@
 }
 
 .carte:hover {
-  border-color: rgba(20, 48, 77, 0.2);
-  box-shadow: 0 18px 34px -22px rgba(20, 48, 77, 0.8);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.9),
+    var(--lp-ombre-carte);
 }
 
 .jeton {
@@ -41,14 +46,14 @@
   height: 46px;
   margin-bottom: 1rem;
   border-radius: 13px;
-  background-color: rgba(20, 48, 77, 0.06);
-  color: #14304d;
+  background-color: var(--lp-ciel-voile);
+  color: var(--lp-ciel);
   transition: background-color 240ms ease, color 240ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .carte:hover .jeton {
-  background-color: #14304d;
-  color: #f2994a;
+  background-color: var(--lp-encre);
+  color: var(--lp-corail);
   transform: translateY(-2px) rotate(-6deg);
 }
 
@@ -56,14 +61,14 @@
   margin: 0 0 0.4rem;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #14304d;
+  color: var(--lp-encre);
 }
 
 .description {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.6;
-  color: rgba(27, 31, 39, 0.7);
+  color: var(--lp-encre-douce);
 }
 
 @media (prefers-reduced-motion: reduce) {

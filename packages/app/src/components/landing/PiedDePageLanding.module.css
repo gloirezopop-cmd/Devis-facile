@@ -3,10 +3,20 @@
  * d'un visiteur qui a tout lu et n'a pas encore cliqué.
  */
 
+/*
+ * La bande sombre reçoit les deux mêmes lumières que la section d'ouverture :
+ * le bleu du ciel en haut à droite, la chaleur du bois en bas à gauche. C'est
+ * ce qui l'empêche de retomber sur un aplat de gabarit après une page entière
+ * tenue par une photo.
+ */
 .rappel {
+  position: relative;
   padding: 3rem 1rem;
-  background: linear-gradient(135deg, #14304d 0%, #0d2038 100%);
-  color: #ffffff;
+  background:
+    radial-gradient(ellipse 70% 90% at 82% 0%, rgba(30, 127, 212, 0.3), transparent 62%),
+    radial-gradient(ellipse 60% 85% at 8% 100%, rgba(232, 131, 109, 0.22), transparent 62%),
+    linear-gradient(135deg, #16283a 0%, #0d1a26 100%);
+  color: var(--lp-blanc);
   text-align: center;
 }
 
@@ -40,8 +50,8 @@
 
 .pied {
   padding: 2rem 1rem;
-  background-color: #ffffff;
-  border-top: 1px solid rgba(20, 48, 77, 0.08);
+  background-color: var(--lp-papier);
+  border-top: 1px solid var(--lp-filet);
 }
 
 .pieContenu {
@@ -66,7 +76,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  color: #14304d;
+  color: var(--lp-encre);
   font-weight: 700;
 }
 
@@ -77,8 +87,8 @@
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  background-color: #14304d;
-  color: #f2994a;
+  background-color: var(--lp-encre);
+  color: var(--lp-corail);
 }
 
 .liensPied {
@@ -92,18 +102,20 @@
 }
 
 .lienPied {
-  color: rgba(27, 31, 39, 0.6);
+  color: var(--lp-encre-tenue);
   font-size: 0.88rem;
   text-decoration: none;
 }
 
 .lienPied:hover {
-  color: #14304d;
+  color: var(--lp-ciel-encre);
   text-decoration: underline;
 }
 
+/* La mention se distingue par sa taille, pas par un gris plus pâle : elle reste
+   sur la teinte la plus claire qui demeure lisible. */
 .mention {
   margin: 0;
   font-size: 0.82rem;
-  color: rgba(27, 31, 39, 0.4);
+  color: var(--lp-encre-tenue);
 }

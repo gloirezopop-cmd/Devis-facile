@@ -1,5 +1,17 @@
 /*
- * La page d'accueil.
+ * La page d'accueil — et la charte de toute la section publique.
+ *
+ * Les couleurs ci-dessous ne sont pas choisies au goût : elles sont relevées
+ * sur la photo d'ouverture (`public/apercu-devis-facile.jpg`). Le bleu est
+ * celui du ciel, le corail celui du bouton affiché sur la tablette, la menthe
+ * celle des courbes du tableau de bord, le sable celui du chêne et du béton
+ * clair. La page et son image parlent donc de la même chose, ce qui évite
+ * l'effet — très courant — d'une photo posée sur un gabarit qui l'ignore.
+ *
+ * Ces variables sont déclarées ici, sur `.page`, et nulle part ailleurs. Comme
+ * les modules CSS ne renomment pas les propriétés personnalisées, tous les
+ * composants de la page les lisent avec `var(--lp-…)`. L'application, elle, ne
+ * les voit jamais : rien ne fuit hors de ce conteneur.
  *
  * L'application entière est composée en Times New Roman (voir tailwind.config).
  * La page publique s'en écarte volontairement : c'est la première chose qu'un
@@ -9,12 +21,52 @@
  */
 
 .page {
+  /* ── L'encre ──
+     Trois niveaux seulement, et le plus clair (`tenue`) est calé sur la limite
+     du lisible : 4,7 contre le fond de la page. Un gris plus pâle ferait plus
+     élégant sur un écran de bureau et deviendrait illisible sur un téléphone
+     tenu en plein soleil — ce qui est exactement la situation de nos lecteurs. */
+  --lp-encre: #13202d;
+  --lp-encre-douce: rgba(19, 32, 45, 0.72);
+  --lp-encre-tenue: rgba(19, 32, 45, 0.62);
+  --lp-filet: rgba(19, 32, 45, 0.08);
+  --lp-filet-marque: rgba(19, 32, 45, 0.16);
+
+  /* ── Les accents, relevés sur la photo ──
+     Le bleu existe en deux versions. Celui du ciel est trop clair pour porter
+     du texte (4,1 sur blanc, sous le seuil) : il sert aux voiles, aux icônes et
+     à l'anneau de focus. Dès qu'un mot est écrit en bleu, c'est l'autre. */
+  --lp-ciel: #1e7fd4;
+  --lp-ciel-encre: #15619f;
+  --lp-ciel-voile: #e9f2fb;
+  --lp-corail: #e8836d;
+  --lp-corail-fonce: #d46f58;
+  --lp-corail-voile: rgba(232, 131, 109, 0.14);
+  --lp-menthe: #3d9e86;
+
+  /* ── Les surfaces ──
+     Aucune n'est le blanc d'écran pur en dehors des cartes : la lumière de la
+     photo est chaude, une page froide à côté d'elle paraîtrait éteinte. */
+  --lp-blanc: #ffffff;
+  --lp-papier: #fdfbf8;
+  --lp-sable: #f6f1e8;
+
+  /* ── Les ombres ──
+     Diffuses et sans trait dur : sur la photo, rien n'est cerné, tout est posé
+     par la lumière. */
+  --lp-ombre-douce: 0 1px 2px rgba(19, 32, 45, 0.04);
+  --lp-ombre-carte: 0 20px 40px -28px rgba(19, 32, 45, 0.55);
+  --lp-ombre-relief: 0 34px 64px -32px rgba(19, 32, 45, 0.5);
+
+  --lp-rayon: 18px;
+  --lp-rayon-large: 24px;
+
   min-height: 100vh;
   /* `dvh` suit la barre d'adresse des navigateurs mobiles ; le `vh` au-dessus
      reste comme repli pour ceux qui ne la connaissent pas. */
   min-height: 100dvh;
-  background-color: #ffffff;
-  color: #1b1f27;
+  background-color: var(--lp-papier);
+  color: var(--lp-encre);
   font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }

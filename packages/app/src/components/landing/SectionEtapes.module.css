@@ -48,8 +48,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background-color: #14304d;
-  color: #f2994a;
+  background-color: var(--lp-encre);
+  color: var(--lp-corail);
   font-size: 1.05rem;
   font-weight: 800;
 }
@@ -70,7 +70,7 @@
   left: 21px;
   bottom: -1.75rem;
   width: 2px;
-  background: linear-gradient(180deg, rgba(20, 48, 77, 0.2), rgba(20, 48, 77, 0));
+  background: linear-gradient(180deg, rgba(19, 32, 45, 0.2), rgba(19, 32, 45, 0));
 }
 
 @media (min-width: 768px) {
@@ -81,7 +81,7 @@
     bottom: auto;
     width: auto;
     height: 2px;
-    background: linear-gradient(90deg, rgba(20, 48, 77, 0.2), rgba(20, 48, 77, 0));
+    background: linear-gradient(90deg, rgba(19, 32, 45, 0.2), rgba(19, 32, 45, 0));
   }
 }
 
@@ -90,7 +90,7 @@
   padding-top: 0.6rem;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #14304d;
+  color: var(--lp-encre);
 }
 
 @media (min-width: 768px) {
@@ -103,5 +103,5 @@
   margin: 0;
   font-size: 0.92rem;
   line-height: 1.6;
-  color: rgba(27, 31, 39, 0.68);
+  color: var(--lp-encre-douce);
 }
