@@ -256,11 +256,6 @@ export default function Admin() {
         </div>
       )}
 
-      <p className="text-[12.5px] leading-relaxed text-brand-text/45">
-        Le nombre de <strong>visiteurs</strong> n'apparaît pas ici : l'application n'enregistre
-        aujourd'hui aucune visite anonyme, et un chiffre inventé ne vaut rien. Pour l'obtenir,
-        activez « Web Analytics » sur votre projet Vercel — c'est un simple interrupteur.
-      </p>
     </section>
   );
 }

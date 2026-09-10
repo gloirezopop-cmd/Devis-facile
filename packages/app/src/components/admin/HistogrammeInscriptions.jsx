@@ -48,7 +48,7 @@ export default function HistogrammeInscriptions({ donnees = [] }) {
         <h3 className="text-[13px] font-extrabold uppercase tracking-[0.1em] text-brand-text/50">
           Inscriptions sur 30 jours
         </h3>
-        <span className="text-[12.5px] text-brand-text/45">{total} au total</span>
+        <span className="text-[12.5px] text-brand-text/65">{total} au total</span>
       </div>
 
       <svg
@@ -104,13 +104,18 @@ export default function HistogrammeInscriptions({ donnees = [] }) {
           </text>
         )}
 
-        {/* Trois dates seulement : début, milieu, fin. Trente se chevaucheraient. */}
+        {/* Trois dates seulement : début, milieu, fin. Trente se chevaucheraient.
+            L'opacité fait 0,62 et non 0,40 : à 0,40 le contraste tombait à 2,45
+            sur la carte blanche, sous le seuil de 4,5. Ces dates restaient
+            visibles sur un écran de téléphone, très contrasté, et
+            disparaissaient sur un écran d'ordinateur — un graphique dont on ne
+            lit plus l'abscisse ne situe plus rien. */}
         {[0, Math.floor(donnees.length / 2), donnees.length - 1].map((i) => (
           <text
             key={i}
             x={Math.min(Math.max(xDe(i) + largeurBarre / 2, 18), LARGEUR - 18)}
             y={HAUTEUR - 8}
-            textAnchor="middle" fontSize="11" fill="#1B1F27" fillOpacity="0.4"
+            textAnchor="middle" fontSize="11" fill="#1B1F27" fillOpacity="0.62"
           >
             {jourCourt(donnees[i].jour)}
           </text>
