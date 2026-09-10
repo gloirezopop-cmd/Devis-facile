@@ -928,7 +928,13 @@ export default function Fondation() {
 
       <CarteBloc
         titre="Dallage"
-        onAdd={() => addRow(dallages, setDallages, { niveauId: niveauActifId, longueur: '', largeur: '', epaisseur: '', nombre: '1', pertes: '5', dosage: '250', coefSable: '0.40', coefGravier: '0.80', densiteSable: '1600', densiteGravier: '1500' }, 'DL')}
+        /* Densités : sable 1500, gravier 1600 — elles étaient inversées ici,
+           alors que le moteur porte les bonnes valeurs (PARAMETRES.beton).
+           Le sable était donc facturé 6,7 % trop lourd et le gravier 6,25 %
+           trop léger, sur chaque dallage créé depuis cet écran.
+           Dosage : 350 kg/m³, le béton de dallage courant. Les lignes déjà
+           enregistrées gardent la valeur qu'elles portent. */
+        onAdd={() => addRow(dallages, setDallages, { niveauId: niveauActifId, longueur: '', largeur: '', epaisseur: '', nombre: '1', pertes: '5', dosage: '350', coefSable: '0.40', coefGravier: '0.80', densiteSable: '1500', densiteGravier: '1600' }, 'DL')}
         addLabel="Ajouter dallage"
         totalValeur={getBloc('dallage').total}
         totalUnite={getBloc('dallage').unite}
@@ -956,12 +962,30 @@ export default function Fondation() {
             <div className="bg-devis-surface p-3 rounded mb-4 border border-devis-border">
               <h4 className="text-xs font-bold text-devis-calcule mb-2">Paramètres de composition</h4>
               <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                <InputSaisie label="Dosage" value={ch.dosage || 250} onChange={(v) => updateRow(dallages, setDallages, ch.id, 'dosage', v)} unite="kg/m³" />
+                {/* Le dosage se choisit, il ne se tape pas : les dosages du
+                    bâtiment sont une liste courte et connue, et une frappe
+                    libre laisse passer un 25 ou un 3500 sans que rien ne le
+                    signale. Même liste que les paramètres globaux du béton
+                    plus haut, pour qu'on ne trouve pas deux vocabulaires
+                    différents dans un même écran. */}
+                <SelectSaisie
+                  label="Dosage"
+                  value={Number(ch.dosage) || 350}
+                  onChange={(v) => updateRow(dallages, setDallages, ch.id, 'dosage', Number(v))}
+                  options={[
+                    { label: '150 kg/m³', value: 150 },
+                    { label: '200 kg/m³', value: 200 },
+                    { label: '250 kg/m³', value: 250 },
+                    { label: '300 kg/m³', value: 300 },
+                    { label: '350 kg/m³', value: 350 },
+                    { label: '400 kg/m³', value: 400 },
+                  ]}
+                />
                 <InputSaisie label="Pertes" value={ch.pertes || 5} onChange={(v) => updateRow(dallages, setDallages, ch.id, 'pertes', v)} unite="%" />
                 <InputSaisie label="Ks" value={ch.coefSable || 0.40} onChange={(v) => updateRow(dallages, setDallages, ch.id, 'coefSable', v)} unite="m³/m³" />
                 <InputSaisie label="Kg" value={ch.coefGravier || 0.80} onChange={(v) => updateRow(dallages, setDallages, ch.id, 'coefGravier', v)} unite="m³/m³" />
-                <InputSaisie label="ρ Sable" value={ch.densiteSable || 1600} onChange={(v) => updateRow(dallages, setDallages, ch.id, 'densiteSable', v)} unite="kg/m³" />
-                <InputSaisie label="ρ Gravier" value={ch.densiteGravier || 1500} onChange={(v) => updateRow(dallages, setDallages, ch.id, 'densiteGravier', v)} unite="kg/m³" />
+                <InputSaisie label="ρ Sable" value={ch.densiteSable || 1500} onChange={(v) => updateRow(dallages, setDallages, ch.id, 'densiteSable', v)} unite="kg/m³" />
+                <InputSaisie label="ρ Gravier" value={ch.densiteGravier || 1600} onChange={(v) => updateRow(dallages, setDallages, ch.id, 'densiteGravier', v)} unite="kg/m³" />
               </div>
             </div>
 
