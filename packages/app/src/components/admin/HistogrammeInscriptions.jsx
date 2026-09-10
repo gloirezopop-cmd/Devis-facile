@@ -35,7 +35,6 @@ export default function HistogrammeInscriptions({ donnees = [] }) {
 
   const valeurs = donnees.map((d) => Number(d.nombre) || 0);
   const maximum = Math.max(...valeurs, 1);
-  const indexMax = valeurs.indexOf(Math.max(...valeurs));
   const hauteurUtile = HAUTEUR - MARGE_BASSE - MARGE_HAUTE;
   const largeurBarre = (LARGEUR - ECART * (donnees.length - 1)) / donnees.length;
   const xDe = (i) => i * (largeurBarre + ECART);
@@ -80,6 +79,25 @@ export default function HistogrammeInscriptions({ donnees = [] }) {
                   fillOpacity={survole === null || actif ? 1 : 0.45}
                 />
               )}
+              {/* Le nombre, au-dessus de sa barre.
+                  Il ne dépend pas du survol : un tableau de bord doit se lire
+                  d'un coup d'œil, et une valeur qui n'existe que sous la
+                  souris n'existe pas pour qui regarde l'écran de loin, ni
+                  pour qui le consulte sur un téléphone — où il n'y a pas de
+                  souris du tout.
+                  Seuls les jours non nuls en portent un : sur trente jours,
+                  cela fait une poignée d'étiquettes, jamais trente. */}
+              {valeur > 0 && (
+                <text
+                  x={xDe(i) + largeurBarre / 2}
+                  y={y - 5}
+                  textAnchor="middle" fontSize="11" fontWeight="700"
+                  fill="#1B1F27" fillOpacity="0.75"
+                >
+                  {valeur}
+                </text>
+              )}
+
               {/* Cible de survol pleine hauteur : plus grande que la barre,
                   pour que les jours creux restent interrogeables. */}
               <rect
@@ -92,17 +110,6 @@ export default function HistogrammeInscriptions({ donnees = [] }) {
             </g>
           );
         })}
-
-        {/* Étiquette directe sur le seul maximum — pas un nombre sur chaque barre. */}
-        {maximum > 0 && valeurs[indexMax] > 0 && (
-          <text
-            x={xDe(indexMax) + largeurBarre / 2}
-            y={HAUTEUR - MARGE_BASSE - (valeurs[indexMax] / maximum) * hauteurUtile - 5}
-            textAnchor="middle" fontSize="11" fontWeight="700" fill="#1B1F27" fillOpacity="0.7"
-          >
-            {valeurs[indexMax]}
-          </text>
-        )}
 
         {/* Trois dates seulement : début, milieu, fin. Trente se chevaucheraient.
             L'opacité fait 0,62 et non 0,40 : à 0,40 le contraste tombait à 2,45
