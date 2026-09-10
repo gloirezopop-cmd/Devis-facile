@@ -51,9 +51,13 @@ create temp table parametre_maj (email_fondateur text);
 -- continuerait de voir le chiffre d'affaires sans que rien ne le signale.
 --
 -- Un compte qui n'existe pas encore est simplement ignoré, et le rapport le dit.
+--
+-- Un seul compte y figure, et c'est voulu : un fondateur ne peut pas être son
+-- propre investisseur — sa part serait prélevée sur un chiffre d'affaires qui
+-- lui appartient déjà en entier, et la base le refuse. Mettre ici toutes ses
+-- adresses, c'est donc se priver de toute adresse à qui donner une part.
 insert into parametre_maj values
-  ('raphaelzopop1@gmail.com'),
-  ('gloirezopop@gmail.com');
+  ('raphaelzopop1@gmail.com');
 
 
 -- ─── Le rapport d'exécution ─────────────────────────────────────────────────
