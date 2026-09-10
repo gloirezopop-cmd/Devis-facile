@@ -21,7 +21,7 @@ import {
  * sans abonnement, et voit sa part en francs. Il ne voit ni le chiffre
  * d'affaires, ni la liste des clients.
  */
-export default function GestionInvestisseurs({ partsAttribuees = 0 }) {
+export default function GestionInvestisseurs({ partsAttribuees = 0, onChangement }) {
   const [investisseurs, setInvestisseurs] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [email, setEmail] = useState('');
@@ -58,6 +58,9 @@ export default function GestionInvestisseurs({ partsAttribuees = 0 }) {
       setEmail('');
       setPart('');
       recharger();
+      // Le total des parts affiché en en-tête appartient à la page parente :
+      // il faut le lui redemander, sinon elle continue d'annoncer l'ancien.
+      onChangement?.();
     } catch (e) {
       // Le message vient de la base : « Aucun compte avec cette adresse »,
       // « Total des parts impossible »… Il est plus juste que tout ce qu'on

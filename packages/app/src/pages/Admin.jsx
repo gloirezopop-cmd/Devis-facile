@@ -188,7 +188,15 @@ export default function Admin() {
 
       {estFondateur && (
         <div className="mb-8">
-          <GestionInvestisseurs partsAttribuees={stats.parts_attribuees} />
+          {/* Le total des parts vient de `statistiques_admin()`, chargé par
+              cette page. Sans ce rappel, associer un investisseur laissait
+              l'en-tête annoncer « 100 % disponibles » au-dessus d'un tableau
+              qui en montrait 10 d'attribués : deux chiffres contradictoires
+              sur la même vignette, celui du haut étant simplement périmé. */}
+          <GestionInvestisseurs
+            partsAttribuees={stats.parts_attribuees}
+            onChangement={() => setRafraichissement((n) => n + 1)}
+          />
         </div>
       )}
 
