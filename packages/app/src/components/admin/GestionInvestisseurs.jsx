@@ -6,6 +6,7 @@ import Icone from '../ui/Icone.jsx';
 import {
   fetchInvestisseurs, fetchInvitations,
   retirerInvestisseur, inviterInvestisseur, annulerInvitation,
+  envoyerInvitationEmail,
 } from '../../lib/estimationApi.js';
 
 /**
@@ -27,6 +28,9 @@ export default function GestionInvestisseurs({ partsAttribuees = 0 }) {
   const [part, setPart] = useState('');
   const [message, setMessage] = useState(null);
   const [enCours, setEnCours] = useState(false);
+  // L'adresse dont l'e-mail part en ce moment : c'est cette ligne-là qui
+  // affiche « Envoi… », pas toutes les autres.
+  const [envoiVers, setEnvoiVers] = useState(null);
   const [rechargement, setRechargement] = useState(0);
 
   useEffect(() => {
@@ -80,6 +84,34 @@ export default function GestionInvestisseurs({ partsAttribuees = 0 }) {
         ? `Invitation retenue pour ${r.email} — ${r.part} %. Elle s'appliquera dès la création du compte.`
         : `${r.email} est désormais investisseur pour ${r.part} %.`),
     );
+  };
+
+  /**
+   * Expédie l'invitation.
+   *
+   * Volontairement séparé de `agir` : celui-ci vide le formulaire et recharge
+   * les listes, ce qui n'aurait aucun sens ici — l'invitation existe déjà, on
+   * ne fait que la poster. Un échec ne perd donc rien, et le message le dit
+   * plutôt que de laisser croire à une invitation annulée.
+   */
+  const envoyer = async (adresse, pourcentage) => {
+    setEnvoiVers(adresse);
+    setMessage(null);
+    try {
+      const r = await envoyerInvitationEmail(adresse, pourcentage);
+      setMessage({
+        type: 'succes',
+        texte: `Invitation envoyée à ${adresse}${r?.fournisseur ? ` par ${r.fournisseur}` : ''}.`,
+      });
+    } catch (e) {
+      setMessage({
+        type: 'erreur',
+        texte: `${e?.message || "L'envoi a échoué."} — l'invitation reste enregistrée : `
+          + 'vous pouvez copier le message et l\'envoyer vous-même.',
+      });
+    } finally {
+      setEnvoiVers(null);
+    }
   };
 
   const messageInvitation = (adresse, pourcentage) =>
@@ -199,18 +231,24 @@ export default function GestionInvestisseurs({ partsAttribuees = 0 }) {
                   <span className="ml-2 font-mono text-brand-text/60">{v.part} %</span>
                 </span>
                 <span className="flex items-center gap-3">
-                  {/* Aucun envoi automatique n'est branché : le message est
-                      préparé, c'est vous qui l'envoyez. Promettre un e-mail
-                      qui ne part pas serait pire que de ne rien promettre. */}
-                  <a
-                    href={`mailto:${encodeURIComponent(v.email)}?subject=${encodeURIComponent('Votre part dans Devis Facile BTP')}&body=${encodeURIComponent(messageInvitation(v.email, v.part))}`}
-                    className="text-[12px] font-bold text-brand-primary underline"
-                  >
-                    Envoyer l'invitation
-                  </a>
+                  {/* L'e-mail part réellement, par la fonction
+                      `envoyer-invitation`. Si aucun service d'envoi n'est
+                      configuré, elle le dit en clair — le bouton de copie
+                      reste alors le chemin de secours, jamais un cul-de-sac. */}
                   <button
                     type="button"
-                    onClick={() => navigator.clipboard?.writeText(messageInvitation(v.email, v.part))}
+                    disabled={envoiVers === v.email}
+                    onClick={() => envoyer(v.email, v.part)}
+                    className="text-[12px] font-bold text-brand-primary underline disabled:opacity-50"
+                  >
+                    {envoiVers === v.email ? 'Envoi…' : "Envoyer l'invitation"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(messageInvitation(v.email, v.part));
+                      setMessage({ type: 'succes', texte: 'Message copié — collez-le dans votre messagerie.' });
+                    }}
                     className="text-[12px] font-bold text-brand-text/55 underline hover:text-brand-text"
                   >
                     Copier le message

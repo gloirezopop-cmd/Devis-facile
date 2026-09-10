@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+import { messageErreurFonction } from './messageErreurFonction.js';
 
 /**
  * Accès Supabase du module « Estimer le budget de ma construction ».
@@ -282,6 +283,27 @@ export async function inviterInvestisseur(email, part) {
 export async function annulerInvitation(email) {
   const { data, error } = await supabase.rpc('annuler_invitation', { p_email: email });
   if (error) throw error;
+  return data;
+}
+
+/**
+ * Expédie l'invitation par e-mail.
+ *
+ * L'invitation est déjà enregistrée en base à ce stade : cet appel ne fait
+ * qu'envoyer le courrier. S'il échoue, rien n'est perdu — l'invitation reste
+ * valable et l'écran propose de copier le message à la main.
+ *
+ * La fonction serveur redemande à la base si l'appelant est le fondateur : ce
+ * n'est pas cet appel qui l'autorise.
+ */
+export async function envoyerInvitationEmail(email, part) {
+  const { data, error } = await supabase.functions.invoke('envoyer-invitation', {
+    body: { email, part },
+  });
+  // `invoke` ne remplit `data` que sur une réponse 2xx ; sur 4xx/5xx le corps
+  // part dans `error.context`, d'où ce détour — sans lui, l'écran afficherait
+  // « Edge Function returned a non-2xx status code » à la place du motif réel.
+  if (error) throw new Error(await messageErreurFonction(error, data));
   return data;
 }
 
