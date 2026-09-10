@@ -1,9 +1,10 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import Icone from '../ui/Icone.jsx';
-import { NAVIGATION, NAVIGATION_ADMIN } from './navigation.js';
+import { NAVIGATION, sectionAdministration } from './navigation.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useEstAdmin } from '../../hooks/useEstAdmin.js';
+import { useEstFondateur } from '../../hooks/useEstFondateur.js';
 
 /**
  * Navigation principale. Rendue deux fois : fixe sur ordinateur (Sidebar),
@@ -14,7 +15,11 @@ export function ContenuNavigation({ onNavigate }) {
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
   const estAdmin = useEstAdmin();
-  const sections = estAdmin ? [...NAVIGATION, NAVIGATION_ADMIN] : NAVIGATION;
+  // Deux questions distinctes depuis qu'un investisseur est administrateur :
+  // la section entière dépend de la première, le lien « Tarifs de référence »
+  // de la seconde.
+  const estFondateur = useEstFondateur();
+  const sections = estAdmin ? [...NAVIGATION, sectionAdministration(estFondateur)] : NAVIGATION;
 
   const handleAuthAction = async () => {
     if (session) {

@@ -85,11 +85,16 @@ export default function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/estimation" element={<EstimationBudget />} />
                 {/* Ces deux pages ne sont pas gardées par une route : c'est la
-                    base qui refuse de répondre à un compte non administrateur
-                    (RLS sur `construction_rates`, `est_admin()` dans
-                    `statistiques_admin`). Elles s'affichent alors vides, ce qui
-                    est le comportement voulu — un utilisateur curieux n'y
-                    trouve rien. */}
+                    base qui refuse de répondre. Elles s'affichent alors vides,
+                    ce qui est le comportement voulu — un utilisateur curieux
+                    n'y trouve rien.
+
+                    Les deux n'exigent pas le même rang. `/admin` demande
+                    `est_admin()` : un investisseur y suit la marche du produit,
+                    sans les recettes ni la liste des clients. `/admin/tarifs`
+                    demande `est_fondateur()` — la politique RLS de
+                    `construction_rates` le vérifie — car la grille des prix
+                    est ce qui fait le produit. */}
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/tarifs" element={<AdminTarifs />} />
 

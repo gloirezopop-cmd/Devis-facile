@@ -30,17 +30,29 @@ export const NAVIGATION = [
 ];
 
 /**
- * Section réservée au fondateur. Ajoutée à la navigation seulement lorsque la
- * base répond `est_admin() = true` — un lien masqué n'est pas une protection,
- * la vraie barrière est côté PostgreSQL (RLS et `statistiques_admin()`).
+ * Section d'administration, ajoutée seulement quand la base répond
+ * `est_admin() = true`. Un lien masqué n'est pas une protection : la vraie
+ * barrière est côté PostgreSQL (RLS et `statistiques_admin()`).
  */
-export const NAVIGATION_ADMIN = {
-  titre: 'Administration',
-  liens: [
-    { to: '/admin', label: 'Statistiques', icone: 'bar-chart', exact: true },
-    { to: '/admin/tarifs', label: 'Tarifs de référence', icone: 'credit-card' },
-  ],
-};
+const LIENS_ADMIN = [
+  { to: '/admin', label: 'Statistiques', icone: 'bar-chart', exact: true },
+];
+
+/**
+ * Les tarifs de référence, eux, ne sont pas affaire d'administrateur mais de
+ * fondateur : la grille des prix est ce qui fait le produit, et la politique
+ * RLS de `construction_rates` exige désormais `est_fondateur()`. Un
+ * investisseur qui verrait ce lien n'obtiendrait qu'un tableau vide — autant
+ * ne pas le lui montrer.
+ */
+const LIEN_TARIFS = { to: '/admin/tarifs', label: 'Tarifs de référence', icone: 'credit-card' };
+
+export function sectionAdministration(estFondateur) {
+  return {
+    titre: 'Administration',
+    liens: estFondateur ? [...LIENS_ADMIN, LIEN_TARIFS] : LIENS_ADMIN,
+  };
+}
 
 /** Routes réellement construites. Les autres passent par EmptyState. */
 export const ROUTES_ACTIVES = new Set(['/', '/dashboard', '/estimation', '/metre', '/devis', '/parametres', '/projets', '/apprendre', '/sujets', '/admin', '/admin/tarifs']);

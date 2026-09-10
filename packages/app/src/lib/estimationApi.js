@@ -179,6 +179,19 @@ export async function estAdministrateur() {
 }
 
 /**
+ * Le compte connecté est-il LE fondateur ?
+ *
+ * Distinct de `estAdministrateur` depuis qu'un investisseur est administrateur
+ * lui aussi : les deux voient le tableau de bord, un seul voit les recettes,
+ * la liste des clients et la grille tarifaire.
+ */
+export async function estFondateurCompte() {
+  const { data, error } = await supabase.rpc('est_fondateur');
+  if (error) return false;
+  return data === true;
+}
+
+/**
  * Les chiffres du tableau de bord d'administration.
  *
  * Tout est compté par la base : le navigateur n'a le droit de lire ni

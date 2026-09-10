@@ -726,7 +726,34 @@ exception when others then
 end $bloc$;
 
 
--- ─── 11. Le verdict ─────────────────────────────────────────────────────────
+-- ─── 11. Les tarifs de référence reviennent au fondateur ────────────────────
+--
+-- La politique disait `est_admin()`. Tant qu'il n'y avait qu'un administrateur,
+-- c'était la même chose ; depuis qu'un investisseur en est un, elle lui ouvrait
+-- la grille tarifaire — et, comme elle porte sur `for all`, son écriture aussi.
+-- Ce sont les prix qui font le produit : ils reviennent au fondateur.
+--
+-- L'estimation continue de les lire sans rien perdre : `estimer_projet()` est
+-- `security definer`, elle ne passe donc pas par cette politique. Aucun
+-- utilisateur ne voit son calcul s'arrêter.
+
+do $bloc$
+begin
+  execute $sql$ drop policy if exists "Les tarifs sont réservés à l'administration" on public.construction_rates $sql$;
+  execute $sql$ drop policy if exists "Les tarifs sont réservés au fondateur" on public.construction_rates $sql$;
+  execute $sql$
+    create policy "Les tarifs sont réservés au fondateur" on public.construction_rates
+      for all using (public.est_fondateur()) with check (public.est_fondateur())
+  $sql$;
+
+  insert into rapport_maj values (11, '11. Tarifs de reference', 'OK',
+    'lecture ET ecriture reservees au fondateur — les investisseurs n y ont plus acces');
+exception when others then
+  insert into rapport_maj values (11, '11. Tarifs de reference', 'ECHEC', sqlerrm);
+end $bloc$;
+
+
+-- ─── 12. Le verdict ─────────────────────────────────────────────────────────
 
 do $bloc$
 declare
@@ -748,6 +775,14 @@ begin
      and routine_name in ('est_fondateur', 'nommer_investisseur', 'retirer_investisseur',
                           'investisseurs_admin', 'inviter_investisseur', 'invitations_admin',
                           'annuler_invitation', 'mes_revenus_investisseur');
+
+  insert into rapport_maj values (96, 'Tarifs de reference',
+    case when exists (
+      select 1 from pg_policies
+       where schemaname = 'public' and tablename = 'construction_rates'
+         and coalesce(qual, '') like '%est_fondateur%')
+    then 'fondateur' else 'A CORRIGER' end,
+    'qui peut lire et modifier la grille tarifaire');
 
   insert into rapport_maj values (97, 'Fondateur(s) reconnu(s)', v_fondateurs::text, v_liste);
 
