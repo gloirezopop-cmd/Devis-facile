@@ -2014,17 +2014,33 @@ function calculerDallage(l) {
         calcul: `Masse = ${volFinal} m³ × ${D} kg/m³ = ${cimentKg} kg (${cimentTonnes} t)\nSacs = ArrondiSup(${cimentKg} ÷ 50) = ${cimentSacs} sacs`,
         motif_arrondi: 'Arrondi supérieur par élément', valeur_arrondie: cimentSacs,
       },
+      // Sable et gravier sortent en TONNES, pas en m³.
+      //
+      // Ils étaient émis en m³ alors que la bibliothèque les facture à la
+      // tonne (`sableTonne`, `gravierTonne`), et aucune conversion ne rattrape
+      // l'unité en chemin : `valorisation.js` n'en prévoit que pour l'eau et
+      // l'acier. Le devis multipliait donc un volume par un prix de masse, et
+      // sous-comptait de toute la densité — un tiers pour le sable, plus du
+      // tiers pour le gravier.
+      //
+      // C'est aussi ce que `recettes.js` a déjà décidé pour le béton
+      // ordinaire, avec la même raison. Le dallage était le dernier endroit à
+      // ne pas suivre : deux blocs du même chantier livraient du sable dans
+      // deux unités différentes sous le même identifiant.
+      //
+      // La tonne est du reste l'unité d'achat réelle : le sable se commande à
+      // la benne, pas au mètre cube.
       {
-        id_materiau: 'sable', categorie: 'sable', nom: 'Sable de rivière', unite: 'm³', quantiteNette: volSable,
-        formule: 'Volume Final × Ks',
+        id_materiau: 'sable', categorie: 'sable', nom: 'Sable de rivière', unite: 't', quantiteNette: sableTonnes,
+        formule: 'Volume Final × Ks × densité',
         calcul: `Vol. Sable (m³) = ${volFinal} m³ × ${Ks} = ${volSable} m³\nVolume Sable (Litres) = ${volSable} m³ × 1000 = ${net(volSable * 1000, 2)} L\nMasse (kg) = ${volSable} m³ × ${densiteS} kg/m³ = ${sableKg} kg\nMasse (tonnes) = ${sableKg} ÷ 1000 = ${sableTonnes} t`,
-        motif_arrondi: null, valeur_arrondie: volSable,
+        motif_arrondi: null, valeur_arrondie: sableTonnes,
       },
       {
-        id_materiau: 'gravier', categorie: 'gravier', nom: 'Gravier', unite: 'm³', quantiteNette: volGravier,
-        formule: 'Volume Final × Kg',
+        id_materiau: 'gravier', categorie: 'gravier', nom: 'Gravier', unite: 't', quantiteNette: gravierTonnes,
+        formule: 'Volume Final × Kg × densité',
         calcul: `Vol. Gravier (m³) = ${volFinal} m³ × ${Kg} = ${volGravier} m³\nVolume Gravier (Litres) = ${volGravier} m³ × 1000 = ${net(volGravier * 1000, 2)} L\nMasse (kg) = ${volGravier} m³ × ${densiteG} kg/m³ = ${gravierKg} kg\nMasse (tonnes) = ${gravierKg} ÷ 1000 = ${gravierTonnes} t`,
-        motif_arrondi: null, valeur_arrondie: volGravier,
+        motif_arrondi: null, valeur_arrondie: gravierTonnes,
       },
       {
         id_materiau: 'eau', categorie: 'eau', nom: 'Eau de gâchage', unite: 'L', quantiteNette: eauL,
