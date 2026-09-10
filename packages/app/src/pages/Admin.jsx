@@ -3,6 +3,7 @@ import Icone from '../components/ui/Icone.jsx';
 import HistogrammeInscriptions from '../components/admin/HistogrammeInscriptions.jsx';
 import ListeComptes from '../components/admin/ListeComptes.jsx';
 import GestionInvestisseurs from '../components/admin/GestionInvestisseurs.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { fetchStatistiquesAdmin, fetchComptesAdmin, fetchMesRevenus } from '../lib/estimationApi.js';
 
 /**
@@ -19,6 +20,12 @@ import { fetchStatistiquesAdmin, fetchComptesAdmin, fetchMesRevenus } from '../l
  * leur passage, et un zéro laisserait croire que personne ne vient.
  */
 export default function Admin() {
+  // L'adresse du compte connecté. Elle ne sert qu'à une chose, mais elle est
+  // décisive : quand la base ne reconnaît pas le fondateur, la première
+  // question est « sur quel compte suis-je, au juste ? ». Un tableau de bord
+  // qui salue par le prénom ne suffit pas à y répondre — plusieurs comptes de
+  // test peuvent porter le même.
+  const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [comptes, setComptes] = useState([]);
   // Ce qu'un investisseur voit de son placement. `null` pour le fondateur et
@@ -195,12 +202,21 @@ export default function Admin() {
             <p className="font-bold text-brand-text">
               Ce compte est administrateur, mais pas reconnu comme fondateur.
             </p>
-            <p className="mt-1">
+            <p className="mt-2">
+              Compte connecté :{' '}
+              <strong className="rounded bg-black/5 px-1.5 py-0.5 font-mono text-brand-text">
+                {user?.email || 'adresse inconnue'}
+              </strong>
+            </p>
+            <p className="mt-2">
               La section <strong>Investisseurs</strong>, le chiffre d'affaires et la liste des
-              comptes lui sont donc masqués. Si c'est bien votre compte principal, exécutez
-              <code className="mx-1 rounded bg-black/5 px-1">maj_investisseurs.sql</code>
-              dans Supabase — sa dernière requête affiche un diagnostic en clair — puis
-              actualisez cette page.
+              comptes lui sont donc masqués.{' '}
+              <code className="rounded bg-black/5 px-1">maj_investisseurs.sql</code> ne marque
+              qu'<strong>une seule adresse</strong> : si celle ci-dessus n'est pas celle du
+              fondateur, déconnectez-vous et revenez avec le bon compte. Si c'est bien elle,
+              ouvrez le script, remplacez l'adresse en tête, relancez-le dans Supabase — son
+              rapport dit étape par étape ce qui est passé — puis <strong>Actualiser</strong>
+              {' '}en haut de cette page.
             </p>
           </div>
         </div>
