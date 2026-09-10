@@ -43,8 +43,17 @@
 drop table if exists parametre_maj;
 create temp table parametre_maj (email_fondateur text);
 
--- ⚠️ SEULE LIGNE À MODIFIER : l'adresse du compte fondateur.
-insert into parametre_maj values ('gloirezopop@gmail.com');
+-- ⚠️ LA SEULE CHOSE À MODIFIER : qui est fondateur. Une ligne par adresse.
+--
+-- Cette liste est la vérité : le script marque ces comptes comme fondateurs ET
+-- retire la qualité à tous les autres. Corriger une adresse suffit donc à
+-- réparer une erreur — sans cela, l'ancienne adresse resterait fondatrice, et
+-- continuerait de voir le chiffre d'affaires sans que rien ne le signale.
+--
+-- Un compte qui n'existe pas encore est simplement ignoré, et le rapport le dit.
+insert into parametre_maj values
+  ('raphaelzopop1@gmail.com'),
+  ('gloirezopop@gmail.com');
 
 
 -- ─── Le rapport d'exécution ─────────────────────────────────────────────────
@@ -128,42 +137,71 @@ end $bloc$;
 
 do $bloc$
 declare
-  v_email text := (select email_fondateur from parametre_maj);
-  v_id    uuid;
-  v_n     int;
+  v_email   text;
+  v_id      uuid;
+  v_n       int;
+  v_faits   text[] := '{}';
+  v_absents text[] := '{}';
+  v_retires int;
 begin
-  select u.id into v_id from auth.users u where lower(u.email) = lower(v_email);
+  for v_email in select email_fondateur from parametre_maj loop
+    select u.id into v_id from auth.users u where lower(u.email) = lower(v_email);
 
-  if v_id is null then
-    insert into rapport_maj values (3, '3. Le fondateur', 'ECHEC',
-      'Aucun compte inscrit avec l''adresse ' || v_email ||
-      '. Creez d''abord le compte sur le site, ou corrigez l''adresse en tete de ce script.');
-  else
-    update public.profiles
-       set est_fondateur = true, is_admin = true
-     where id = v_id;
-    get diagnostics v_n = row_count;
-
-    -- Le compte existe dans `auth.users` mais n'a pas de profil : c'est le cas
-    -- des comptes créés avant le déclencheur. On le crée plutôt que de laisser
-    -- l'UPDATE ne toucher aucune ligne et se taire.
-    if v_n = 0 then
-      insert into public.profiles (id, email, is_admin, est_fondateur)
-      values (v_id, v_email, true, true)
-      on conflict (id) do update set is_admin = true, est_fondateur = true;
-      insert into rapport_maj values (3, '3. Le fondateur', 'OK',
-        v_email || ' — le profil manquait, il a ete cree');
+    if v_id is null then
+      v_absents := v_absents || v_email;
     else
-      insert into rapport_maj values (3, '3. Le fondateur', 'OK', v_email);
-    end if;
+      update public.profiles
+         set est_fondateur = true, is_admin = true
+       where id = v_id;
+      get diagnostics v_n = row_count;
 
-    -- Tant qu'à faire, on remet toutes les copies d'adresse d'aplomb : elles
-    -- servent aux recherches par e-mail dans `nommer_investisseur()`.
-    update public.profiles p
-       set email = u.email
-      from auth.users u
-     where u.id = p.id
-       and (p.email is null or lower(p.email) is distinct from lower(u.email));
+      -- Le compte existe dans `auth.users` mais n'a pas de profil : c'est le
+      -- cas des comptes créés avant le déclencheur. On le crée, plutôt que de
+      -- laisser l'UPDATE ne toucher aucune ligne et se taire.
+      if v_n = 0 then
+        insert into public.profiles (id, email, is_admin, est_fondateur)
+        values (v_id, v_email, true, true)
+        on conflict (id) do update set is_admin = true, est_fondateur = true;
+      end if;
+
+      v_faits := v_faits || v_email;
+    end if;
+  end loop;
+
+  -- La liste en tête dit qui est fondateur — elle dit donc aussi qui ne l'est
+  -- plus. C'est ce qui rend une correction d'adresse réparatrice : sans cette
+  -- reprise, l'ancienne resterait fondatrice et continuerait de voir le
+  -- chiffre d'affaires, en silence.
+  update public.profiles p
+     set est_fondateur = false
+   where p.est_fondateur
+     and not exists (
+       select 1 from auth.users u
+         join parametre_maj m on lower(u.email) = lower(m.email_fondateur)
+        where u.id = p.id);
+  get diagnostics v_retires = row_count;
+
+  -- Tant qu'à faire, on remet toutes les copies d'adresse d'aplomb : elles
+  -- servent aux recherches par e-mail dans `nommer_investisseur()`.
+  update public.profiles p
+     set email = u.email
+    from auth.users u
+   where u.id = p.id
+     and (p.email is null or lower(p.email) is distinct from lower(u.email));
+
+  if array_length(v_faits, 1) is null then
+    insert into rapport_maj values (3, '3. Le fondateur', 'ECHEC',
+      'Aucun compte inscrit avec : ' || array_to_string(v_absents, ', ') ||
+      '. Creez le compte sur le site, ou corrigez la liste en tete de ce script.');
+  else
+    insert into rapport_maj values (3, '3. Le fondateur', 'OK',
+      array_to_string(v_faits, ', ')
+      || case when array_length(v_absents, 1) is not null
+              then ' — sans compte, ignore(s) : ' || array_to_string(v_absents, ', ')
+              else '' end
+      || case when v_retires > 0
+              then ' — ' || v_retires || ' ancien(s) fondateur(s) retire(s)'
+              else '' end);
   end if;
 exception when others then
   insert into rapport_maj values (3, '3. Le fondateur', 'ECHEC', sqlerrm);
@@ -688,14 +726,17 @@ end $bloc$;
 
 do $bloc$
 declare
-  v_email     text := (select email_fondateur from parametre_maj);
-  v_fondateur boolean;
-  v_admin     boolean;
-  v_fonctions int;
+  v_fondateurs int;
+  v_liste      text;
+  v_fonctions  int;
 begin
-  select p.est_fondateur, p.is_admin into v_fondateur, v_admin
-    from auth.users u left join public.profiles p on p.id = u.id
-   where lower(u.email) = lower(v_email);
+  -- On relit la base, pas le paramètre : ce qui compte est ce qui y est
+  -- réellement inscrit, pas ce qu'on lui a demandé d'inscrire.
+  select count(*), coalesce(string_agg(u.email, ', ' order by u.email), '(aucun)')
+    into v_fondateurs, v_liste
+    from public.profiles p
+    join auth.users u on u.id = p.id
+   where p.est_fondateur;
 
   select count(*) into v_fonctions
     from information_schema.routines
@@ -704,16 +745,18 @@ begin
                           'investisseurs_admin', 'inviter_investisseur', 'invitations_admin',
                           'annuler_invitation', 'mes_revenus_investisseur');
 
+  insert into rapport_maj values (97, 'Fondateur(s) reconnu(s)', v_fondateurs::text, v_liste);
+
   insert into rapport_maj values (98, 'Fonctions installees', v_fonctions || ' / 8',
     case when v_fonctions = 8 then 'complet' else 'incomplet — voir les ECHEC ci-dessus' end);
 
   insert into rapport_maj values (99, 'VERDICT',
-    case when coalesce(v_fondateur, false) and v_fonctions = 8 then 'PRET' else 'A CORRIGER' end,
+    case when v_fondateurs > 0 and v_fonctions = 8 then 'PRET' else 'A CORRIGER' end,
     case
-      when coalesce(v_fondateur, false) and v_fonctions = 8
-        then 'Rechargez /admin avec Ctrl+Maj+R : la section Investisseurs doit apparaitre.'
-      when not coalesce(v_fondateur, false)
-        then v_email || ' n''est pas marque fondateur — lisez la ligne 3 ci-dessus.'
+      when v_fondateurs > 0 and v_fonctions = 8
+        then 'Connectez-vous avec l''un des comptes ci-dessus, puis rechargez /admin (Ctrl+Maj+R).'
+      when v_fondateurs = 0
+        then 'Aucun compte n''est fondateur — lisez la ligne 3 ci-dessus.'
       else 'Des fonctions manquent — lisez les lignes ECHEC ci-dessus et envoyez-les moi.'
     end);
 exception when others then
