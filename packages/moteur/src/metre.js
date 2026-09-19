@@ -1,6 +1,7 @@
 import { PARAMETRES, calculerRecouvrement } from './parametres.js';
 import { calculerBlocArmature, filDeLigature, poidsAuMetre } from './armature.js';
 import { calculerCoffrage } from './coffrage.js';
+import { calculerMetreToitureComplet } from './toiture.js';
 
 /**
  * Moteur de metre — LOT 100.
@@ -200,8 +201,16 @@ const BLOCS = {
         saisie.amorces.forEach(am => {
           const a = am.longueur || 0;
           const b = am.largeur || 0;
-          // Hauteur H de la longrine
           volAmorces += a * b * l.hauteur * nombre(am.nombre);
+        });
+      }
+      if (saisie && saisie.semelles) {
+        saisie.semelles.forEach(sem => {
+          const a = (sem.amorceSectionA || 0) / 100;
+          const b = (sem.amorceSectionB || 0) / 100;
+          if (a > 0 && b > 0) {
+            volAmorces += a * b * l.hauteur * nombre(sem.nombre);
+          }
         });
       }
       return volBrut - volAmorces;
@@ -520,7 +529,15 @@ const BLOCS = {
 
   // moellon est géré par calculerMoellon() — retiré du loop générique BLOCS
 
-  // chapeEgalisation remplacée par dallages géré manuellement (comme moellon)
+  // chapeEgalisation a été historiquement remplacée par dallage, mais elle est maintenue pour compatibilité
+  chapeEgalisation: {
+    libelle: 'Chape d\'égalisation',
+    unite: 'm3',
+    requis: ['perimetre', 'largeur', 'epaisseur'],
+    formule: 'Périmètre x largeur x epaisseur',
+    calcul: (l) => (l.perimetre || l.longueur) * l.largeur * l.epaisseur * nombre(l.nombre),
+    trace: (l) => `Volume = ${net(l.perimetre || l.longueur, 2)}m × ${net(l.largeur, 2)}m × ${net(l.epaisseur, 2)}m × ${nombre(l.nombre)} = ${net((l.perimetre || l.longueur) * l.largeur * l.epaisseur * nombre(l.nombre), 3)} m³`
+  },
   
   remblai: {
     libelle: 'Remblai',
@@ -581,14 +598,7 @@ const BLOCS = {
       : `Surface coffrage = ${net(l.longueur, 2)}m (L) × ${net(l.largeur, 2)}m (l) × 1.12 (Majoration joues) × ${nombre(l.nombre)} (N) = ${net(l.longueur * l.largeur * 1.12 * nombre(l.nombre), 2)} m²`
   },
 
-  plancherHourdis: {
-    libelle: 'Plancher Hourdis',
-    unite: 'm2',
-    requis: ['longueur', 'largeur'],
-    formule: 'L x l x N',
-    calcul: (l) => l.longueur * l.largeur * nombre(l.nombre),
-    trace: (l) => `Surface = ${net(l.longueur, 2)}m (L) × ${net(l.largeur, 2)}m (l) × ${nombre(l.nombre)} (N) = ${net(l.longueur * l.largeur * nombre(l.nombre), 2)} m²`
-  },
+
 
   charpenteBois: {
     libelle: 'Charpente Bois',
@@ -1025,11 +1035,11 @@ const extractionsArmatures = {
       designation: 'Principale 1',
       diametre: dPrin,
       nuance: PARAMETRES.nuancePrincipaleParDefaut,
-      nombreDeFilesTotal: nbreBarresPrin,
+      nombreDeFilesTotal: nbreBarresPrin * nombre(l.nombre),
       longueurDeveloppee: l.perimetre,
       espacement: null,
       overrides: l.overrides_prin,
-      tracePrefix: `Nbre barres principales = ${nbreBarresPrin} pièces\nL_barre = Périmètre = ${net(l.perimetre)} m`,
+      tracePrefix: `Nbre barres principales = ${nbreBarresPrin} pièces\nNbre Total = ${nbreBarresPrin * nombre(l.nombre)} pièces\nL_barre = Périmètre = ${net(l.perimetre)} m`,
       traceFormule: 'L_barre = Périmètre'
     }));
     
@@ -1038,11 +1048,11 @@ const extractionsArmatures = {
         designation: 'Principale 2',
         diametre: dPrin2,
         nuance: PARAMETRES.nuancePrincipaleParDefaut,
-        nombreDeFilesTotal: nbreBarresPrin2,
+        nombreDeFilesTotal: nbreBarresPrin2 * nombre(l.nombre),
         longueurDeveloppee: l.perimetre,
         espacement: null,
         overrides: l.overrides_prin2,
-        tracePrefix: `Nbre barres principales 2 = ${nbreBarresPrin2} pièces\nL_barre = Périmètre = ${net(l.perimetre)} m`,
+        tracePrefix: `Nbre barres principales 2 = ${nbreBarresPrin2} pièces\nNbre Total = ${nbreBarresPrin2 * nombre(l.nombre)} pièces\nL_barre = Périmètre = ${net(l.perimetre)} m`,
         traceFormule: 'L_barre = Périmètre'
       }));
     }
@@ -1052,11 +1062,11 @@ const extractionsArmatures = {
         designation: 'Armatures de Peau',
         diametre: dPeau,
         nuance: PARAMETRES.nuancePrincipaleParDefaut,
-        nombreDeFilesTotal: nbreBarresPeau,
+        nombreDeFilesTotal: nbreBarresPeau * nombre(l.nombre),
         longueurDeveloppee: l.perimetre,
         espacement: null,
         overrides: l.overrides_peau,
-        tracePrefix: `Nbre barres de peau = ${nbreBarresPeau} pièces\nL_barre = Périmètre = ${net(l.perimetre)} m`,
+        tracePrefix: `Nbre barres de peau = ${nbreBarresPeau} pièces\nNbre Total = ${nbreBarresPeau * nombre(l.nombre)} pièces\nL_barre = Périmètre = ${net(l.perimetre)} m`,
         traceFormule: 'L_barre = Périmètre'
       }));
     }
@@ -1066,11 +1076,11 @@ const extractionsArmatures = {
         designation: 'Chapeaux',
         diametre: dChapeau,
         nuance: PARAMETRES.nuancePrincipaleParDefaut,
-        nombreDeFilesTotal: nbreBarresChapeau,
+        nombreDeFilesTotal: nbreBarresChapeau * nombre(l.nombre),
         longueurDeveloppee: longueurChapeau,
         espacement: null,
         overrides: l.overrides_chapeau,
-        tracePrefix: `Nbre barres de chapeau = ${nbreBarresChapeau} pièces\nL_barre saisie = ${net(longueurChapeau)} m`,
+        tracePrefix: `Nbre barres de chapeau = ${nbreBarresChapeau} pièces\nNbre Total = ${nbreBarresChapeau * nombre(l.nombre)} pièces\nL_barre saisie = ${net(longueurChapeau)} m`,
         traceFormule: 'L_barre = Saisie manuelle'
       }));
     }
@@ -1080,11 +1090,11 @@ const extractionsArmatures = {
         designation: 'Renforts',
         diametre: dRenfort,
         nuance: PARAMETRES.nuancePrincipaleParDefaut,
-        nombreDeFilesTotal: nbreBarresRenfort,
+        nombreDeFilesTotal: nbreBarresRenfort * nombre(l.nombre),
         longueurDeveloppee: longueurRenfort,
         espacement: null,
         overrides: l.overrides_renfort,
-        tracePrefix: `Nbre barres de renfort = ${nbreBarresRenfort} pièces\nL_barre saisie = ${net(longueurRenfort)} m`,
+        tracePrefix: `Nbre barres de renfort = ${nbreBarresRenfort} pièces\nNbre Total = ${nbreBarresRenfort * nombre(l.nombre)} pièces\nL_barre saisie = ${net(longueurRenfort)} m`,
         traceFormule: 'L_barre = Saisie manuelle'
       }));
     }
@@ -1094,11 +1104,11 @@ const extractionsArmatures = {
       designation: 'Cadre',
       diametre: dCadre,
       nuance: PARAMETRES.nuanceCadresParDefaut,
-      nombreDeFilesTotal: nbreEtriers,
+      nombreDeFilesTotal: nbreEtriers * nombre(l.nombre),
       longueurDeveloppee: LcEtrier,
       espacement,
       overrides: l.overrides_cadre,
-      tracePrefix: `Nbre Étriers total = ceil(${net(l.perimetre)} / ${espacement}) + 1 = ${nbreEtriers} pièces\nL_étrier = 2×[(${net(l.largeur)} - 2×${enrobage}) + (${net(l.hauteur)} - 2×${enrobage})] + 2×${LcCadre}\nL_étrier = 2×(${net(bint)} + ${net(hint)}) + 2×${LcCadre} = ${net(LcEtrier)} m`,
+      tracePrefix: `Nbre Étriers = ceil(${net(l.perimetre)} / ${espacement}) + 1 = ${nbreEtriers} pièces\nNbre Total = ${nbreEtriers * nombre(l.nombre)} pièces\nL_étrier = 2×[(${net(l.largeur)} - 2×${enrobage}) + (${net(l.hauteur)} - 2×${enrobage})] + 2×${LcCadre}\nL_étrier = 2×(${net(bint)} + ${net(hint)}) + 2×${LcCadre} = ${net(LcEtrier)} m`,
       traceFormule: 'L_étrier = 2×(L - 2c + l - 2c) + 2×crochet'
     }));
 
@@ -1192,7 +1202,8 @@ const extractionsArmatures = {
   },
   linteaux: (l, regles) => {
     const lMapped = { ...l, perimetre: l.longueur || l.perimetre };
-    return extractionsArmatures.longrines(lMapped, regles, 'linteaux');
+    const aciers = extractionsArmatures.longrines(lMapped, regles, 'linteaux');
+    return aciers.filter(a => a.designation !== 'Cadre');
   },
   dalles: (l, regles) => {
     if (!l.longueur || !l.largeur) {
@@ -1612,7 +1623,7 @@ function calculerMur(mur, regles = {}) {
     },
     decomposition_materiaux: [
       { 
-        id_materiau: 'agglos_creux', categorie: 'agglos_creux', nom: `Agglos creux ${typeAgglo}×20×40`, unite: 'u', quantiteNette: nbAgglosCommande, 
+        id_materiau: 'agglos_creux', categorie: 'agglos_creux', nom: `Agglos creux ${typeAgglo}×20×40`, unite: 'u', quantiteNette: nbAgglosCommande, valeur_arrondie: nbAggloBrut, donnees: { quantite_majoree: nbAgglosCommande }, 
         formule: '(Surface Mur) ÷ ((L + joint) × (H + joint)) × (1 + perte)',
         calcul: `Surface = ${net(surfaceMur)} m²\nS. Unitaire = (0.40 + ${joint}) × (0.20 + ${joint}) = ${net(surfaceUnitaire, 6)} m²\nQ. Théorique = ${net(surfaceMur)} ÷ ${net(surfaceUnitaire, 6)} = ${net(nbAggloBrut, 2)} agglos\nQ. Avec perte (${perte}%) = ${net(nbAggloBrut, 2)} × ${1 + perte/100} = ${net(nbAggloAvecPerte, 2)} agglos\nQ. Commande = ArrondiSup(${net(nbAggloAvecPerte, 2)}) = ${nbAgglosCommande} agglos` 
       },
@@ -1767,7 +1778,7 @@ function calculerMurSoubassement(mur) {
     },
     decomposition_materiaux: [
       { 
-        id_materiau: 'agglos_pleins', categorie: 'agglos_pleins', nom: `Agglos pleins ${typeAgglo}×20×40`, unite: 'u', quantiteNette: nbAgglosCommande, 
+        id_materiau: 'agglos_pleins', categorie: 'agglos_pleins', nom: `Agglos pleins ${typeAgglo}×20×40`, unite: 'u', quantiteNette: nbAgglosCommande, valeur_arrondie: nbAggloBrut, donnees: { quantite_majoree: nbAgglosCommande },
         formule: '(Surface Mur) ÷ ((L + joint) × (H + joint)) × (1 + perte)',
         calcul: `Surface = ${net(surfaceMur)} m²\nS. Unitaire = (0.40 + ${joint}) × (0.20 + ${joint}) = ${net(surfaceUnitaire, 6)} m²\nQ. Théorique = ${net(surfaceMur)} ÷ ${net(surfaceUnitaire, 6)} = ${net(nbAggloBrut, 2)} agglos\nQ. Avec perte (${perte}%) = ${net(nbAggloBrut, 2)} × ${1 + perte/100} = ${net(nbAggloAvecPerte, 2)} agglos\nQ. Commande = ArrondiSup(${net(nbAggloAvecPerte, 2)}) = ${nbAgglosCommande} agglos` 
       },
@@ -1841,7 +1852,7 @@ function calculerMoellon(l) {
   const PCT_MOELLONS   = 0.70;
   const PCT_MORTIER    = 0.30;
   const DENSITE_MOELLON = 1.60;    // t/m³
-  const COEF_SABLE      = 0.40;    // m³ sable / m³ mortier
+  const COEF_SABLE      = 1.0;     // m³ sable / m³ mortier
   const DENSITE_SABLE   = 1.50;    // t/m³
   const POIDS_SAC       = 50;      // kg
   const VOL_BROUETTE    = 0.060;   // m³ (60 L)
@@ -1901,7 +1912,7 @@ function calculerMoellon(l) {
         valeur_arrondie: tonnMoellons,
       },
       {
-        id_materiau: 'ciment_mortier',
+        id_materiau: 'ciment',
         categorie: 'ciment',
         nom: `Ciment mortier (dosage ${dosageCiment} kg/m³)`,
         unite: 'sac',
@@ -1912,18 +1923,18 @@ function calculerMoellon(l) {
         valeur_arrondie: sacsCiment,
       },
       {
-        id_materiau: 'sable_mortier',
+        id_materiau: 'sable',
         categorie: 'sable',
         nom: 'Sable (Mortier moellon)',
-        unite: 'm³',
-        quantiteNette: volSableM3,
-        formule: 'Vol. Mortier × 0.40',
-        calcul: `Vol. Mortier = ${volMortier} m³\nVol. Sable = ${volMortier} × 0.40 = ${volSableM3} m³\nVolume Sable (Litres) = ${volSableM3} m³ × 1000 = ${litresSable} L → ${nbrBrouettes} brouettes de 60 L\nMasse (kg) = ${volSableM3} m³ × 1500 kg/m³ = ${net(tonnSable * 1000)} kg\nMasse (tonnes) = ${net(tonnSable * 1000)} ÷ 1000 = ${tonnSable} t`,
+        unite: 't',
+        quantiteNette: tonnSable,
+        formule: 'Vol. Mortier × 1.50 t/m³',
+        calcul: `Vol. Mortier = ${volMortier} m³\nVol. Sable = ${volMortier} m³\nMasse (tonnes) = ${volSableM3} × 1.50 t/m³ = ${tonnSable} t`,
         motif_arrondi: null,
-        valeur_arrondie: volSableM3,
+        valeur_arrondie: tonnSable,
       },
       {
-        id_materiau: 'eau_gachage',
+        id_materiau: 'eau',
         categorie: 'eau',
         nom: 'Eau de gâchage',
         unite: 'L',
@@ -2056,6 +2067,173 @@ function calculerDallage(l) {
 
 
 /**
+ * Plancher Hourdis 16+4
+ * Calcule avec precision les hourdis, les poutrelles, le beton des nervures/dalles
+ * et les aciers (treillis et HA).
+ */
+function calculerPlancherHourdis16(l, regles) {
+  if (!renseigne(l.longueur) || !renseigne(l.largeur)) {
+    return {
+      valeur: null,
+      manquants: ['longueur', 'largeur'].filter(c => !renseigne(l[c])),
+      trace: { formule: 'L × l × N', entrees: {}, resultat: null }
+    };
+  }
+
+  const p = regles.plancher164 || {
+    hourdisL: 0.5, hourdisl: 0.2, hc: 0.04, hh: 0.16,
+    entraxe: 0.6,
+    pertes: { hourdis: 5, beton: 5, acier: 5 },
+    acier: { longueurBarre: 12, treillisHte: 8, treillisBasse: 6, diag: 5, pas: 0.2, Ht: 0.12 }
+  };
+  const nappe = p.nappe || { diametre: 6, espacement: 0.2 };
+  const poutrelles = p.poutrelles || { nbBarres: 2, diametre: 8, espacement: 0.2 };
+  const L = Number(l.longueur);
+  const larg = Number(l.largeur);
+  const N = nombre(l.nombre);
+  const Lp = renseigne(l.Lp) ? Number(l.Lp) : larg;
+
+  const surfaceBrute = L * larg;
+  let surfaceOuvertures = 0;
+  if (Array.isArray(l.tremies)) {
+    l.tremies.forEach(t => {
+      if (renseigne(t.longueur) && renseigne(t.largeur)) {
+        surfaceOuvertures += Number(t.longueur) * Number(t.largeur);
+      }
+    });
+  }
+  const surfaceNette = surfaceBrute - surfaceOuvertures;
+  const surfaceTotale = surfaceNette * N;
+
+  const Sh = p.hourdisL * p.hourdisl;
+  const nHourdisTheorique = surfaceNette / Sh;
+  const nHourdisAcheter = Math.ceil(nHourdisTheorique * (1 + p.pertes.hourdis / 100)) * N;
+
+  const nIntervalles = Math.ceil(L / p.entraxe); 
+  const nPoutrelles = nIntervalles + 1;
+  const longueurPoutrelles = nPoutrelles * Lp * N;
+
+  const volDalle = surfaceNette * p.hc;
+  const bn = p.entraxe - p.hourdisL;
+  const volNervures = bn * p.hh * Lp * nPoutrelles;
+  const volBetonTotal = (volDalle + volNervures) * N;
+  const volBetonAcheter = volBetonTotal * (1 + p.pertes.beton / 100);
+
+  const lMb = nPoutrelles * poutrelles.nbBarres * Lp * N;
+  const pMb = lMb * Math.pow(poutrelles.diametre, 2) / 162;
+  const lMh = nPoutrelles * 1 * Lp * N;
+  const pMh = lMh * Math.pow(p.acier.treillisHte, 2) / 162;
+  const nDiag = Math.ceil(Lp / poutrelles.espacement);
+  const lDiagUn = Math.sqrt(Math.pow(p.acier.Ht, 2) + Math.pow(poutrelles.espacement, 2));
+  const lDiagTotal = nPoutrelles * nDiag * lDiagUn * N;
+  const pDiag = lDiagTotal * Math.pow(p.acier.diag, 2) / 162;
+  const poidsTreillisTotal = pMb + pMh + pDiag;
+
+  const s1 = nappe.espacement; const s2 = s1;
+  const n1 = Math.ceil(L / s1) + 1;
+  const n2 = Math.ceil(larg / s2) + 1;
+  const Lt1 = n1 * larg;
+  const Lt2 = n2 * L;
+  const lAcierDalle = (Lt1 + Lt2) * N;
+  const pAcierDalle = lAcierDalle * Math.pow(nappe.diametre, 2) / 162; 
+  const pAcierDalleFinal = pAcierDalle * (1 + p.pertes.acier / 100);
+  
+  const barresDalle = Math.ceil((lAcierDalle * (1 + p.pertes.acier / 100)) / p.acier.longueurBarre);
+  // Treillis is usually sold as a whole unit or we can just convert it to HA8 equivalent bars for simplicity if they assemble it
+  // But wait, if they buy it as treillis, it's not HA bar. We'll output it as HA8 bars so it maps to the price library.
+  const longueurEquivalenteTreillis = (poidsTreillisTotal * 162) / Math.pow(8, 2);
+  const barresTreillis = Math.ceil(longueurEquivalenteTreillis / p.acier.longueurBarre);
+
+  const traceCalcul = `ÉTAPE 1 : Surface brute de plancher
+S_brute = L × l = ${L} × ${larg} = ${net(surfaceBrute)} m²
+
+ÉTAPE 2 : Surface des trémies (déductions)
+S_tremies = Somme(L_t × l_t) = ${net(surfaceOuvertures)} m²
+
+ÉTAPE 3 : Surface nette de plancher
+S_nette = S_brute - S_tremies = ${net(surfaceBrute)} - ${net(surfaceOuvertures)} = ${net(surfaceNette)} m²
+
+ÉTAPE 4 : Surface unitaire d'un hourdis
+S_h = ${p.hourdisL} × ${p.hourdisl} = ${net(Sh)} m²
+
+ÉTAPE 5 : Nombre théorique d'hourdis
+N_theorique = S_nette / S_h = ${net(surfaceNette)} / ${net(Sh)} = ${net(nHourdisTheorique)} u
+
+ÉTAPE 6 : Nombre total d'hourdis (avec ${p.pertes.hourdis}% de pertes)
+N_hourdis = N_theorique × 1.${p.pertes.hourdis} = ${nHourdisAcheter} u
+
+ÉTAPE 7 : Entraxe des poutrelles
+Entraxe = ${p.entraxe} m
+
+ÉTAPE 8 : Nombre d'intervalles
+N_intervalles = ArrondiSup(L / Entraxe) = ArrondiSup(${L} / ${p.entraxe}) = ${nIntervalles}
+
+ÉTAPE 9 : Nombre total de poutrelles
+N_poutrelles = N_intervalles + 1 = ${nPoutrelles}
+
+ÉTAPE 10 : Longueur totale des poutrelles
+L_totale = N_poutrelles × L_poutrelle = ${nPoutrelles} × ${Lp} = ${net(longueurPoutrelles)} ml
+
+ÉTAPE 11 : Volume de la dalle de compression
+V_dalle = S_nette × Épaisseur (hc) = ${net(surfaceNette)} × ${p.hc} = ${net(volDalle)} m³
+
+ÉTAPE 12 : Volume des nervures
+V_nervures = (Entraxe - L_hourdis) × H_hourdis × L_totale = (${p.entraxe} - ${p.hourdisL}) × ${p.hh} × ${net(longueurPoutrelles)} = ${net(volNervures)} m³
+
+ÉTAPE 13 : Volume total théorique de béton
+V_total_theorique = V_dalle + V_nervures = ${net(volDalle)} + ${net(volNervures)} = ${net(volBetonTotal)} m³
+
+ÉTAPE 14 : Volume final de béton (avec ${p.pertes.beton}% de pertes)
+V_final = V_total_theorique × 1.${p.pertes.beton} = ${net(volBetonAcheter)} m³
+
+ÉTAPE 15 : Poids du treillis raidisseur (Poutrelles)
+Membrure basse = ${net(pMb)} kg, Membrure haute = ${net(pMh)} kg, Diagonales = ${net(pDiag)} kg
+Total Treillis = ${net(poidsTreillisTotal)} kg (soit ${barresTreillis} barres équiv. HA${p.acier.treillisHte})
+
+ÉTAPE 16 : Poids de la nappe de compression (Dalle)
+Treillis dalle (HA${nappe.diametre}) = ${net(pAcierDalle)} kg
+Total Acier (+${p.pertes.acier}%) = ${net(pAcierDalleFinal)} kg (soit ${barresDalle} barres)`;
+
+  return {
+    ...l,
+    valeur: surfaceTotale,
+    unite: 'm2',
+    manquants: [],
+    detailsExtra: {
+      nHourdis: nHourdisAcheter,
+      longueurPoutrelles: longueurPoutrelles,
+      volBeton: volBetonAcheter
+    },
+    poidsAcier: pAcierDalleFinal + poidsTreillisTotal,
+    detailsArmatures: [
+      {
+        diametre: nappe.diametre,
+        nuance: 'HA',
+        designation: 'Nappe de compression',
+        poids: pAcierDalleFinal,
+        nombreBarres12m: barresDalle,
+        trace: { formule: 'Calcul dalle de compression', calculText: `Poids: ${net(pAcierDalleFinal)} kg` }
+      },
+      {
+        diametre: poutrelles.diametre,
+        nuance: 'HA',
+        designation: 'Treillis Poutrelles',
+        poids: poidsTreillisTotal,
+        nombreBarres12m: barresTreillis,
+        trace: { formule: 'Calcul treillis raidisseur', calculText: `Poids: ${net(poidsTreillisTotal)} kg` }
+      }
+    ],
+    trace: {
+      formule: 'Calcul Détaillé Plancher 16+4',
+      entrees: { longueur: L, largeur: larg, Lp, tremies: l.tremies },
+      resultat: surfaceTotale,
+      unite: 'm2',
+      calcul: traceCalcul
+    }
+  };
+}
+
+/**
  * Carrelage : surface au sol et perimetre.
  *
  * Le classeur laissait la colonne « Perim. (m) » sans formule et sans total,
@@ -2164,7 +2342,7 @@ export function calculerMetre(saisie = {}, regles = {}) {
   // dedie (calculerMur/calculerLocal), pas par la table BLOCS : sans leur
   // presence ici, le moteur les traitait correctement tout en affirmant a
   // l'utilisateur qu'il les ignorait — un faux avertissement, pas un vrai.
-  const knownKeys = [...Object.keys(BLOCS), 'faience', 'peinture', 'autresOuvrages', 'niveaux', 'maconnerie', 'carrelage', 'soubassement'];
+  const knownKeys = [...Object.keys(BLOCS), 'faience', 'peinture', 'autresOuvrages', 'niveaux', 'maconnerie', 'carrelage', 'soubassement', 'toituresPro'];
   for (const key of Object.keys(saisie || {})) {
     if (!knownKeys.includes(key) && Array.isArray(saisie[key]) && saisie[key].length > 0) {
       avertissements.push({
@@ -2274,6 +2452,18 @@ export function calculerMetre(saisie = {}, regles = {}) {
     formule: 'L × B × e × (1 + Pertes)',
     lignes: lignesDallage,
     total: totaliser(lignesDallage),
+  };
+
+  // Plancher Hourdis 16+4 — calculé analytiquement
+  const lignesHourdis16 = (Array.isArray(saisie.plancherHourdis16) ? saisie.plancherHourdis16 : (Array.isArray(saisie.plancherHourdis) ? saisie.plancherHourdis : [])).map(
+    (l) => calculerPlancherHourdis16(l, regles),
+  );
+  blocs.plancherHourdis = {
+    libelle: 'Plancher Hourdis 16+4',
+    unite: 'm2',
+    formule: 'Calcul Détaillé',
+    lignes: lignesHourdis16,
+    total: totaliser(lignesHourdis16, 'valeur'),
   };
 
   // Exclusion mutuelle Moellon vs (Longrines + Mur Soubassement)
@@ -2575,6 +2765,25 @@ export function calculerMetre(saisie = {}, regles = {}) {
       type: 'hypothese', // to trigger amber color
       message: 'Le calcul de charpente inclut une majoration forfaitaire de 15% pour couvrir poinçon, fiches, contre-fiches et assemblages.'
     });
+  }
+
+  if (saisie.toituresPro && saisie.toituresPro.length > 0) {
+    const toitureProLines = saisie.toituresPro.map((t, idx) => {
+      const resultats = calculerMetreToitureComplet(t);
+      return {
+        id: t.id || `toiture-pro-${idx}`,
+        valeur: 1, // Pour que la ligne soit comptée
+        config: t,
+        resultats
+      };
+    });
+    blocs.toiturePro = {
+      libelle: 'Toiture Professionnelle',
+      unite: 'Ens',
+      formule: 'Métré détaillé',
+      lignes: toitureProLines,
+      total: toitureProLines.length
+    };
   }
 
   return { blocs, avertissements };

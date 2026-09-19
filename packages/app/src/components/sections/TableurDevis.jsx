@@ -21,11 +21,15 @@ import { FUniver } from '@univerjs/facade';
 import frFRDesign from '@univerjs/design/lib/es/locale/fr-FR.js';
 import frFRUI from '@univerjs/ui/lib/es/locale/fr-FR.js';
 import frFRDocsUI from '@univerjs/docs-ui/lib/es/locale/fr-FR.js';
+import frFRSheetsUI from '@univerjs/sheets-ui/lib/es/locale/fr-FR.js';
+import frFRSheetsFormulaUI from '@univerjs/sheets-formula-ui/lib/es/locale/fr-FR.js';
 
 const frFR = {
-  ...frFRDesign.default,
-  ...frFRUI.default,
-  ...frFRDocsUI.default,
+  ...(frFRDesign.default || frFRDesign),
+  ...(frFRUI.default || frFRUI),
+  ...(frFRDocsUI.default || frFRDocsUI),
+  ...(frFRSheetsUI.default || frFRSheetsUI),
+  ...(frFRSheetsFormulaUI.default || frFRSheetsFormulaUI),
 };
 
 import '@univerjs/design/lib/index.css';
@@ -36,8 +40,8 @@ import '@univerjs/sheets-formula-ui/lib/index.css';
 
 /** En dessous, le tableur ne sert plus à rien : on ne descend jamais plus bas. */
 const HAUTEUR_MINIMALE = 240;
-/** Ce qu'on laisse respirer sous le tableur, pour ne pas le coller au bord. */
-const MARGE_BASSE = 12;
+/** Ce qu'on laisse respirer sous le tableur, pour compenser le padding du Layout et éviter la double barre de scroll. */
+const MARGE_BASSE = 40;
 
 const TableurDevis = forwardRef(({ initialData }, ref) => {
   const univerRef = useRef(null);

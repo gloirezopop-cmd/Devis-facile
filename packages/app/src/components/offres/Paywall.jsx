@@ -93,20 +93,24 @@ export default function Paywall({ offres, abonnements = [], source = 'ESTIMATEUR
 
   return (
     <section>
-      <ProgressionEtude droits={droits} />
+      {source !== 'ABONNEMENT' && (
+        <>
+          <ProgressionEtude droits={droits} />
 
-      {/* ── L'annonce ── */}
-      <div className="mb-8 sm:mb-10 sm:text-center">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-devis-herite/10 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.12em] text-devis-herite">
-          <Icone nom="check-circle" size={13} /> Terminé
-        </span>
-        <h2 className="mt-3 font-sans text-[26px] sm:text-[32px] font-extrabold leading-tight tracking-tight text-brand-text">
-          Votre étude est prête.
-        </h2>
-        <p className="mx-auto mt-3 max-w-xl text-[14px] leading-relaxed text-brand-text/60">
-          Vous avez terminé votre estimation. Choisissez maintenant le niveau d'accès dont vous avez besoin.
-        </p>
-      </div>
+          {/* ── L'annonce ── */}
+          <div className="mb-8 sm:mb-10 sm:text-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-devis-herite/10 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.12em] text-devis-herite">
+              <Icone nom="check-circle" size={13} /> Terminé
+            </span>
+            <h2 className="mt-3 font-sans text-[26px] sm:text-[32px] font-extrabold leading-tight tracking-tight text-brand-text">
+              Votre étude est prête.
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-[14px] leading-relaxed text-brand-text/60">
+              Vous avez terminé votre estimation. Choisissez maintenant le niveau d'accès dont vous avez besoin.
+            </p>
+          </div>
+        </>
+      )}
 
       {/* ── Les formules ──
           Une carte par ligne tant que la largeur ne permet pas de les lire

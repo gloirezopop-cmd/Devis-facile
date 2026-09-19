@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useProjet } from '../../context/ProjetContext.jsx';
 import { useAuth } from '../../context/AuthContext';
 import SelectAvecAutre from '../ui/SelectAvecAutre.jsx';
+import InputSaisie from '../ui/InputSaisie.jsx';
 import Icone from '../ui/Icone';
 import { useExport } from '../../hooks/useExport.js';
 
@@ -200,19 +201,74 @@ export default function ParametresProjet() {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="coffrageTerre"
-            checked={parametresProjet.coffrageTerre}
-            onChange={(e) => setParametresProjet({ ...parametresProjet, coffrageTerre: e.target.checked })}
-            className="w-5 h-5 accent-devis-saisie cursor-pointer min-h-[44px] min-w-[44px]"
-          />
-          <label htmlFor="coffrageTerre" className="text-sm font-bold text-devis-calcule cursor-pointer">
-            Couler les fondations en pleine fouille (sans coffrage latéral)
-          </label>
-        </div>
-      </div>
+    <div className="mt-4 flex items-center gap-2">
+      <input
+        type="checkbox"
+        id="coffrageTerre"
+        checked={parametresProjet.coffrageTerre}
+        onChange={(e) => setParametresProjet({ ...parametresProjet, coffrageTerre: e.target.checked })}
+        className="w-5 h-5 accent-devis-saisie cursor-pointer min-h-[44px] min-w-[44px]"
+      />
+      <label htmlFor="coffrageTerre" className="text-sm font-bold text-devis-calcule cursor-pointer">
+        Couler les fondations en pleine fouille (sans coffrage latéral)
+      </label>
+    </div>
+  </div>
+
+  <div className="bg-white rounded-lg shadow-sm border border-devis-border p-5 mb-6">
+    <h3 className="font-sans font-bold text-devis-calcule mb-4 flex items-center justify-between border-b border-devis-border pb-2">
+      Paramètres Plancher à corps creux (16+4)
+    </h3>
+    
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+      <InputSaisie 
+        label="Long. Hourdis (m)" 
+        value={parametresProjet.plancher164?.hourdisL || 0.5} 
+        onChange={(v) => setParametresProjet({ ...parametresProjet, plancher164: { ...parametresProjet.plancher164, hourdisL: Number(v) }})} 
+        unite="m" 
+      />
+      <InputSaisie 
+        label="Larg. Hourdis (m)" 
+        value={parametresProjet.plancher164?.hourdisl || 0.2} 
+        onChange={(v) => setParametresProjet({ ...parametresProjet, plancher164: { ...parametresProjet.plancher164, hourdisl: Number(v) }})} 
+        unite="m" 
+      />
+      <InputSaisie 
+        label="Entraxe Poutrelles (m)" 
+        value={parametresProjet.plancher164?.entraxe || 0.6} 
+        onChange={(v) => setParametresProjet({ ...parametresProjet, plancher164: { ...parametresProjet.plancher164, entraxe: Number(v) }})} 
+        unite="m" 
+      />
+      <InputSaisie 
+        label="Dalle de compression" 
+        value={(parametresProjet.plancher164?.hc || 0.04) * 100} 
+        onChange={(v) => setParametresProjet({ ...parametresProjet, plancher164: { ...parametresProjet.plancher164, hc: Number(v)/100 }})} 
+        unite="cm" 
+      />
+    </div>
+    
+    <h4 className="text-sm font-bold text-gray-700 uppercase mb-2">Pertes Plancher 16+4</h4>
+    <div className="grid grid-cols-3 gap-4 mb-4">
+      <InputSaisie 
+        label="Perte Hourdis" 
+        value={parametresProjet.plancher164?.pertes?.hourdis || 5} 
+        onChange={(v) => setParametresProjet({ ...parametresProjet, plancher164: { ...parametresProjet.plancher164, pertes: { ...parametresProjet.plancher164?.pertes, hourdis: Number(v) }}})} 
+        unite="%" 
+      />
+      <InputSaisie 
+        label="Perte Béton" 
+        value={parametresProjet.plancher164?.pertes?.beton || 5} 
+        onChange={(v) => setParametresProjet({ ...parametresProjet, plancher164: { ...parametresProjet.plancher164, pertes: { ...parametresProjet.plancher164?.pertes, beton: Number(v) }}})} 
+        unite="%" 
+      />
+      <InputSaisie 
+        label="Perte Acier" 
+        value={parametresProjet.plancher164?.pertes?.acier || 5} 
+        onChange={(v) => setParametresProjet({ ...parametresProjet, plancher164: { ...parametresProjet.plancher164, pertes: { ...parametresProjet.plancher164?.pertes, acier: Number(v) }}})} 
+        unite="%" 
+      />
+    </div>
+  </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-devis-border p-5 mb-6">
         <h3 className="font-sans font-bold text-devis-calcule mb-4 flex items-center justify-between border-b border-devis-border pb-2">

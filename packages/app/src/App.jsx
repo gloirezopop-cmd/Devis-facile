@@ -10,6 +10,7 @@ import Admin from './pages/Admin.jsx';
 import AdminTarifs from './pages/AdminTarifs.jsx';
 import Metre from './pages/Metre.jsx';
 import Parametres from './pages/Parametres.jsx';
+import Abonnement from './pages/Abonnement.jsx';
 import Projets from './pages/Projets.jsx';
 import EditeurAvance from './pages/EditeurAvance.jsx';
 import Login from './pages/Login.jsx';
@@ -103,6 +104,7 @@ export default function App() {
                     dernière étape. /parametres est une page séparée, en dehors
                     du parcours : ce sont des réglages qu'on pose une fois. */}
                 <Route path="/metre" element={<Metre />} />
+                <Route path="/abonnement" element={<Abonnement />} />
                 <Route path="/parametres" element={<Parametres />} />
                 <Route path="/projets" element={<Projets />} />
 

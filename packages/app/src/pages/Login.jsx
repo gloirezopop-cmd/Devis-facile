@@ -54,6 +54,8 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const { signIn, signUp, resetPassword } = useAuth();
   const navigate = useNavigate();
@@ -258,13 +260,20 @@ export default function Login() {
                   </div>
                   <input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2.5 border-2 border-brand-primary/10 rounded-xl focus:ring-0 focus:border-brand-primary transition-colors text-brand-text placeholder-brand-text/30"
+                    className="block w-full pl-10 pr-10 py-2.5 border-2 border-brand-primary/10 rounded-xl focus:ring-0 focus:border-brand-primary transition-colors text-brand-text placeholder-brand-text/30"
                     placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-brand-text/40 hover:text-brand-text/70 focus:outline-none"
+                  >
+                    <Icone nom={showPassword ? "eye-off" : "eye"} size={18} />
+                  </button>
                 </div>
               </div>
             )}
@@ -280,13 +289,20 @@ export default function Login() {
                   </div>
                   <input
                     id="confirmPassword"
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2.5 border-2 border-brand-primary/10 rounded-xl focus:ring-0 focus:border-brand-primary transition-colors text-brand-text placeholder-brand-text/30"
+                    className="block w-full pl-10 pr-10 py-2.5 border-2 border-brand-primary/10 rounded-xl focus:ring-0 focus:border-brand-primary transition-colors text-brand-text placeholder-brand-text/30"
                     placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-brand-text/40 hover:text-brand-text/70 focus:outline-none"
+                  >
+                    <Icone nom={showConfirmPassword ? "eye-off" : "eye"} size={18} />
+                  </button>
                 </div>
               </div>
             )}

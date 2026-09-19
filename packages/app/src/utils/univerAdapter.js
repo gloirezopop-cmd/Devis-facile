@@ -140,6 +140,7 @@ const EN_TETES = ['N°', 'DESIGNATION', 'UNITE', 'QTTE', 'P.U.', 'P.T.'];
  * unitaire dans la feuille recalcule le montant immediatement.
  */
 function genererFeuilleDevis(bordereau, type) {
+  const estEntreprise = type === 'entreprise';
   const cellData = {};
   const correspondance = {};
   const columnData = {
@@ -199,37 +200,39 @@ function genererFeuilleDevis(bordereau, type) {
         1: { v: rang.designation ?? '', t: 1, s: styleTexte },
         2: { v: rang.unite ?? '', t: 1, s: styleUnite },
         3: quantiteConnue ? { v: rang.quantite, t: 2, s: styleQuantite(rang.quantite) } : { v: '—', t: 1, s: styleUnite },
-        4: prixConnu ? { v: rang.pu, t: 2, s: stylePrix } : { v: '—', t: 1, s: styleUnite },
-        5: quantiteConnue && prixConnu
-          ? { f: `=D${ligneExcel}*E${ligneExcel}`, v: rang.pt, t: 2, s: styleMontant }
-          : { v: '—', t: 1, s: styleUnite },
+        4: estEntreprise ? { v: '', t: 1, s: stylePrix } : (prixConnu ? { v: rang.pu, t: 2, s: stylePrix } : { v: '—', t: 1, s: styleUnite }),
+        5: estEntreprise
+          ? { f: `=IF(ISBLANK(E${ligneExcel}),"",D${ligneExcel}*E${ligneExcel})`, v: '', t: 1, s: styleMontant }
+          : (quantiteConnue && prixConnu ? { f: `=D${ligneExcel}*E${ligneExcel}`, v: rang.pt, t: 2, s: styleMontant } : { v: '—', t: 1, s: styleUnite }),
       };
 
       if (rang.id) correspondance[row] = rang.id;
       if (quantiteConnue && prixConnu) lignesDuLot.push(ligneExcel);
     } else if (rang.type === 'sousTotal') {
-      const formule = lignesDuLot.length > 0
-        ? `=SUM(F${lignesDuLot[0]}:F${lignesDuLot[lignesDuLot.length - 1]})`
+      const baseFormule = lignesDuLot.length > 0
+        ? `SUM(F${lignesDuLot[0]}:F${lignesDuLot[lignesDuLot.length - 1]})`
         : undefined;
+      const formule = baseFormule ? (estEntreprise ? `=IF(${baseFormule}=0,"",${baseFormule})` : `=${baseFormule}`) : undefined;
       cellData[row] = {
         0: { v: '', t: 1, s: styleSousTotal },
         1: { v: rang.libelle, t: 1, s: styleSousTotal },
         2: { v: '', t: 1, s: styleSousTotal },
         3: { v: '', t: 1, s: styleSousTotal },
         4: { v: '', t: 1, s: styleSousTotal },
-        5: { f: formule, v: rang.montant ?? 0, t: 2, s: styleSousTotalMontant },
+        5: { f: formule, v: estEntreprise ? '' : (rang.montant ?? 0), t: 2, s: styleSousTotalMontant },
       };
       cellulesSousTotaux.push(`F${row + 1}`);
     } else if (rang.type === 'total') {
       row += 1; // une respiration avant le total
-      const formule = cellulesSousTotaux.length > 0 ? `=${cellulesSousTotaux.join('+')}` : undefined;
+      const baseFormuleTotal = cellulesSousTotaux.length > 0 ? cellulesSousTotaux.join('+') : undefined;
+      const formuleTotal = baseFormuleTotal ? (estEntreprise ? `=IF((${baseFormuleTotal})=0,"",${baseFormuleTotal})` : `=${baseFormuleTotal}`) : undefined;
       cellData[row] = {
         0: { v: '', t: 1, s: styleTotal },
         1: { v: rang.libelle, t: 1, s: styleTotal },
         2: { v: '', t: 1, s: styleTotal },
         3: { v: '', t: 1, s: styleTotal },
         4: { v: '', t: 1, s: styleTotal },
-        5: { f: formule, v: rang.montant ?? 0, t: 2, s: styleTotalMontant },
+        5: { f: formuleTotal, v: estEntreprise ? '' : (rang.montant ?? 0), t: 2, s: styleTotalMontant },
       };
       celluleTotal = `F${row + 1}`;
     } else if (rang.type === 'frais') {

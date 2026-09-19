@@ -46,6 +46,7 @@ export function useMetre() {
     escaliers,
     maconneries,
     linteaux,
+    ceintures,
     soubassements,
     moellons,
     dallages, remblais,
@@ -63,15 +64,16 @@ export function useMetre() {
     charpentes,
     couverturesToles,
     terrasses,
+    toituresPro,
     reglesPersonnalisees
   } = useProjet();
 
   const metreParNiveau = useMemo(() => {
     const premierPassage = niveaux.map(niveau => {
       const stateNiveau = preparerSaisiePourMoteur(niveau, {
-        fouilles, fouilleFilante, betonProprete, semelles, amorces, longrines, colonnes, escaliers, maconneries, linteaux, soubassements,
+        fouilles, fouilleFilante, betonProprete, semelles, amorces, longrines, colonnes, escaliers, maconneries, linteaux, ceintures, soubassements,
         moellons, dallages, remblais, sousPavements, nivellement, terrassementGrandeSurface, carrelages, enduits, peintures, faiences, autresOuvrages,
-        dalles, plancherHourdis12, plancherHourdis16, charpentes, couverturesToles, terrasses
+        dalles, plancherHourdis12, plancherHourdis16, charpentes, couverturesToles, terrasses, toituresPro
       });
       const result = calculerMetre(stateNiveau, reglesPersonnalisees);
       return { niveauId: niveau.id, niveau, saisie: stateNiveau, metre: result };
@@ -119,9 +121,9 @@ export function useMetre() {
   }, [
     niveaux,
     fouilles, fouilleFilante, betonProprete, semelles, amorces, longrines, colonnes, escaliers,
-    maconneries, linteaux, soubassements, moellons, dallages, remblais, sousPavements, nivellement,
+    maconneries, linteaux, ceintures, soubassements, moellons, dallages, remblais, sousPavements, nivellement,
     terrassementGrandeSurface, carrelages, enduits, peintures, faiences, autresOuvrages,
-    dalles, plancherHourdis12, plancherHourdis16, charpentes, couverturesToles, terrasses,
+    dalles, plancherHourdis12, plancherHourdis16, charpentes, couverturesToles, terrasses, toituresPro,
     reglesPersonnalisees
   ]);
 

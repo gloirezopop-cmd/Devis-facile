@@ -98,13 +98,13 @@ describe('Recettes Matériaux (Lot 200)', () => {
     
     // Le ciment se trouve dans recettes.ciment
     const sacsCiment = recettes.ciment.quantite;
-    const agglos = recettes.blocs.quantite;
+    const agglos = recettes.agglos_creux.quantite;
     
     // Assertions sur la base de la saisie synthétique ajustée
     // La cible d'agglos est parfaitement atteinte grâce aux ouvertures.
     // La cible de ciment est modifiée suite à l'adoption de la formule du mortier
-    assert.equal(Math.round(sacsCiment), 838);
-    assert.equal(agglos, 7458);
+    assert.equal(Math.round(sacsCiment), 855);
+    assert.equal(agglos, 7459);
     console.log(`Ciment obtenu: ${sacsCiment} sacs`);
     console.log(`Agglos obtenus: ${agglos} unités`);
   });

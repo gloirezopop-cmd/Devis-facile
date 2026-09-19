@@ -24,6 +24,7 @@ export const NAVIGATION = [
   {
     titre: 'Compte',
     liens: [
+      { to: '/abonnement', label: 'Abonnement', icone: 'credit-card' },
       { to: '/parametres', label: 'Paramètres', icone: 'settings' },
     ],
   },
@@ -55,4 +56,4 @@ export function sectionAdministration(estFondateur) {
 }
 
 /** Routes réellement construites. Les autres passent par EmptyState. */
-export const ROUTES_ACTIVES = new Set(['/', '/dashboard', '/estimation', '/metre', '/devis', '/parametres', '/projets', '/apprendre', '/sujets', '/admin', '/admin/tarifs']);
+export const ROUTES_ACTIVES = new Set(['/', '/dashboard', '/estimation', '/metre', '/devis', '/abonnement', '/parametres', '/projets', '/apprendre', '/sujets', '/admin', '/admin/tarifs']);

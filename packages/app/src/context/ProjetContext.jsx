@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useMemo, useEffect } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState.js';
 import { REGLES_DEFAUT } from '@devis-facile/moteur';
 import { useAuth } from './AuthContext.jsx';
@@ -40,6 +40,7 @@ export function ProjetProvider({ children }) {
 
   const [maconneries, setMaconneries] = useLocalStorageState('df_maconneries_v3', []);
   const [linteaux, setLinteaux] = useLocalStorageState('df_linteaux_v3', []);
+  const [ceintures, setCeintures] = useLocalStorageState('df_ceintures_v3', []);
 
   const [soubassements, setSoubassements] = useLocalStorageState('df_soubassements_v3', []);
 
@@ -74,6 +75,8 @@ export function ProjetProvider({ children }) {
 
   const [terrasses, setTerrasses] = useLocalStorageState('df_terrasses_v3', []);
 
+  const [toituresPro, setToituresPro] = useLocalStorageState('df_toituresPro_v3', []);
+
   const [taux, setTaux] = useLocalStorageState('df_taux_v3', { ...REGLES_DEFAUT.taux });
   
   const [majorations, setMajorations] = useLocalStorageState('df_majorations_v3', {
@@ -90,7 +93,13 @@ export function ProjetProvider({ children }) {
     cimentTypePoutres: '42.5', dosagePoutres: 350,
     cimentTypeDalles: '42.5', dosageDalles: 350,
     cimentTypeEscaliers: '42.5', dosageEscaliers: 350,
-    dosageBA: 350, coffrageTerre: false, inclureEau: false, appliquerCoefVente: false
+    dosageBA: 350, coffrageTerre: false, inclureEau: false, appliquerCoefVente: false,
+    plancher164: {
+      hourdisL: 0.5, hourdisl: 0.2, hc: 0.04, hh: 0.16,
+      entraxe: 0.6,
+      pertes: { hourdis: 5, beton: 5, acier: 5 },
+      acier: { longueurBarre: 12 }
+    }
   });
 
   const [bibliothequePrix, setBibliothequePrix] = useLocalStorageState('df_bibliothequePrix_v3', {
@@ -110,21 +119,21 @@ export function ProjetProvider({ children }) {
     terrassementEnginM3: ''
   });
 
-  const [labelsPrix, setLabelsPrix] = useLocalStorageState('df_labelsPrix_v3', {
-    ciment: "Ciment CPJ (sac de 50 kg)", sable: "Sable (tonne)", gravier: "Gravier (tonne)", eau: "Eau (m³)", moellon: "Moellon (tonne)",
-    acierHA_16: "Fer HA 16 (barre de 12 m)", acierHA_14: "Fer HA 14 (barre de 12 m)", acierHA_12: "Fer HA 12 (barre de 12 m)", acierHA_10: "Fer HA 10 (barre de 12 m)", acierHA_8: "Fer HA 8 (barre de 12 m)", acierHA_6: "Fer HA 6 (barre de 12 m)", acierRL_8: "Fer RL 8 (barre de 12 m)", acierRL_6: "Fer RL 6 (barre de 12 m)", filLigature: "Fil de ligature (kg)",
-    blocs: "Agglos creux (unité)", blocs_pleins: "Agglos pleins (unité)", planches: "Planches de coffrage (unité)", chevrons: "Chevrons (unité)", clous: "Clous de coffrage (kg)",
-    bois_charpente: "Bois de charpente (m³)", clous_charpente: "Clous de charpente (kg)",
-    toles: "Tôle BG28 (unité)", faitieres: "Faîtière (unité)", clous_toiture: "Pointes à tôle (kg)",
-    carreaux: "Carreau 30x30 (unité)", faience: "Faïence (unité)", plinthe: "Plinthe (unité)", cimentColle: "Ciment-colle (kg)",
-    peinture_latex: "Peinture latex (kg)", peinture_classique: "Peinture classique (L)", peinture_chaux: "Badigeon de chaux (kg)",
-    terrassementEnginM3: "Terrassement à l'engin (m³)"
+  const [labelsPrix, setLabelsPrix] = useLocalStorageState('df_labelsPrix_v4', {
+    ciment: "Ciment CPJ", sable: "Sable", gravier: "Gravier", eau: "Eau", moellon: "Moellon",
+    acierHA_16: "Fer HA 16", acierHA_14: "Fer HA 14", acierHA_12: "Fer HA 12", acierHA_10: "Fer HA 10", acierHA_8: "Fer HA 8", acierHA_6: "Fer HA 6", acierRL_8: "Fer RL 8", acierRL_6: "Fer RL 6", filLigature: "Fil de ligature",
+    blocs: "Agglos creux", blocs_pleins: "Agglos pleins", planches: "Planches de coffrage", chevrons: "Chevrons", clous: "Clous de coffrage",
+    bois_charpente: "Bois de charpente", clous_charpente: "Clous de charpente",
+    toles: "Tôle BG28", faitieres: "Faîtière", clous_toiture: "Pointes à tôle",
+    carreaux: "Carreau 30x30", faience: "Faïence", plinthe: "Plinthe", cimentColle: "Ciment-colle",
+    peinture_latex: "Peinture latex", peinture_classique: "Peinture classique", peinture_chaux: "Badigeon de chaux",
+    terrassementEnginM3: "Terrassement à l'engin"
   });
 
-  const [devisExcelSnapshot, setDevisExcelSnapshot] = useLocalStorageState('df_devisExcelSnapshot_v3', null);
+  const [devisExcelSnapshot, setDevisExcelSnapshot] = useLocalStorageState('df_devisExcelSnapshot_v4', null);
   // L'empreinte du devis au moment ou la version Excel en a ete tiree : elle
   // permet de dire que la feuille date d'avant la derniere modification du metre.
-  const [devisExcelSignature, setDevisExcelSignature] = useLocalStorageState('df_devisExcelSignature_v3', null);
+  const [devisExcelSignature, setDevisExcelSignature] = useLocalStorageState('df_devisExcelSignature_v4', null);
 
   const bibliothequePrixNumerique = useMemo(() => {
     const biblio = {};
@@ -133,6 +142,22 @@ export function ProjetProvider({ children }) {
     }
     return biblio;
   }, [bibliothequePrix]);
+
+  useEffect(() => {
+    let hasParens = false;
+    const cleaned = {};
+    for (const [k, v] of Object.entries(labelsPrix)) {
+      if (typeof v === 'string' && v.includes('(')) {
+        hasParens = true;
+        cleaned[k] = v.replace(/\s*\([^)]*\)/g, '').trim();
+      } else {
+        cleaned[k] = v;
+      }
+    }
+    if (hasParens) {
+      setLabelsPrix(cleaned);
+    }
+  }, [labelsPrix, setLabelsPrix]);
 
   const reglesPersonnalisees = useMemo(() => {
     return {
@@ -164,7 +189,24 @@ export function ProjetProvider({ children }) {
       },
       coffrage: { ...REGLES_DEFAUT.coffrage, terrePourFondations: parametresProjet.coffrageTerre },
       acier: { ...REGLES_DEFAUT.acier },
-      majorations: { ...majorations }
+      majorations: { ...majorations },
+      plancher164: {
+        ...(parametresProjet.plancher164 || {
+          hourdisL: 0.5, hourdisl: 0.2, hc: 0.04, hh: 0.16,
+          entraxe: 0.6,
+          pertes: { hourdis: 5, beton: 5, acier: 5 },
+          acier: { longueurBarre: 12, treillisHte: 8, treillisBasse: 6, diag: 5, pas: 0.2, Ht: 0.12 }
+        }),
+        nappe: {
+          diametre: parametresProjet.nappeDiametre || 6,
+          espacement: (parametresProjet.nappeEspacement || 20) / 100
+        },
+        poutrelles: {
+          nbBarres: parametresProjet.poutrelleNbBarres || 2,
+          diametre: parametresProjet.poutrelleDiametre || 8,
+          espacement: (parametresProjet.poutrelleEspacement || 20) / 100
+        }
+      }
     };
   }, [taux, parametresProjet, majorations]);
 
@@ -186,10 +228,10 @@ export function ProjetProvider({ children }) {
   // -----------------------------------------------------
   const gatherProjectData = () => ({
     niveaux, fouilles, betonProprete, fouilleFilante, nivellement, terrassementGrandeSurface,
-    semelles, amorces, longrines, colonnes, maconneries, escaliers, soubassements,
+    semelles, amorces, longrines, colonnes, maconneries, linteaux, ceintures, escaliers, soubassements,
     moellons, dallages, remblais, sousPavements, carrelages, enduits,
     peintures, faiences, autresOuvrages, dalles, plancherHourdis12,
-    plancherHourdis16, charpentes, couverturesToles, terrasses,
+    plancherHourdis16, charpentes, couverturesToles, terrasses, toituresPro,
     taux, majorations, parametresProjet, bibliothequePrix, labelsPrix, devisExcelSnapshot, devisExcelSignature
   });
 
@@ -205,6 +247,8 @@ export function ProjetProvider({ children }) {
     if(data.longrines) setLongrines(data.longrines);
     if(data.colonnes) setColonnes(data.colonnes);
     if(data.maconneries) setMaconneries(data.maconneries);
+    if(data.linteaux) setLinteaux(data.linteaux);
+    if(data.ceintures) setCeintures(data.ceintures);
     if(data.escaliers) setEscaliers(data.escaliers);
     if(data.soubassements) setSoubassements(data.soubassements);
     if(data.moellons) setMoellons(data.moellons);
@@ -222,6 +266,7 @@ export function ProjetProvider({ children }) {
     if(data.charpentes) setCharpentes(data.charpentes);
     if(data.couverturesToles) setCouverturesToles(data.couverturesToles);
     if(data.terrasses) setTerrasses(data.terrasses);
+    if(data.toituresPro) setToituresPro(data.toituresPro);
     if(data.taux) setTaux(data.taux);
     if(data.majorations) setMajorations(data.majorations);
     if(data.parametresProjet) setParametresProjet(data.parametresProjet);
@@ -253,12 +298,13 @@ export function ProjetProvider({ children }) {
       ongletActif, setOngletActif, niveaux, setNiveaux, niveauActifId, setNiveauActifId,
       fouilles, setFouilles, betonProprete, setBetonProprete, fouilleFilante, setFouilleFilante,
       nivellement, setNivellement, terrassementGrandeSurface, setTerrassementGrandeSurface, semelles, setSemelles, amorces, setAmorces, longrines, setLongrines,
-      colonnes, setColonnes, maconneries, setMaconneries, linteaux, setLinteaux, escaliers, setEscaliers,
+      colonnes, setColonnes, maconneries, setMaconneries, linteaux, setLinteaux, ceintures, setCeintures, escaliers, setEscaliers,
       soubassements, setSoubassements, moellons, setMoellons, dallages, setDallages, remblais, setRemblais,
       sousPavements, setSousPavements, carrelages, setCarrelages, enduits, setEnduits,
       peintures, setPeintures, faiences, setFaiences, autresOuvrages, setAutresOuvrages,
       dalles, setDalles, plancherHourdis12, setPlancherHourdis12, plancherHourdis16, setPlancherHourdis16,
       charpentes, setCharpentes, couverturesToles, setCouverturesToles, terrasses, setTerrasses,
+      toituresPro, setToituresPro,
       taux, setTaux, majorations, setMajorations, parametresProjet, setParametresProjet,
       bibliothequePrix, setBibliothequePrix, labelsPrix, setLabelsPrix, devisExcelSnapshot, setDevisExcelSnapshot,
       devisExcelSignature, setDevisExcelSignature,

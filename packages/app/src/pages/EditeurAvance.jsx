@@ -60,8 +60,8 @@ export default function EditeurAvance() {
   };
 
   return (
-    <section>
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <section className="fixed inset-0 z-50 bg-brand-bg flex flex-col">
+      <div className="p-4 md:p-6 pb-0 md:pb-0 mb-4 flex flex-wrap items-start justify-between gap-3 shrink-0">
         <div>
           <h1 className="font-sans text-xl font-bold text-brand-text">Éditeur avancé</h1>
           <p className="mt-1 text-[13.5px] text-brand-text/55">
@@ -90,8 +90,9 @@ export default function EditeurAvance() {
       </div>
 
       {perime ? (
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-devis-averifier/40 bg-amber-50 px-3 py-2.5">
-          <div className="flex items-start gap-2 text-[12.5px] text-brand-text/75">
+        <div className="px-4 md:px-6 mb-3 shrink-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-devis-averifier/40 bg-amber-50 px-3 py-2.5">
+            <div className="flex items-start gap-2 text-[12.5px] text-brand-text/75">
             <Icone nom="alert-circle" size={15} className="mt-0.5 shrink-0 text-devis-averifier" />
             <span>
               <strong>Cette feuille date d’avant vos derniers calculs.</strong> Elle a été enregistrée
@@ -104,19 +105,23 @@ export default function EditeurAvance() {
           >
             Repartir du devis à jour
           </button>
+          </div>
         </div>
       ) : (
-        <div className="mb-3 flex items-start gap-2 rounded-md border border-devis-averifier/30 bg-amber-50 px-3 py-2 text-[12.5px] text-brand-text/70">
-          <Icone nom="help-circle" size={15} className="mt-0.5 shrink-0 text-devis-averifier" />
+        <div className="px-4 md:px-6 mb-3 shrink-0">
+          <div className="flex items-start gap-2 rounded-md border border-devis-averifier/30 bg-amber-50 px-3 py-2 text-[12.5px] text-brand-text/70">
+            <Icone nom="help-circle" size={15} className="mt-0.5 shrink-0 text-devis-averifier" />
           <span>
             Cliquez sur <strong>Enregistrer le Projet</strong> pour sauvegarder vos modifications Excel dans le Cloud. Vous les retrouverez dans l'onglet "Projets".
-          </span>
+            </span>
+          </div>
         </div>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-brand-primary/10 bg-white">
+      <div className="overflow-hidden border-t border-brand-primary/10 bg-white flex-1 min-h-0">
         <ErrorBoundary>
           <TableurDevis
+            key={devisExcelSnapshot ? 'snapshot' : signatureActuelle}
             ref={tableurRef}
             initialData={devisExcelSnapshot || generateWorkbookData(devisParticulier, devisEntreprise, {
               taux,

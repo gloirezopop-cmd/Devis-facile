@@ -46,6 +46,7 @@ const CATALOGUE_LOTS = {
   plancherHourdis: 'plancher',
   charpenteBois: 'toiture',
   couvertureToles: 'toiture',
+  toiturePro: 'toiture',
   acrotere: 'toiture',
   formePente: 'toiture',
   enduits: 'finitions',

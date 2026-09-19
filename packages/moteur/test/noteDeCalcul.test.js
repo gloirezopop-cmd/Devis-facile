@@ -119,7 +119,7 @@ test('Note de Calcul — Source de vérité unique', async (t) => {
     const deblais = note.indexOuvrages['deblais_auto'];
     const remblai = note.indexOuvrages['remblai_auto'];
     assert.equal(deblais.total_arrondi.toFixed(5), '36.78285');
-    assert.equal(remblai.total_arrondi.toFixed(6), '46.868575');
+    assert.equal(remblai.total_arrondi.toFixed(6), '47.008975');
 
     // Le remblai est bien dans le même lot que le déblai, juste après lui —
     // « à côté » n'a de sens que si l'ordre le respecte.

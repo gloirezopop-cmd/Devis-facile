@@ -8,3 +8,4 @@ export { genererNoteDeCalcul, LOTS_NOTE_DE_CALCUL } from './noteDeCalcul.js';
 export { genererResumeFondation, genererResumeElevation, genererResumeFinition, genererResumePlancher, genererResumeToiture } from './resume.js';
 export { genererResumeProjet } from './resumeMetre.js';
 export { genererResumeChantier, GRANDS_TITRES_CHANTIER } from './resumeChantier.js';
+export * from './toiture.js';

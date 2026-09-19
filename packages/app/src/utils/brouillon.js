@@ -86,7 +86,7 @@ export function brouillonEstVide(contenu) {
   for (const [cle, brut] of Object.entries(contenu)) {
     if (!cle.endsWith('_v3')) continue;
     if (['df_niveaux_v3', 'df_taux_v3', 'df_majorations_v3', 'df_bibliothequePrix_v3',
-      'df_labelsPrix_v3', 'df_parametresProjet_v3'].includes(cle)) continue;
+      'df_labelsPrix_v3', 'df_labelsPrix_v4', 'df_parametresProjet_v3'].includes(cle)) continue;
     try {
       const valeur = JSON.parse(brut);
       if (Array.isArray(valeur) && valeur.length > 0) return false;

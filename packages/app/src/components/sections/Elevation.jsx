@@ -8,7 +8,7 @@ import InputSaisie from '../ui/InputSaisie.jsx';
 import SelectSaisie from '../ui/SelectSaisie.jsx';
 import ValeurCalculee from '../ui/ValeurCalculee.jsx';
 
-const BLOCS_ELEVATION = ['Colonnes (Poteaux)', 'Linteaux', 'Maçonnerie en Agglos', 'Escaliers'];
+const BLOCS_ELEVATION = ['Colonnes (Poteaux)', 'Linteaux', 'Maçonnerie en Agglos', 'Escaliers', 'Ceintures (Chaînage haut)'];
 
 const LC_OPTIONS = [
   { label: '0 m (Sans crochets)', value: 0 },
@@ -40,6 +40,7 @@ export default function Elevation() {
     linteaux, setLinteaux,
     maconneries, setMaconneries,
     escaliers, setEscaliers,
+    ceintures, setCeintures,
     parametresProjet, setParametresProjet,
     addRow, removeRow, updateRow, niveauActifId
   } = useProjet();
@@ -58,6 +59,7 @@ export default function Elevation() {
   const currentLinteaux = linteaux.filter(x => x.niveauId === niveauActifId);
   const currentMaconneries = maconneries.filter(x => x.niveauId === niveauActifId);
   const currentEscaliers = escaliers.filter(x => x.niveauId === niveauActifId);
+  const currentCeintures = (ceintures || []).filter(x => x.niveauId === niveauActifId);
 
   return (
     <section>
@@ -127,14 +129,14 @@ export default function Elevation() {
                 </select>
               </div>
               {circulaire ? (
-                <InputSaisie label="Diamètre (m)" value={c.diametre} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'diametre', v)} unite="m" />
+                <InputSaisie label="Diamètre" value={c.diametre} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'diametre', v)} unite="m" />
               ) : (
                 <>
-                  <InputSaisie label="Côté a (m)" value={c.longueur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'longueur', v)} unite="m" />
-                  <InputSaisie label="Côté b (m)" value={c.largeur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'largeur', v)} unite="m" />
+                  <InputSaisie label="Côté a" value={c.longueur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'longueur', v)} unite="m" />
+                  <InputSaisie label="Côté b" value={c.largeur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'largeur', v)} unite="m" />
                 </>
               )}
-              <InputSaisie label="Hauteur (m)" value={c.hauteur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'hauteur', v)} unite="m" />
+              <InputSaisie label="Hauteur" value={c.hauteur} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'hauteur', v)} unite="m" />
               <InputSaisie label="Nombre" value={c.nombre} onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'nombre', v)} unite="u" />
             </div>
 
@@ -221,7 +223,7 @@ export default function Elevation() {
                     styleClass="!bg-white"
                   />
                   <SelectSaisie
-                    label="Espacement (m)"
+                    label="Espacement"
                     value={c.espacementCadre || 0.15}
                     onChange={(v) => updateRow(colonnes, setColonnes, c.id, 'espacementCadre', Number(v))}
                     options={[
@@ -270,7 +272,7 @@ export default function Elevation() {
           >
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <InputSaisie label="Longueur" value={l.longueur} onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'longueur', v)} unite="m" />
-              <InputSaisie label="Largeur" value={l.largeur} onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'largeur', v)} unite="m" />
+              <InputSaisie label="Base" value={l.largeur} onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'largeur', v)} unite="m" />
               <InputSaisie label="Hauteur" value={l.hauteur} onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'hauteur', v)} unite="m" />
               <InputSaisie label="Nombre" value={l.nombre} onChange={(v) => updateRow(linteaux, setLinteaux, l.id, 'nombre', v)} unite="u" />
             </div>
@@ -663,6 +665,241 @@ export default function Elevation() {
                 trace={getBloc('escalier').lignes[index]?.trace}
                 overrideValue={e.override_volume}
                 onOverrideChange={(v) => updateRow(escaliers, setEscaliers, e.id, 'override_volume', v)}
+              />
+            </div>
+          </LigneOuvrage>
+        ))}
+      </CarteBloc>
+
+      <CarteBloc
+        titre="Ceintures (Chaînage haut)"
+        onAdd={() => addRow(ceintures, setCeintures, { 
+          niveauId: niveauActifId, perimetre: '', largeur: '', hauteur: '', nombre: '1', 
+          diametrePrin: 12, diametreCadre: 6, nbreBarresPrin: 4, espacementCadre: 0.20,
+          diametrePrin2: 10, nbreBarresPrin2: 0,
+          diametrePeau: 8, nbreBarresPeau: 0,
+          diametreChapeau: 10, nbreBarresChapeau: 0, longueurChapeau: '',
+          diametreRenfort: 12, nbreBarresRenfort: 0, longueurRenfort: '',
+          enrobage: 0.025, LcCadre: 0.10
+        }, 'CE')}
+        addLabel="Ajouter type de ceinture"
+        totalValeur={getBloc('ceintures').total}
+        totalUnite={getBloc('ceintures').unite}
+        totalLabel="Volume total ceintures"
+      >
+        <div className="bg-blue-50/50 p-3 rounded border border-blue-100 mb-6 flex flex-col md:flex-row gap-4 items-center">
+          <h4 className="text-xs font-bold text-blue-800 uppercase w-full md:w-auto md:mr-auto">Paramètres globaux du béton</h4>
+          <div className="flex gap-4 w-full md:w-auto">
+            <SelectSaisie
+              label="Dosage (kg/m³)"
+              value={parametresProjet.dosagePoutres || 350}
+              onChange={(v) => setParametresProjet({...parametresProjet, dosagePoutres: Number(v)})}
+              options={[
+                {label: '250 kg/m³', value: 250},
+                {label: '300 kg/m³', value: 300},
+                {label: '350 kg/m³', value: 350},
+                {label: '400 kg/m³', value: 400}
+              ]}
+            />
+            <SelectSaisie
+              label="Type de ciment"
+              value={parametresProjet.cimentTypePoutres || '42.5'}
+              onChange={(v) => setParametresProjet({...parametresProjet, cimentTypePoutres: v})}
+              options={[
+                {label: 'Ciment 32.5', value: '32.5'},
+                {label: 'Ciment 42.5', value: '42.5'}
+              ]}
+            />
+          </div>
+        </div>
+
+        {currentCeintures.map((l, index) => (
+          <LigneOuvrage
+            key={l.id} repere={l.repere} titre="Ceinture"
+            onRemove={currentCeintures.length > 1 ? () => removeRow(ceintures, setCeintures, l.id) : null}
+            avertissement={getAvertissementLocal('ceintures', index)}
+          >
+            <h4 className="text-sm font-bold text-devis-calcule mb-2 border-b border-devis-border pb-1">Dimensions Ceinture</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <InputSaisie label="Longueur" value={l.perimetre} onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'perimetre', v)} unite="m" />
+              <InputSaisie label="Base" value={l.largeur} onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'largeur', v)} unite="m" />
+              <InputSaisie label="Hauteur" value={l.hauteur} onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'hauteur', v)} unite="m" />
+              <InputSaisie label="Nombre" value={l.nombre} onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'nombre', v)} unite="u" />
+            </div>
+
+            <div className="bg-amber-50 p-3 rounded border border-amber-200 mb-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 border-b border-amber-200 pb-2">
+                <h4 className="text-xs font-bold text-amber-800 uppercase">Paramètres d'Armature</h4>
+                <div className="flex gap-4 mt-2 md:mt-0">
+                  <SelectSaisie
+                    label="Enrobage (c)"
+                    value={l.enrobage || 0.025}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'enrobage', Number(v))}
+                    options={[
+                      {label: '2 cm', value: 0.02}, {label: '2.5 cm', value: 0.025}, {label: '3 cm', value: 0.03}, {label: '4 cm', value: 0.04}, {label: '5 cm', value: 0.05}
+                    ]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Ancrage (La)"
+                    value={l.La || '40D'}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'La', v)}
+                    options={LA_OPTIONS}
+                    styleClass="!bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Armature Principale 1</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <SelectSaisie
+                    label="Diamètre"
+                    value={l.diametrePrin || 12}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'diametrePrin', Number(v))}
+                    options={[{label: 'HA 8', value: 8}, {label: 'HA 10', value: 10}, {label: 'HA 12', value: 12}, {label: 'HA 14', value: 14}, {label: 'HA 16', value: 16}]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Nombre de barres"
+                    value={l.nbreBarresPrin || 4}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'nbreBarresPrin', Number(v))}
+                    options={[{label: '2', value: 2}, {label: '3', value: 3}, {label: '4', value: 4}, {label: '6', value: 6}, {label: '8', value: 8}]}
+                    styleClass="!bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Armature Principale 2 (Optionnelle)</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <SelectSaisie
+                    label="Diamètre"
+                    value={l.diametrePrin2 || 10}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'diametrePrin2', Number(v))}
+                    options={[{label: 'HA 8', value: 8}, {label: 'HA 10', value: 10}, {label: 'HA 12', value: 12}, {label: 'HA 14', value: 14}, {label: 'HA 16', value: 16}]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Nombre de barres"
+                    value={l.nbreBarresPrin2 || 0}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'nbreBarresPrin2', Number(v))}
+                    options={[{label: '0 (Aucune)', value: 0}, {label: '2', value: 2}, {label: '4', value: 4}, {label: '6', value: 6}, {label: '8', value: 8}]}
+                    styleClass="!bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Armatures de Peau (Optionnelles)</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <SelectSaisie
+                    label="Diamètre"
+                    value={l.diametrePeau || 8}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'diametrePeau', Number(v))}
+                    options={[{label: 'HA 6', value: 6}, {label: 'HA 8', value: 8}, {label: 'HA 10', value: 10}, {label: 'HA 12', value: 12}]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Nombre de barres"
+                    value={l.nbreBarresPeau || 0}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'nbreBarresPeau', Number(v))}
+                    options={[{label: '0 (Aucune)', value: 0}, {label: '2', value: 2}, {label: '4', value: 4}, {label: '6', value: 6}]}
+                    styleClass="!bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Armatures de Chapeau (Optionnelles)</span>
+                <div className="grid grid-cols-3 gap-4">
+                  <SelectSaisie
+                    label="Diamètre"
+                    value={l.diametreChapeau || 10}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'diametreChapeau', Number(v))}
+                    options={[{label: 'HA 8', value: 8}, {label: 'HA 10', value: 10}, {label: 'HA 12', value: 12}, {label: 'HA 14', value: 14}]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Nombre de barres"
+                    value={l.nbreBarresChapeau || 0}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'nbreBarresChapeau', Number(v))}
+                    options={[{label: '0 (Aucune)', value: 0}, {label: '2', value: 2}, {label: '3', value: 3}, {label: '4', value: 4}, {label: '6', value: 6}]}
+                    styleClass="!bg-white"
+                  />
+                  <InputSaisie 
+                    label="Longueur unitaire" 
+                    value={l.longueurChapeau || ''} 
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'longueurChapeau', v)} 
+                    unite="m" 
+                    styleClass="!bg-white" 
+                  />
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Renforts (Optionnels)</span>
+                <div className="grid grid-cols-3 gap-4">
+                  <SelectSaisie
+                    label="Diamètre"
+                    value={l.diametreRenfort || 12}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'diametreRenfort', Number(v))}
+                    options={[{label: 'HA 8', value: 8}, {label: 'HA 10', value: 10}, {label: 'HA 12', value: 12}, {label: 'HA 14', value: 14}]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Nombre de barres"
+                    value={l.nbreBarresRenfort || 0}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'nbreBarresRenfort', Number(v))}
+                    options={[{label: '0 (Aucune)', value: 0}, {label: '2', value: 2}, {label: '3', value: 3}, {label: '4', value: 4}, {label: '6', value: 6}]}
+                    styleClass="!bg-white"
+                  />
+                  <InputSaisie 
+                    label="Longueur unitaire" 
+                    value={l.longueurRenfort || ''} 
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'longueurRenfort', v)} 
+                    unite="m" 
+                    styleClass="!bg-white" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Cadres</span>
+                <div className="grid grid-cols-3 gap-4">
+                  <SelectSaisie
+                    label="Diamètre Cadres"
+                    value={l.diametreCadre || 6}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'diametreCadre', Number(v))}
+                    options={[{label: 'RL 6', value: 6}, {label: 'RL 8', value: 8}]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Espacement"
+                    value={l.espacementCadre || 0.20}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'espacementCadre', Number(v))}
+                    options={[{label: '0.10 m', value: 0.10}, {label: '0.15 m', value: 0.15}, {label: '0.20 m', value: 0.20}, {label: '0.25 m', value: 0.25}]}
+                    styleClass="!bg-white"
+                  />
+                  <SelectSaisie
+                    label="Crochets (Lc)"
+                    value={l.LcCadre || 0.10}
+                    onChange={(v) => updateRow(ceintures, setCeintures, l.id, 'LcCadre', Number(v))}
+                    options={LC_OPTIONS}
+                    styleClass="!bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-devis-border grid grid-cols-2 gap-4">
+              <ValeurCalculee
+                label="Volume ligne"
+                value={getBloc('ceintures').lignes[index]?.valeur}
+                unite="m3"
+                trace={getBloc('ceintures').lignes[index]?.trace}
+                overrideValue={l.override_volume}
+                onOverrideChange={(v) => updateRow(ceintures, setCeintures, l.id, 'override_volume', v)}
               />
             </div>
           </LigneOuvrage>

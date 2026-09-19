@@ -152,6 +152,27 @@ export default function Plancher() {
 
         {variante === 'hourdis16' && (
           <CarteBloc titre="Plancher Hourdis 16+4 (Livré et Posé)">
+            <div className="bg-blue-50/50 p-3 rounded border border-blue-100 mb-6 flex flex-col gap-4">
+              <h4 className="text-xs font-bold text-blue-800 uppercase">Paramètres des armatures</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                   <h5 className="text-xs font-bold text-gray-700 mb-2">Dalle de compression (Nappe)</h5>
+                   <div className="flex gap-4">
+                     <SelectSaisie label="Section (mm)" value={parametresProjet.nappeDiametre || 6} onChange={(v) => setParametresProjet({...parametresProjet, nappeDiametre: Number(v)})} options={[{label: 'HA6', value: 6}, {label: 'HA8', value: 8}]} />
+                     <SelectSaisie label="Espacement (cm)" value={parametresProjet.nappeEspacement || 20} onChange={(v) => setParametresProjet({...parametresProjet, nappeEspacement: Number(v)})} options={[{label: '15 cm', value: 15}, {label: '20 cm', value: 20}, {label: '25 cm', value: 25}]} />
+                   </div>
+                </div>
+                <div>
+                   <h5 className="text-xs font-bold text-gray-700 mb-2">Poutrelles</h5>
+                   <div className="flex gap-4">
+                     <SelectSaisie label="Nb Barres / Poutrelle" value={parametresProjet.poutrelleNbBarres || 2} onChange={(v) => setParametresProjet({...parametresProjet, poutrelleNbBarres: Number(v)})} options={[{label: '2 barres', value: 2}, {label: '3 barres', value: 3}, {label: '4 barres', value: 4}]} />
+                     <SelectSaisie label="Section (mm)" value={parametresProjet.poutrelleDiametre || 8} onChange={(v) => setParametresProjet({...parametresProjet, poutrelleDiametre: Number(v)})} options={[{label: 'HA8', value: 8}, {label: 'HA10', value: 10}, {label: 'HA12', value: 12}]} />
+                     <SelectSaisie label="Espacement long. (cm)" value={parametresProjet.poutrelleEspacement || 20} onChange={(v) => setParametresProjet({...parametresProjet, poutrelleEspacement: Number(v)})} options={[{label: '15 cm', value: 15}, {label: '20 cm', value: 20}, {label: '25 cm', value: 25}]} />
+                   </div>
+                </div>
+              </div>
+            </div>
+
             {hourdis16Niveau.map((ligne, i) => (
               <LigneOuvrage
                 key={`hourdis16-${ligne.id}`}
@@ -159,15 +180,53 @@ export default function Plancher() {
                 repere={ligne.repere || `PH16-${i + 1}`}
                 onRemove={() => removeRow(plancherHourdis16, setPlancherHourdis16, ligne.id)}
               >
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <InputSaisie label="Longueur (m)" value={ligne.longueur} onChange={(v) => updateRow(plancherHourdis16, setPlancherHourdis16, ligne.id, 'longueur', v)} unite="m" />
-                  <InputSaisie label="Largeur (m)" value={ligne.largeur} onChange={(v) => updateRow(plancherHourdis16, setPlancherHourdis16, ligne.id, 'largeur', v)} unite="m" />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <InputSaisie label="Longueur L (m)" value={ligne.longueur} onChange={(v) => updateRow(plancherHourdis16, setPlancherHourdis16, ligne.id, 'longueur', v)} unite="m" />
+                  <InputSaisie label="Largeur l (m)" value={ligne.largeur} onChange={(v) => updateRow(plancherHourdis16, setPlancherHourdis16, ligne.id, 'largeur', v)} unite="m" />
+                  <InputSaisie label="Long. Poutrelle Lp (m)" value={ligne.Lp !== undefined ? ligne.Lp : ligne.largeur} onChange={(v) => updateRow(plancherHourdis16, setPlancherHourdis16, ligne.id, 'Lp', v)} unite="m" />
                   <InputSaisie label="Nombre" value={ligne.nombre !== undefined ? ligne.nombre : 1} onChange={(v) => updateRow(plancherHourdis16, setPlancherHourdis16, ligne.id, 'nombre', v)} unite="u" />
+                </div>
+                
+                <div className="bg-white p-3 rounded border border-gray-200 mt-4">
+                  <h5 className="text-xs font-bold text-gray-700 uppercase mb-3">Trémies / Ouvertures</h5>
+                  {(ligne.tremies || []).map((t, tIndex) => (
+                    <div key={tIndex} className="flex gap-4 items-end mb-2">
+                      <InputSaisie label={`Long. Trémie ${tIndex + 1}`} value={t.longueur} onChange={(v) => {
+                        const newT = [...(ligne.tremies || [])];
+                        newT[tIndex] = { ...newT[tIndex], longueur: v };
+                        updateRow(plancherHourdis16, setPlancherHourdis16, ligne.id, 'tremies', newT);
+                      }} unite="m" />
+                      <InputSaisie label={`Larg. Trémie ${tIndex + 1}`} value={t.largeur} onChange={(v) => {
+                        const newT = [...(ligne.tremies || [])];
+                        newT[tIndex] = { ...newT[tIndex], largeur: v };
+                        updateRow(plancherHourdis16, setPlancherHourdis16, ligne.id, 'tremies', newT);
+                      }} unite="m" />
+                      <button 
+                        onClick={() => {
+                          const newT = [...(ligne.tremies || [])];
+                          newT.splice(tIndex, 1);
+                          updateRow(plancherHourdis16, setPlancherHourdis16, ligne.id, 'tremies', newT);
+                        }}
+                        className="text-red-500 hover:text-red-700 px-2 py-1 h-9 rounded text-sm mb-1"
+                      >
+                        X
+                      </button>
+                    </div>
+                  ))}
+                  <button 
+                    onClick={() => {
+                      const newT = [...(ligne.tremies || []), { longueur: '', largeur: '' }];
+                      updateRow(plancherHourdis16, setPlancherHourdis16, ligne.id, 'tremies', newT);
+                    }}
+                    className="text-devis-saisie hover:underline text-sm font-bold mt-2"
+                  >
+                    + Ajouter une trémie
+                  </button>
                 </div>
               </LigneOuvrage>
             ))}
             <button 
-              onClick={() => addRow(plancherHourdis16, setPlancherHourdis16, { niveauId: niveauActifId, longueur: '', largeur: '', nombre: 1 }, 'PH16-')}
+              onClick={() => addRow(plancherHourdis16, setPlancherHourdis16, { niveauId: niveauActifId, longueur: '', largeur: '', Lp: '', nombre: 1, tremies: [] }, 'PH16-')}
               className="mt-4 text-devis-saisie hover:underline text-sm font-bold min-h-[44px] px-2"
             >
               + Ajouter une surface

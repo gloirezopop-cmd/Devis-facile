@@ -59,6 +59,7 @@ export function preparerSaisiePourMoteur(niveau, state) {
     plancherHourdis16: sanitize((state.plancherHourdis16 || []).filter(p => p.niveauId === niveau.id)),
     charpenteBois: sanitize((state.charpentes || []).filter(c => c.niveauId === niveau.id)),
     couvertureToles: sanitize((state.couverturesToles || []).filter(c => c.niveauId === niveau.id)),
+    toituresPro: sanitize((state.toituresPro || []).filter(t => t.niveauId === niveau.id)),
     acrotere: sanitize((state.terrasses || []).filter(t => t.niveauId === niveau.id)),
     formePente: sanitize((state.terrasses || []).filter(t => t.niveauId === niveau.id))
   };

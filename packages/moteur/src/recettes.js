@@ -113,7 +113,7 @@ export function obtenirDecompositionOuvrage(blocId, bloc, regles = {}) {
   // --- 3. BETON ---
   const isBetonArme = ['semelles', 'amorces', 'longrines', 'colonnes', 'ceintures', 'linteaux', 'escalier', 'poteaux', 'poutres', 'dalles', 'acrotere'].includes(blocId);
   const isBetonProprete = blocId === 'betonProprete';
-  const isAutresBeton = ['sousPavement'].includes(blocId);
+  const isAutresBeton = ['sousPavement', 'chapeEgalisation'].includes(blocId);
 
   if (isBetonArme || isBetonProprete || isAutresBeton) {
     const fallbackDosage = isBetonProprete ? PARAMETRES.dosages.betonProprete : (isBetonArme ? PARAMETRES.dosages.betonArme : 250);
@@ -164,9 +164,6 @@ export function obtenirDecompositionOuvrage(blocId, bloc, regles = {}) {
   }
 
 
-  // --- 4. MOELLON — consommation de la décomposition analytique ---
-  // calculerMoellon() porte la décomposition complète dans chaque ligne.
-  // On agrège ici pour la fiche récapitulative (comme pour le soubassement).
   if ((blocId === 'moellon' || blocId === 'dallage') && bloc.lignes && bloc.lignes.length > 0) {
     for (const l of bloc.lignes) {
       if (l.decomposition_materiaux && l.decomposition_materiaux.length > 0) {
@@ -188,6 +185,42 @@ export function obtenirDecompositionOuvrage(blocId, bloc, regles = {}) {
     }
   }
 
+  // --- 4.5 PLANCHER HOURDIS 16+4 ---
+  if (blocId === 'plancherHourdis' && bloc.lignes) {
+    for (const l of bloc.lignes) {
+      if (l.detailsExtra) {
+        const d = l.detailsExtra;
+        add('hourdis', 'blocs', 'Hourdis 16 cm', 'u', d.nHourdis, 'Calcul théorique + pertes', 'Calcul basé sur surface nette et dimensions hourdis', 'Valeur avec pertes', d.nHourdis);
+        add('poutrelles', 'prefa', 'Poutrelles', 'ml', d.longueurPoutrelles, 'Calcul poutrelles (L/entraxe)', 'Nombre d\'intervalles + 1', 'Valeur exacte', d.longueurPoutrelles);
+
+        
+        // Beton plancher (on ajoute le volume pour que la passe beton au-dessus le traite ?
+        // Non, la passe beton au-dessus traite le plancherHourdis si isBetonArme est true, 
+        // mais isBetonArme ne contient PAS plancherHourdis. On le calcule ici).
+        const defaultDosage = regles?.dosages?.[blocId] || 350;
+        const defaultCimentType = regles?.cimentTypes?.[blocId] || '42.5';
+        const poidsSac = PARAMETRES.beton.poidsSacCiment || 50;
+        
+        const volBeton = d.volBeton;
+        if (volBeton > 0) {
+          const sacsCimentNet = Math.ceil((volBeton * defaultDosage) / poidsSac);
+          add('ciment', 'ciment', `Ciment (${defaultCimentType})`, 'sac', sacsCimentNet, '(Volume béton × Dosage) / Poids sac', `Vol. Béton = ${net(volBeton, 3)} m³`, 'Arrondi supérieur', sacsCimentNet);
+          
+          const volSable = volBeton * PARAMETRES.beton.sableParM3;
+          const tonnesSable = (volSable * PARAMETRES.beton.densiteSable * 1000) / 1000;
+          add('sable', 'sable', 'Sable de rivière', 't', tonnesSable, `Volume béton × ${PARAMETRES.beton.sableParM3} × ${PARAMETRES.beton.densiteSable}`, '', 'Commandé à la tonne', tonnesSable);
+          
+          const volGravier = volBeton * PARAMETRES.beton.gravierParM3;
+          const tonnesGravier = (volGravier * PARAMETRES.beton.densiteGravier * 1000) / 1000;
+          add('gravier', 'gravier', 'Gravier 15/25', 't', tonnesGravier, `Volume béton × ${PARAMETRES.beton.gravierParM3} × ${PARAMETRES.beton.densiteGravier}`, '', 'Commandé à la tonne', tonnesGravier);
+          
+          const eau = (volBeton * defaultDosage) / PARAMETRES.beton.eauParDosage;
+          add('eau', 'eau', 'Eau de gâchage', 'L', eau, '(Volume béton × Dosage) / 2', '');
+        }
+      }
+    }
+  }
+
 
 
   // --- 5. MAÇONNERIE (AGGLOS CREUX) ---
@@ -196,7 +229,8 @@ export function obtenirDecompositionOuvrage(blocId, bloc, regles = {}) {
     for (const l of bloc.lignes) {
       if (l.decomposition_materiaux) {
         l.decomposition_materiaux.forEach(mat => {
-          add(mat.id_materiau, mat.categorie, mat.nom, mat.unite, mat.quantiteNette, mat.formule, mat.calcul, 'Calcul analytique exact', mat.quantiteNette, { quantite_majoree: mat.quantiteNette });
+          const qMajoree = mat.donnees && mat.donnees.quantite_majoree !== undefined ? mat.donnees.quantite_majoree : mat.quantiteNette;
+          add(mat.id_materiau, mat.categorie, mat.nom, mat.unite, mat.quantiteNette, mat.formule, mat.calcul, 'Calcul analytique exact', mat.valeur_arrondie !== undefined ? mat.valeur_arrondie : mat.quantiteNette, { quantite_majoree: qMajoree });
         });
       }
     }
@@ -207,7 +241,8 @@ export function obtenirDecompositionOuvrage(blocId, bloc, regles = {}) {
     for (const l of bloc.lignes) {
       if (l.decomposition_materiaux) {
         l.decomposition_materiaux.forEach(mat => {
-          add(mat.id_materiau, mat.categorie, mat.nom, mat.unite, mat.quantiteNette, mat.formule, mat.calcul, 'Calcul analytique exact', mat.quantiteNette, { quantite_majoree: mat.quantiteNette });
+          const qMajoree = mat.donnees && mat.donnees.quantite_majoree !== undefined ? mat.donnees.quantite_majoree : mat.quantiteNette;
+          add(mat.id_materiau, mat.categorie, mat.nom, mat.unite, mat.quantiteNette, mat.formule, mat.calcul, 'Calcul analytique exact', mat.valeur_arrondie !== undefined ? mat.valeur_arrondie : mat.quantiteNette, { quantite_majoree: qMajoree });
         });
       }
     }
@@ -293,6 +328,41 @@ export function obtenirDecompositionOuvrage(blocId, bloc, regles = {}) {
     }
     if (faitieres > 0) {
       add('faitieres', 'toles', 'Tôles faîtières', 'u', faitieres, 'ArrondiSup(Longueur / Longueur Faîtière) + 1', `Arrondi par faîtage`, 'Arrondi', faitieres);
+    }
+  }
+  // --- 11. TOITURE PROFESSIONNELLE (Métré Pro) ---
+  if (blocId === 'toiturePro' && bloc.lignes) {
+    for (const l of bloc.lignes) {
+      const res = l.resultats; // charpente, couverture, plafond (arrays)
+      if (res) {
+        if (res.charpente) {
+          res.charpente.forEach(item => {
+            if (item.quantite_finale > 0) {
+              if (item.designation.includes('Madriers')) add('madriers', 'bois', item.designation, item.unite, item.quantite_finale, item.formule, item.valeurs);
+              else if (item.designation.includes('Pannes')) add('pannes', 'bois', item.designation, item.unite, item.quantite_finale, item.formule, item.valeurs);
+              else if (item.designation.includes('Chevrons')) add('chevrons', 'bois', item.designation, item.unite, item.quantite_finale, item.formule, item.valeurs);
+              else if (item.designation.includes('Clous')) add('clous_charpente', 'clous', item.designation, item.unite, item.quantite_finale, item.formule, item.valeurs);
+              else add('bois_divers', 'bois', item.designation, item.unite, item.quantite_finale, item.formule, item.valeurs);
+            }
+          });
+        }
+        if (res.couverture) {
+          res.couverture.forEach(item => {
+            if (item.quantite_finale > 0) {
+              if (item.designation.includes('Tôles')) add('toles', 'toles', item.designation, item.unite, item.quantite_finale, item.formule, item.valeurs);
+              else if (item.designation.includes('Clous')) add('clous_toiture', 'clous', item.designation, item.unite, item.quantite_finale, item.formule, item.valeurs);
+            }
+          });
+        }
+        if (res.plafond) {
+          res.plafond.forEach(item => {
+            if (item.quantite_finale > 0) {
+              if (item.designation.includes('Triplex')) add('triplex', 'bois', item.designation, item.unite, item.quantite_finale, item.formule, item.valeurs);
+              else if (item.designation.includes('Chevrons')) add('chevrons', 'bois', item.designation, item.unite, item.quantite_finale, item.formule, item.valeurs);
+            }
+          });
+        }
+      }
     }
   }
 

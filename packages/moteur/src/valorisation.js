@@ -19,16 +19,12 @@ const { net } = moteurInternes;
  * metier n'a pas ete donnee — un lot sans ligne ne s'affiche pas.
  */
 export const LOTS_DEVIS_PARTICULIER = [
-  { id: 'installation',     ordre: 1,  titre: 'INSTALLATION CHANTIER' },
-  { id: 'deblais',          ordre: 2,  titre: 'DEBLAIS' },
-  { id: 'remblais',         ordre: 3,  titre: 'REMBLAIS' },
-  { id: 'fondation',        ordre: 4,  titre: 'FONDATION' },
-  { id: 'elevation',        ordre: 5,  titre: 'ELEVATION' },
-  { id: 'plancher',         ordre: 6,  titre: 'DALLE' },
-  { id: 'finition',         ordre: 7,  titre: 'FINITION' },
-  { id: 'charpente',        ordre: 8,  titre: 'CHARPENTE' },
-  { id: 'couverture',       ordre: 9,  titre: 'COUVERTURE' },
-  { id: 'pieds_droit',      ordre: 10, titre: 'PIEDS DROIT' },
+  { id: 'terrassement',     ordre: 1,  titre: 'TERRASSEMENT' },
+  { id: 'fondation',        ordre: 2,  titre: 'FONDATION' },
+  { id: 'elevation',        ordre: 3,  titre: 'ELEVATION' },
+  { id: 'plancher',         ordre: 4,  titre: 'PLANCHER' },
+  { id: 'toiture',          ordre: 5,  titre: 'TOITURE' },
+  { id: 'finition',         ordre: 6,  titre: 'FINITIONS' },
 ];
 
 /**
@@ -95,8 +91,9 @@ const BLOCS_PARTICULIER = {
   carrelage: 'finition',
   faience: 'finition',
   peinture: 'finition',
-  charpenteBois: 'charpente',
-  couvertureToles: 'couverture',
+  charpenteBois: 'toiture',
+  couvertureToles: 'toiture',
+  toiturePro: 'toiture',
   acrotere: 'toiture_terrasse',
   formePente: 'toiture_terrasse',
   armatures: 'armatures'
@@ -463,46 +460,34 @@ export function genererDevisParticulier(input, regles, bibliothequePrix, bibliot
    */
   const chantierChiffre = projetComporteDesOuvrages(niveauxMetre);
 
-  const lignesForfaitaires = {
-    installation: [
-      { id: 'ameneeEtRepliForfait', designation: 'Installation et repli de chantier', unite: 'forfait', quantite: chantierChiffre ? 1 : 0 },
-    ],
-    deblais: [
-      { id: 'fouilleTrancheeM3',   designation: 'Deblais',                             unite: 'm3', quantite: resumeFondation?.volumes?.deblais    || 0 },
-      { id: 'evacuationDeblaisM3', designation: 'Evacuation des terres excedentaires',  unite: 'm3', quantite: resumeFondation?.volumes?.evacuation || 0 },
-    ],
-    remblais: [
-      { id: 'remblaiSousDallageM3', designation: 'Remblais',                            unite: 'm3', quantite: resumeFondation?.volumes?.remblais   || 0 },
-    ],
-  };
+  const lignesTerrassement = [
+    { id: 'ameneeEtRepliForfait', designation: 'Installation et repli de chantier', unite: 'forfait', quantite: chantierChiffre ? 1 : 0 },
+    { id: 'fouilleTrancheeM3',   designation: 'Déblais',                             unite: 'm³', quantite: resumeFondation?.volumes?.deblais    || 0 },
+    { id: 'evacuationDeblaisM3', designation: 'Evacuation des terres excédentaires', unite: 'm³', quantite: resumeFondation?.volumes?.evacuation || 0 },
+    { id: 'remblaiSousDallageM3', designation: 'Remblais',                            unite: 'm³', quantite: resumeFondation?.volumes?.remblais   || 0 },
+  ];
 
-  // Les trois premiers lots ne se chiffrent pas en fournitures : l'installation
-  // est un forfait, les deblais et les remblais se paient au m3 de terre. Ils
-  // gardent donc leur traitement propre.
-  for (const lot of ordreParticulier) {
-    if (!lignesForfaitaires[lot]) continue;
-    const lignes = [];
-    let sousTotal = 0;
+  const lignes = [];
+  let sousTotalTerrassement = 0;
 
-    for (const modele of lignesForfaitaires[lot]) {
-      if (!modele.quantite) continue;
-      const pu = bibliothequePrix[modele.id] !== undefined ? bibliothequePrix[modele.id]
-               : PARAMETRES.prixUnitaires[modele.id] !== undefined ? PARAMETRES.prixUnitaires[modele.id] : 0;
-      const pt = net(modele.quantite * pu);
-      lignes.push({
-        id: modele.id,
-        designation: bibliothequeLibelles[modele.id] || modele.designation,
-        unite: modele.unite, quantite: modele.quantite, pu: pu, pt: pt,
-        avertissements: pu === 0 ? ['Prix manquant'] : [],
-      });
-      sousTotal += pt;
-    }
+  for (const modele of lignesTerrassement) {
+    if (!modele.quantite) continue;
+    const pu = bibliothequePrix[modele.id] !== undefined ? bibliothequePrix[modele.id]
+             : PARAMETRES.prixUnitaires[modele.id] !== undefined ? PARAMETRES.prixUnitaires[modele.id] : 0;
+    const pt = net(modele.quantite * pu);
+    lignes.push({
+      id: modele.id,
+      designation: bibliothequeLibelles[modele.id] || modele.designation,
+      unite: modele.unite, quantite: modele.quantite, pu: pu, pt: pt,
+      avertissements: pu === 0 ? ['Prix manquant'] : [],
+    });
+    sousTotalTerrassement += pt;
+  }
 
-    if (lignes.length > 0) {
-      devisParLot[lot] = { titre: TITRES_LOTS_PARTICULIER[lot], lignes: lignes, sousTotal: Math.round(sousTotal) };
-      ordreLots.push(lot);
-      totalMateriaux  += sousTotal;
-    }
+  if (lignes.length > 0) {
+    devisParLot['terrassement'] = { titre: TITRES_LOTS_PARTICULIER['terrassement'], lignes: lignes, sousTotal: Math.round(sousTotalTerrassement) };
+    ordreLots.push('terrassement');
+    totalMateriaux += sousTotalTerrassement;
   }
 
   // Tout le reste vient du Resume, lot par lot. Les fournitures d'un lot y sont

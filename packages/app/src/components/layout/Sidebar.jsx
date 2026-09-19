@@ -5,6 +5,7 @@ import { NAVIGATION, sectionAdministration } from './navigation.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useEstAdmin } from '../../hooks/useEstAdmin.js';
 import { useEstFondateur } from '../../hooks/useEstFondateur.js';
+import { effacerEtatLocal } from '../../utils/brouillon.js';
 
 /**
  * Navigation principale. Rendue deux fois : fixe sur ordinateur (Sidebar),
@@ -56,7 +57,20 @@ export function ContenuNavigation({ onNavigate }) {
                   <NavLink
                     to={lien.to}
                     end={lien.exact}
-                    onClick={onNavigate}
+                    onClick={(e) => {
+                      if (lien.label.toLowerCase().includes('nouveau')) {
+                        const ok = window.confirm("Commencer un nouveau projet effacera le travail en cours non sauvegardé. Continuer ?");
+                        if (!ok) {
+                          e.preventDefault();
+                          return;
+                        }
+                        // Effacer l'état local et forcer le rechargement pour tout remettre à zéro
+                        effacerEtatLocal();
+                        window.location.href = lien.to;
+                        return;
+                      }
+                      if (onNavigate) onNavigate();
+                    }}
                     className={({ isActive }) =>
                       `flex items-center gap-3 rounded-md px-3 py-2.5 min-h-[44px] text-[13.5px] font-medium transition-colors ${
                         isActive

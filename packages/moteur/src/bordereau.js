@@ -45,13 +45,13 @@ function bordereauSelonOrdre(devis, ordre) {
     const contenu = devis.lots[lotId];
     if (!contenu || !contenu.lignes || contenu.lignes.length === 0) continue;
 
-    numeroLot += 1;
+    numeroLot += 100;
     rangs.push({ type: 'lot', numero: String(numeroLot), libelle: contenu.titre || contenu.nom || lotId, lotId });
 
     contenu.lignes.forEach((ligne, index) => {
       rangs.push({
         type: 'ligne',
-        numero: `${numeroLot}.${index + 1}`,
+        numero: String(numeroLot + index + 1),
         lotId,
         id: ligne.id,
         designation: ligne.designation,
@@ -71,7 +71,7 @@ function bordereauSelonOrdre(devis, ordre) {
   const cascade = devis.cascade || {};
   rangs.push({ type: 'total', libelle: 'TOTAL', montant: cascade.totalMateriaux || 0 });
 
-  let numeroFrais = numeroLot;
+  let numeroFrais = numeroLot + 100;
   for (const frais of FRAIS_PARTICULIER) {
     numeroFrais += 1;
     rangs.push({
@@ -128,11 +128,12 @@ export function construireBordereauParticulier(devis) {
     const contenu = devis.lots[lot.id];
     if (!contenu || !contenu.lignes || contenu.lignes.length === 0) continue;
 
-    dernierNumeroLot = Math.max(dernierNumeroLot, lot.ordre);
+    const numeroLot = lot.ordre * 100;
+    dernierNumeroLot = Math.max(dernierNumeroLot, numeroLot);
 
     rangs.push({
       type: 'lot',
-      numero: String(lot.ordre),
+      numero: String(numeroLot),
       libelle: contenu.titre || lot.titre,
       lotId: lot.id,
     });
@@ -140,7 +141,7 @@ export function construireBordereauParticulier(devis) {
     contenu.lignes.forEach((ligne, index) => {
       rangs.push({
         type: 'ligne',
-        numero: `${lot.ordre}.${index + 1}`,
+        numero: String(numeroLot + index + 1),
         lotId: lot.id,
         id: ligne.id,
         designation: ligne.designation,
@@ -160,7 +161,7 @@ export function construireBordereauParticulier(devis) {
     });
   }
 
-  let numeroFrais = dernierNumeroLot;
+  let numeroFrais = dernierNumeroLot + 100;
 
   if (rangs.length === 0) return rangs;
 
@@ -215,13 +216,13 @@ export function construireBordereauEntreprise(devis, ordreNiveaux = []) {
     const groupe = devis.niveaux[id];
     if (!groupe || !groupe.lignes || groupe.lignes.length === 0) continue;
 
-    numeroLot += 1;
+    numeroLot += 100;
     rangs.push({ type: 'lot', numero: String(numeroLot), libelle: groupe.nom || id, lotId: id });
 
     groupe.lignes.forEach((ligne, index) => {
       rangs.push({
         type: 'ligne',
-        numero: `${numeroLot}.${index + 1}`,
+        numero: String(numeroLot + index + 1),
         lotId: id,
         id: ligne.id,
         designation: ligne.designation,

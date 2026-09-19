@@ -192,8 +192,8 @@ export default function Fondation() {
             avertissement={getAvertissementLocal('semelles', index)}>
             <h4 className="text-sm font-bold text-devis-calcule mb-2 border-b border-devis-border pb-1">Dimensions Semelle</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <InputSaisie label="Longueur (m)" value={s.longueur} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'longueur', v)} unite="m" />
-              <InputSaisie label="Largeur (m)" value={s.largeur} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'largeur', v)} unite="m" />
+              <InputSaisie label="Côté A" value={s.longueur} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'longueur', v)} unite="m" />
+              <InputSaisie label="Côté B" value={s.largeur} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'largeur', v)} unite="m" />
               <InputSaisie label="Hauteur (m)" value={s.hauteur} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'hauteur', v)} unite="m" />
               <InputSaisie label="Nombre" value={s.nombre} onChange={(v) => updateRow(semelles, setSemelles, s.id, 'nombre', v)} unite="u" />
             </div>
@@ -214,7 +214,7 @@ export default function Fondation() {
               </div>
               
               <div className="mb-3">
-                <span className="text-xs font-semibold text-amber-700 block mb-1">Nappe sens Longueur (L)</span>
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Nappe sens Côté A</span>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <SelectSaisie
                     label="Diam. Principal"
@@ -254,7 +254,7 @@ export default function Fondation() {
               </div>
 
               <div>
-                <span className="text-xs font-semibold text-amber-700 block mb-1">Nappe sens Largeur (l)</span>
+                <span className="text-xs font-semibold text-amber-700 block mb-1">Nappe sens Côté B</span>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <SelectSaisie
                     label="Diam. Principal"
@@ -349,8 +349,8 @@ export default function Fondation() {
             avertissement={getAvertissementLocal('amorces', index)}>
             <h4 className="text-sm font-bold text-devis-calcule mb-2 border-b border-devis-border pb-1">Dimensions Amorce</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <InputSaisie label="Côté a (m)" value={a.longueur} onChange={(v) => updateRow(amorces, setAmorces, a.id, 'longueur', v)} unite="m" />
-              <InputSaisie label="Côté b (m)" value={a.largeur} onChange={(v) => updateRow(amorces, setAmorces, a.id, 'largeur', v)} unite="m" />
+              <InputSaisie label="Côté A" value={a.longueur} onChange={(v) => updateRow(amorces, setAmorces, a.id, 'longueur', v)} unite="m" />
+              <InputSaisie label="Côté B" value={a.largeur} onChange={(v) => updateRow(amorces, setAmorces, a.id, 'largeur', v)} unite="m" />
               <InputSaisie label="Hauteur (m)" value={a.hauteur} onChange={(v) => updateRow(amorces, setAmorces, a.id, 'hauteur', v)} unite="m" />
               <InputSaisie label="Nombre" value={a.nombre} onChange={(v) => updateRow(amorces, setAmorces, a.id, 'nombre', v)} unite="u" />
             </div>
@@ -521,9 +521,9 @@ export default function Fondation() {
           >
             <h4 className="text-sm font-bold text-devis-calcule mb-2 border-b border-devis-border pb-1">Dimensions Longrine</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <InputSaisie label="Périmètre (m)" value={l.perimetre} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'perimetre', v)} unite="m" />
-              <InputSaisie label="Largeur (m)" value={l.largeur} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'largeur', v)} unite="m" />
-              <InputSaisie label="Hauteur (m)" value={l.hauteur} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'hauteur', v)} unite="m" />
+              <InputSaisie label="Longueur" value={l.perimetre} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'perimetre', v)} unite="m" />
+              <InputSaisie label="Base" value={l.largeur} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'largeur', v)} unite="m" />
+              <InputSaisie label="Hauteur" value={l.hauteur} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'hauteur', v)} unite="m" />
               <InputSaisie label="Nombre" value={l.nombre} onChange={(v) => updateRow(longrines, setLongrines, l.id, 'nombre', v)} unite="u" />
             </div>
 
@@ -628,7 +628,7 @@ export default function Fondation() {
                     styleClass="!bg-white"
                   />
                   <InputSaisie 
-                    label="Longueur unitaire (m)" 
+                    label="Longueur unitaire" 
                     value={l.longueurChapeau || ''} 
                     onChange={(v) => updateRow(longrines, setLongrines, l.id, 'longueurChapeau', v)} 
                     unite="m" 
@@ -655,7 +655,7 @@ export default function Fondation() {
                     styleClass="!bg-white"
                   />
                   <InputSaisie 
-                    label="Longueur unitaire (m)" 
+                    label="Longueur unitaire" 
                     value={l.longueurRenfort || ''} 
                     onChange={(v) => updateRow(longrines, setLongrines, l.id, 'longueurRenfort', v)} 
                     unite="m" 
@@ -675,7 +675,7 @@ export default function Fondation() {
                     styleClass="!bg-white"
                   />
                   <SelectSaisie
-                    label="Espacement (m)"
+                    label="Espacement"
                     value={l.espacementCadre || 0.20}
                     onChange={(v) => updateRow(longrines, setLongrines, l.id, 'espacementCadre', Number(v))}
                     options={[{label: '0.10 m', value: 0.10}, {label: '0.15 m', value: 0.15}, {label: '0.20 m', value: 0.20}, {label: '0.25 m', value: 0.25}]}

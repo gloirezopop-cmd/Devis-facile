@@ -96,7 +96,8 @@ export function calculerBlocArmature({ designation, diametre, nuance, nombreDeFi
     const piecesParBarre = Math.max(1, Math.floor(PARAMETRES.armatures.longueurBarreUtile / Ld));
     const chute = PARAMETRES.armatures.longueurBarreCommerciale - (piecesParBarre * Ld);
     if (chute > 1 && chute < PARAMETRES.armatures.longueurBarreCommerciale) {
-      trace.avertissements.push(`Attention : Chaque barre de 12 m coupée génère une chute de ${net(chute)} m.`);
+      // Alert removed based on user request
+      // trace.avertissements.push(`Attention : Chaque barre de 12 m coupée génère une chute de ${net(chute)} m.`);
     }
   } else if (Ld > PARAMETRES.armatures.longueurBarreCommerciale && Ls === 0) {
     trace.avertissements.push(`Impossible : Longueur développée (${Ld}m) supérieure à une barre du commerce sans recouvrement possible.`);

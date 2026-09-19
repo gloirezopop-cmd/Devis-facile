@@ -77,7 +77,7 @@ const POSTES = [
   // ── Plancher ──
   { titre: 'plancher', ids: ['dalles'], arme: true,
     nom: (d) => `Dalles pleines${d ? ` (dosage ${d} kg/m³)` : ''}` },
-  { titre: 'plancher', ids: ['plancherHourdis'], arme: false,
+  { titre: 'plancher', ids: ['plancherHourdis'], arme: true,
     nom: () => 'Plancher hourdis' },
 
   // ── Toiture ──
@@ -85,6 +85,8 @@ const POSTES = [
     nom: () => 'Charpente bois' },
   { titre: 'toiture', ids: ['couvertureToles'], arme: false,
     nom: () => 'Couverture en tôles' },
+  { titre: 'toiture', ids: ['toiturePro'], arme: false,
+    nom: () => 'Toiture (Métré Professionnel)' },
   { titre: 'toiture', ids: ['acrotere'], arme: true,
     nom: (d) => `Chaînage acrotère${d ? ` (dosage ${d} kg/m³)` : ''}` },
   { titre: 'toiture', ids: ['formePente'], arme: false,
@@ -154,7 +156,7 @@ function materiauxDuPoste({ beton, agglos, autres, aciers, filAttache }) {
     lignes.push({
       id: acier.idPrix,
       nom: `Fers de ${acier.diametre}`,
-      unite: 'barre 12 m',
+      unite: 'bar',
       quantite: acier.barres12m,
       precision: `${acier.poids} kg`,
     });
@@ -173,6 +175,10 @@ function construirePoste(spec, blocs, regles) {
     .map((id) => ({ id, bloc: blocs[id] }))
     .filter(({ bloc }) => bloc && bloc.total > 0);
   if (blocsUtiles.length === 0) return null;
+
+  if (spec.ids.includes('toiturePro')) {
+    console.log("construirePoste for toiturePro. blocsUtiles:", blocsUtiles.map(b => b.id));
+  }
 
   const volume = net(blocsUtiles.reduce((s, { bloc }) => s + (bloc.total || 0), 0));
   const unite = blocsUtiles[0].bloc.unite;
@@ -237,7 +243,7 @@ function construirePoste(spec, blocs, regles) {
     .map((a) => ({ diametre: a.diametre, idPrix: a.idPrix, poids: net(a.poids), barres12m: a.barres12m }));
   const filAttache = poidsAcierTotal > 0 ? filDeLigature(poidsAcierTotal) : 0;
 
-  return {
+  const finalPoste = {
     id: spec.ids.join('_'),
     // Les blocs d'origine : c'est par eux que le Devis Entreprise retrouve le
     // sous-detail de prix de l'ouvrage.
@@ -253,6 +259,12 @@ function construirePoste(spec, blocs, regles) {
     filAttache,
     autresPostes,
   };
+  
+  if (spec.ids.includes('toiturePro')) {
+    console.log("finalPoste for toiturePro. materiaux:", finalPoste.materiaux, "autresPostes:", finalPoste.autresPostes);
+  }
+  
+  return finalPoste;
 }
 
 /**

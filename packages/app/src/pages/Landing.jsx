@@ -3,6 +3,8 @@ import EnTeteLanding from '../components/landing/EnTeteLanding.jsx';
 import HerosLanding from '../components/landing/HerosLanding.jsx';
 import SectionEtapes from '../components/landing/SectionEtapes.jsx';
 import SectionFonctionnalites from '../components/landing/SectionFonctionnalites.jsx';
+import SectionStatistiques from '../components/landing/SectionStatistiques.jsx';
+import SectionAvis from '../components/landing/SectionAvis.jsx';
 import PiedDePageLanding from '../components/landing/PiedDePageLanding.jsx';
 import styles from './Landing.module.css';
 
@@ -20,8 +22,10 @@ export default function Landing() {
       <EnTeteLanding />
       <main>
         <HerosLanding />
+        <SectionStatistiques />
         <SectionEtapes />
         <SectionFonctionnalites />
+        <SectionAvis />
       </main>
       <PiedDePageLanding />
     </div>

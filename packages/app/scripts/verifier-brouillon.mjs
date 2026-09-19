@@ -106,7 +106,7 @@ const jamaisTouche = {
   df_niveaux_v3: JSON.stringify([{ id: 'terrassement' }, { id: 'fondation' }]),
   df_taux_v3: JSON.stringify({ tva: 19.25 }),
   df_bibliothequePrix_v3: JSON.stringify({ ciment: '5500' }),
-  df_labelsPrix_v3: JSON.stringify({ ciment: 'Ciment' }),
+  df_labelsPrix_v4: JSON.stringify({ ciment: 'Ciment' }),
   df_parametresProjet_v3: JSON.stringify({ reference: '', maitreOuvrage: '', localisation: '' }),
   df_semelles_v3: '[]',
 };

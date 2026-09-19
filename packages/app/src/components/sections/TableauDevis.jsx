@@ -94,20 +94,15 @@ export default function TableauDevis({ devis, type = 'particulier' }) {
                         <td className={`${cellule} text-sm`}>
                           <span>
                             {ligne.designation}
-                            {sansPrix && (
-                              <span className="ml-2 text-xs font-bold text-amber-700" title="Prix unitaire absent de la bibliothèque">
-                                prix à saisir
-                              </span>
-                            )}
                           </span>
                         </td>
                         <td className={`${cellule} text-xs text-center text-gray-600`}>{ligne.unite}</td>
                         <td className={`${cellule} text-sm text-right tabular-nums`}>{formaterNombre(ligne.quantite)}</td>
                         <td className={`${cellule} text-sm text-right tabular-nums ${estEntreprise ? 'text-devis-calcule' : 'text-devis-herite'}`}>
-                          {formaterNombre(ligne.pu, true)}
+                          {estEntreprise ? '' : formaterNombre(ligne.pu, true)}
                         </td>
                         <td className={`${cellule} text-sm text-right font-bold tabular-nums text-devis-calcule`}>
-                          {formaterNombre(ligne.pt, true)}
+                          {estEntreprise ? '' : formaterNombre(ligne.pt, true)}
                         </td>
                       </tr>
                     );
@@ -118,7 +113,7 @@ export default function TableauDevis({ devis, type = 'particulier' }) {
                       Sous-total — {titre}
                     </td>
                     <td className={`${cellule} text-sm text-right font-bold tabular-nums`}>
-                      {formaterNombre(lot.sousTotal, true)}
+                      {estEntreprise ? '' : formaterNombre(lot.sousTotal, true)}
                     </td>
                   </tr>
                 </Fragment>
@@ -128,7 +123,7 @@ export default function TableauDevis({ devis, type = 'particulier' }) {
         </table>
       </div>
 
-      {devis?.cascade && <Cascade cascade={devis.cascade} total={devis.total} />}
+      {(!estEntreprise && devis?.cascade) && <Cascade cascade={devis.cascade} total={devis.total} />}
     </div>
   );
 }

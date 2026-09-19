@@ -29,7 +29,7 @@ const LOT_PARTICULIER = {
   fondation: 'fondation',
   elevation: 'elevation',
   plancher: 'plancher',
-  toiture: 'charpente',
+  toiture: 'toiture',
   finition: 'finition',
 };
 
@@ -62,11 +62,19 @@ function fournituresDuLot(titre, inclureEau) {
     entree.quantite = arrondi(entree.quantite + mat.quantite);
   };
 
-  for (const poste of titre.postes || []) {
-    for (const mat of poste.materiaux || []) ajouter(mat);
+  if (titre.id === 'toiture') {
+    // Pour la toiture, la charpente (autresPostes) vient avant la couverture (postes) chronologiquement.
+    for (const mat of titre.autresPostes || []) ajouter(mat);
+    for (const poste of titre.postes || []) {
+      for (const mat of poste.materiaux || []) ajouter(mat);
+    }
+  } else {
+    for (const poste of titre.postes || []) {
+      for (const mat of poste.materiaux || []) ajouter(mat);
+    }
+    // Planches, chevrons et clous : le moteur les additionne pour tout le lot.
+    for (const mat of titre.autresPostes || []) ajouter(mat);
   }
-  // Planches, chevrons et clous : le moteur les additionne pour tout le lot.
-  for (const mat of titre.autresPostes || []) ajouter(mat);
 
   return [...parCle.values()];
 }

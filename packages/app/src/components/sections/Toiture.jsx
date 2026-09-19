@@ -3,6 +3,7 @@ import { useProjet } from '../../context/ProjetContext';
 import CarteBloc from '../ui/CarteBloc';
 import { AccordionProvider } from '../ui/Accordion.jsx';
 import LigneOuvrage from '../ui/LigneOuvrage';
+import ToiturePro from './ToiturePro';
 
 const BLOCS_CHARPENTE = ['Charpente en Bois (Méthode Simplifiée)', 'Couverture en Tôles'];
 
@@ -30,7 +31,7 @@ export default function Toiture() {
             onClick={() => setVariante('charpente')}
             className={`px-4 py-2 rounded text-sm font-bold transition-colors ${variante === 'charpente' ? 'bg-devis-calcule text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
           >
-            Charpente & Tôles
+            Toiture Professionnelle
           </button>
           <button 
             onClick={() => setVariante('terrasse')}
@@ -43,57 +44,7 @@ export default function Toiture() {
 
       <div className="space-y-6">
         {variante === 'charpente' && (
-          <AccordionProvider key={niveauActifId} ids={BLOCS_CHARPENTE}>
-            <CarteBloc titre="Charpente en Bois (Méthode Simplifiée)">
-              {charpentesNiveau.map((ligne, i) => (
-                <LigneOuvrage
-                  key={`charpente-${ligne.id}`}
-                  titre={`Charpente ${i + 1}`}
-                  ligne={ligne}
-                  champs={[
-                    { key: 'longueur', label: 'Longueur bât. (m)' },
-                    { key: 'portee', label: 'Portée (m)' },
-                    { key: 'debord', label: 'Débord (m)' },
-                    { key: 'faitage', label: 'H. Faîtage (m)' },
-                    { key: 'ecartement', label: 'Écartement fermes (m)' },
-                    { key: 'section', label: 'Section bois (m)' },
-                    { key: 'lignesPannes', label: 'Lignes de pannes' }
-                  ]}
-                  onChange={(cle, val) => updateRow(charpentes, setCharpentes, ligne.id, cle, val)}
-                  onRemove={() => removeRow(charpentes, setCharpentes, ligne.id)}
-                />
-              ))}
-              <button 
-                onClick={() => addRow(charpentes, setCharpentes, { niveauId: niveauActifId, longueur: '', portee: '', debord: '', faitage: '', ecartement: '', section: '', lignesPannes: '', nombre: 1 }, 'CH')}
-                className="mt-4 text-devis-saisie hover:underline text-sm font-bold min-h-[44px] px-2"
-              >
-                + Ajouter une charpente
-              </button>
-            </CarteBloc>
-
-            <CarteBloc titre="Couverture en Tôles">
-              {couverturesNiveau.map((ligne, i) => (
-                <LigneOuvrage
-                  key={`couverture-${ligne.id}`}
-                  titre={`Couverture ${i + 1}`}
-                  ligne={ligne}
-                  champs={[
-                    { key: 'longueur', label: 'Longueur (m)' },
-                    { key: 'portee', label: 'Portée (m)' },
-                    { key: 'debord', label: 'Débord (m)' }
-                  ]}
-                  onChange={(cle, val) => updateRow(couverturesToles, setCouverturesToles, ligne.id, cle, val)}
-                  onRemove={() => removeRow(couverturesToles, setCouverturesToles, ligne.id)}
-                />
-              ))}
-              <button 
-                onClick={() => addRow(couverturesToles, setCouverturesToles, { niveauId: niveauActifId, longueur: '', portee: '', debord: '', nombre: 1 }, 'CV')}
-                className="mt-4 text-devis-saisie hover:underline text-sm font-bold min-h-[44px] px-2"
-              >
-                + Ajouter une couverture
-              </button>
-            </CarteBloc>
-          </AccordionProvider>
+          <ToiturePro />
         )}
 
         {variante === 'terrasse' && (
@@ -104,12 +55,12 @@ export default function Toiture() {
                 titre={`Terrasse ${i + 1}`}
                 ligne={ligne}
                 champs={[
-                  { key: 'longueur', label: 'Longueur (m)' },
-                  { key: 'largeur', label: 'Largeur (m)' },
-                  { key: 'perimetre', label: 'Périmètre acrotère (m)' },
-                  { key: 'largeurChainage', label: 'Larg. Chaînage (m)', overrideDefault: 0.15 },
-                  { key: 'hauteurChainage', label: 'Haut. Chaînage (m)', overrideDefault: 0.15 },
-                  { key: 'hauteurAcrotere', label: 'Haut. Maçonnerie Acrotère (m)', overrideDefault: 0.60 }
+                  { key: 'longueur', label: 'Longueur' },
+                  { key: 'largeur', label: 'Base' },
+                  { key: 'perimetre', label: 'Périmètre acrotère' },
+                  { key: 'largeurChainage', label: 'Base Chaînage', overrideDefault: 0.15 },
+                  { key: 'hauteurChainage', label: 'Haut. Chaînage', overrideDefault: 0.15 },
+                  { key: 'hauteurAcrotere', label: 'Haut. Maçonnerie Acrotère', overrideDefault: 0.60 }
                 ]}
                 onChange={(cle, val) => updateRow(terrasses, setTerrasses, ligne.id, cle, val)}
                 onRemove={() => removeRow(terrasses, setTerrasses, ligne.id)}
