@@ -7,15 +7,16 @@ import { NAVIGATION } from './navigation.js';
 const TOUS_LES_LIENS = NAVIGATION.flatMap((section) => section.liens);
 
 /**
- * Barre supérieure : compacte, propre, jamais chargée.
- * Chaque bouton fait réellement quelque chose — la recherche saute vers
- * l'entrée de menu correspondante, les notifications et l'aide répondent
- * honnêtement plutôt que de rester des icônes mortes.
+ * Barre supérieure : visible sur TOUS les appareils.
+ * - Mobile : hamburger + logo + actions essentielles
+ * - Tablette/Desktop : complète avec recherche
+ * Sur desktop, le Header est caché car le Ruban gère tout.
  */
 export default function Header({ onOpenMenu, titre }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [recherche, setRecherche] = useState('');
+  const [rechercheOuverte, setRechercheOuverte] = useState(false);
 
   const lancerRecherche = (e) => {
     e.preventDefault();
@@ -25,59 +26,73 @@ export default function Header({ onOpenMenu, titre }) {
     if (trouve) {
       navigate(trouve.to);
       setRecherche('');
+      setRechercheOuverte(false);
     } else {
       toast(`Aucune page ne correspond à « ${recherche} ».`, 'erreur');
     }
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-brand-primary/10 bg-brand-bg/95 px-4 backdrop-blur">
+    /* Caché sur desktop car le Ruban prend tout en charge */
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-brand-primary/10 bg-brand-bg/95 px-3 backdrop-blur lg:hidden">
+
+      {/* Hamburger — mobile et tablette uniquement */}
       <button
         onClick={onOpenMenu}
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-md text-brand-text/70 hover:bg-black/5 lg:hidden"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-md text-brand-text/70 hover:bg-black/5"
         aria-label="Ouvrir le menu"
       >
-        <Icone nom="menu" size={20} />
+        <Icone nom="menu" size={22} />
       </button>
 
-      {titre && (
-        <span className="hidden text-sm font-bold text-brand-text/80 sm:block lg:hidden">{titre}</span>
-      )}
+      {/* Logo / Titre de l'app */}
+      <div className="flex items-center gap-2">
+        <span className="grid h-7 w-7 place-items-center rounded bg-brand-primary text-white font-bold text-[11px]">DF</span>
+        <span className="hidden sm:block font-bold text-[14px] text-brand-text tracking-tight">DEVIS FACILE</span>
+      </div>
 
+      {/* Zone droite : recherche + actions */}
       <div className="ml-auto flex items-center gap-1">
-        <form onSubmit={lancerRecherche} className="relative mr-2 hidden sm:block">
-          <Icone nom="search" size={16} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-brand-text/35" />
-          <input
-            type="search"
-            value={recherche}
-            onChange={(e) => setRecherche(e.target.value)}
-            placeholder="Rechercher une page…"
-            className="h-9 w-48 rounded-md border border-brand-primary/10 bg-white pl-8 pr-3 text-[13px] text-brand-text placeholder:text-brand-text/35 focus:border-brand-interactive focus:outline-none focus:ring-1 focus:ring-brand-interactive"
-          />
-        </form>
+
+        {/* Recherche — pleine sur tablette, icône seule sur mobile */}
+        {rechercheOuverte ? (
+          <form onSubmit={lancerRecherche} className="flex items-center gap-1">
+            <input
+              autoFocus
+              type="search"
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              onBlur={() => { if (!recherche) setRechercheOuverte(false); }}
+              placeholder="Rechercher…"
+              className="h-9 w-36 sm:w-48 rounded-md border border-brand-primary/15 bg-white pl-3 pr-3 text-[13px] text-brand-text placeholder:text-brand-text/35 focus:border-brand-interactive focus:outline-none focus:ring-1 focus:ring-brand-interactive"
+            />
+            <button type="button" onClick={() => { setRechercheOuverte(false); setRecherche(''); }}
+              className="grid h-9 w-9 place-items-center rounded-md text-brand-text/60 hover:bg-black/5">
+              <Icone nom="x" size={16} />
+            </button>
+          </form>
+        ) : (
+          <button
+            onClick={() => setRechercheOuverte(true)}
+            className="grid h-9 w-9 place-items-center rounded-md text-brand-text/60 hover:bg-black/5"
+            aria-label="Rechercher"
+          >
+            <Icone nom="search" size={18} />
+          </button>
+        )}
 
         <button
           onClick={() => toast('Aucune notification pour le moment.')}
           className="grid h-9 w-9 place-items-center rounded-md text-brand-text/60 hover:bg-black/5"
           aria-label="Notifications"
-          title="Notifications"
         >
           <Icone nom="bell" size={18} />
-        </button>
-        <button
-          onClick={() => navigate('/aide')}
-          className="grid h-9 w-9 place-items-center rounded-md text-brand-text/60 hover:bg-black/5"
-          aria-label="Aide"
-          title="Centre d'aide"
-        >
-          <Icone nom="help-circle" size={18} />
         </button>
 
         <button
           onClick={() => navigate('/profil')}
-          className="ml-1 grid h-8 w-8 place-items-center rounded-full bg-brand-primary text-[12px] font-bold text-white"
+          className="ml-1 grid h-8 w-8 place-items-center rounded-full bg-brand-primary text-[11px] font-bold text-white"
           aria-label="Mon profil"
-          title="Mon profil"
         >
           DF
         </button>

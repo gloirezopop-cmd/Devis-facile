@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ContenuNavigation } from './Sidebar.jsx';
+import { ContenuNavigation } from './Ruban.jsx';
 import Icone from '../ui/Icone.jsx';
 
 /** Tiroir de navigation mobile — ferme au clic extérieur et à la navigation. */
@@ -24,7 +24,7 @@ export default function MobileDrawer({ open, onClose }) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-200 ${
+      className={`fixed inset-0 z-50 md:hidden transition-opacity duration-200 ${
         open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
       }`}
       aria-hidden={!open}
