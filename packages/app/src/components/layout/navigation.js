@@ -9,8 +9,7 @@ export const NAVIGATION = [
     liens: [
       { to: '/dashboard', label: 'Tableau de bord', icone: 'grid', exact: true },
       { to: '/estimation', label: 'Estimer un budget', icone: 'calculator' },
-      { to: '/metre', label: 'Nouveau métré', icone: 'ruler' },
-      { to: '/devis', label: 'Nouveau devis', icone: 'file-text' },
+      { to: '/metre', label: 'Nouveau devis', icone: 'file-text' },
       { to: '/projets', label: 'Projets', icone: 'folder' },
     ],
   },

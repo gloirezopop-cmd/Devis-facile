@@ -4,6 +4,7 @@ import { chargerBrouillon, enregistrerBrouillon, supprimerBrouillon } from '../l
 import {
   collecterEtatLocal, restaurerEtatLocal, effacerEtatLocal, brouillonEstVide, resumerBrouillon,
 } from '../utils/brouillon.js';
+import { CLES_PROJET } from './useProjets.js';
 
 /** Une fois la question posée et tranchée, on ne la repose pas à chaque page. */
 const CLE_REPONSE = 'df_brouillon_repondu';
@@ -125,10 +126,39 @@ export function useBrouillon() {
   const recommencer = useCallback(async () => {
     setOccupe(true);
     noterLaReponse();
+
+    // Sauvegarder automatiquement le brouillon existant dans "Mes Devis" avant de l'effacer
+    if (brouillon && brouillon.contenu && !brouillonEstVide(brouillon.contenu)) {
+      try {
+        const projetsStr = window.localStorage.getItem('df_projets') || '[]';
+        const projets = JSON.parse(projetsStr);
+        const snapshot = {};
+        for (const cle of CLES_PROJET) {
+          // On reconstitue le snapshot depuis le contenu local du brouillon
+          const cleBrouillon = `df_${cle}`;
+          if (brouillon.contenu[cleBrouillon]) {
+            snapshot[cle] = JSON.parse(brouillon.contenu[cleBrouillon]);
+          }
+        }
+        
+        // S'assurer qu'il y a des données pertinentes
+        if (Object.keys(snapshot).length > 0) {
+          const maintenant = new Date().toISOString();
+          const id = `proj_auto_${Date.now()}`;
+          const nom = brouillon.resume || 'Projet non terminé';
+          
+          projets.push({ id, nom, dateCreation: maintenant, dateModification: maintenant, snapshot });
+          window.localStorage.setItem('df_projets', JSON.stringify(projets));
+        }
+      } catch (err) {
+        console.error("Impossible de sauvegarder l'ancien brouillon automatiquement", err);
+      }
+    }
+
     effacerEtatLocal();
     await supprimerBrouillon();
     window.location.href = '/dashboard';
-  }, []);
+  }, [brouillon]);
 
   /** Fermer sans trancher : la question ne revient pas avant la prochaine connexion. */
   const remettreAPlusTard = useCallback(() => {

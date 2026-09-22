@@ -320,9 +320,9 @@ export function genererResumeFinition(blocs, regles) {
   };
   
   const materiauxKeys = [
-    'ciment', 'sable', 'eau', 'cimentColle', 
+    'ciment', 'sable', 'eau', 'cimentColle', 'jointCarrelage',
     'peinture_latex', 'peinture_classique', 'peinture_chaux',
-    'carreaux', 'faience', 'plinthe'
+    'carreaux', 'carreauxCarton', 'faience', 'faienceCarton', 'plinthe'
   ];
   
   const materiaux = materiauxKeys.reduce((acc, k) => {

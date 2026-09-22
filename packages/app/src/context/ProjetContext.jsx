@@ -53,7 +53,9 @@ export function ProjetProvider({ children }) {
 
   const [sousPavements, setSousPavements] = useLocalStorageState('df_sous_pavements_v3', []);
 
-  const [carrelages, setCarrelages] = useLocalStorageState('df_carrelages_v3', []);
+  const [carrelagesC1, setCarrelagesC1] = useLocalStorageState('df_carrelagesC1_v4', []);
+  const [carrelagesC2, setCarrelagesC2] = useLocalStorageState('df_carrelagesC2_v4', []);
+  const [plinthes, setPlinthes] = useLocalStorageState('df_plinthes_v4', []);
 
   const [enduits, setEnduits] = useLocalStorageState('df_enduits_v3', []);
 
@@ -111,7 +113,7 @@ export function ProjetProvider({ children }) {
     planches: '3000', chevrons: '2200', clous: '1000',
     bois_charpente: '180000', clous_charpente: '1000',
     toles: '7500', faitieres: '8500', clous_toiture: '1000',
-    carreaux: '500', faience: '600', plinthe: '800', cimentColle: '650',
+    carreauxC1: '5000', carreauxCartonC1: '60000', carreauxC2: '2500', carreauxCartonC2: '30000', faience: '600', faienceCarton: '6000', plinthe: '800', cimentColle: '650', jointCarrelage: '1500',
     peinture_latex: '2800', peinture_classique: '3200', peinture_chaux: '450',
     // Vide a dessein : le prix du terrassement a l'engin varie trop d'un
     // chantier a l'autre pour qu'une valeur par defaut ait un sens. Tant
@@ -125,7 +127,7 @@ export function ProjetProvider({ children }) {
     blocs: "Agglos creux", blocs_pleins: "Agglos pleins", planches: "Planches de coffrage", chevrons: "Chevrons", clous: "Clous de coffrage",
     bois_charpente: "Bois de charpente", clous_charpente: "Clous de charpente",
     toles: "Tôle BG28", faitieres: "Faîtière", clous_toiture: "Pointes à tôle",
-    carreaux: "Carreau 30x30", faience: "Faïence", plinthe: "Plinthe", cimentColle: "Ciment-colle",
+    carreauxC1: "Carreau grès cérame 60×60 cm – Premium", carreauxCartonC1: "Carton Carreau Premium", carreauxC2: "Carreau céramique 30×30 cm – Standard", carreauxCartonC2: "Carton Carreau Standard", faience: "Faïence murale 25×40 cm", faienceCarton: "Carton de Faïences", plinthe: "Plinthe", cimentColle: "Ciment-colle", jointCarrelage: "Joint pour carrelage",
     peinture_latex: "Peinture latex", peinture_classique: "Peinture classique", peinture_chaux: "Badigeon de chaux",
     terrassementEnginM3: "Terrassement à l'engin"
   });
@@ -229,7 +231,7 @@ export function ProjetProvider({ children }) {
   const gatherProjectData = () => ({
     niveaux, fouilles, betonProprete, fouilleFilante, nivellement, terrassementGrandeSurface,
     semelles, amorces, longrines, colonnes, maconneries, linteaux, ceintures, escaliers, soubassements,
-    moellons, dallages, remblais, sousPavements, carrelages, enduits,
+    moellons, dallages, remblais, sousPavements, carrelagesC1, carrelagesC2, plinthes, enduits,
     peintures, faiences, autresOuvrages, dalles, plancherHourdis12,
     plancherHourdis16, charpentes, couverturesToles, terrasses, toituresPro,
     taux, majorations, parametresProjet, bibliothequePrix, labelsPrix, devisExcelSnapshot, devisExcelSignature
@@ -255,7 +257,9 @@ export function ProjetProvider({ children }) {
     if(data.dallages) setDallages(data.dallages);
     if(data.remblais) setRemblais(data.remblais);
     if(data.sousPavements) setSousPavements(data.sousPavements);
-    if(data.carrelages) setCarrelages(data.carrelages);
+    if(data.carrelagesC1) setCarrelagesC1(data.carrelagesC1);
+    if(data.carrelagesC2) setCarrelagesC2(data.carrelagesC2);
+    if(data.plinthes) setPlinthes(data.plinthes);
     if(data.enduits) setEnduits(data.enduits);
     if(data.peintures) setPeintures(data.peintures);
     if(data.faiences) setFaiences(data.faiences);
@@ -300,7 +304,7 @@ export function ProjetProvider({ children }) {
       nivellement, setNivellement, terrassementGrandeSurface, setTerrassementGrandeSurface, semelles, setSemelles, amorces, setAmorces, longrines, setLongrines,
       colonnes, setColonnes, maconneries, setMaconneries, linteaux, setLinteaux, ceintures, setCeintures, escaliers, setEscaliers,
       soubassements, setSoubassements, moellons, setMoellons, dallages, setDallages, remblais, setRemblais,
-      sousPavements, setSousPavements, carrelages, setCarrelages, enduits, setEnduits,
+      sousPavements, setSousPavements, carrelagesC1, setCarrelagesC1, carrelagesC2, setCarrelagesC2, plinthes, setPlinthes, enduits, setEnduits,
       peintures, setPeintures, faiences, setFaiences, autresOuvrages, setAutresOuvrages,
       dalles, setDalles, plancherHourdis12, setPlancherHourdis12, plancherHourdis16, setPlancherHourdis16,
       charpentes, setCharpentes, couverturesToles, setCouverturesToles, terrasses, setTerrasses,

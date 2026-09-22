@@ -94,7 +94,9 @@ const POSTES = [
 
   // ── Finitions ──
   { titre: 'finition', ids: ['enduits'], arme: false, nom: () => 'Enduits' },
-  { titre: 'finition', ids: ['carrelage'], arme: false, nom: () => 'Carrelage' },
+  { titre: 'finition', ids: ['carrelageC1'], arme: false, nom: () => 'Carrelage Catégorie 1' },
+  { titre: 'finition', ids: ['carrelageC2'], arme: false, nom: () => 'Carrelage Catégorie 2' },
+  { titre: 'finition', ids: ['plinthes'], arme: false, nom: () => 'Plinthes' },
   { titre: 'finition', ids: ['faience'], arme: false, nom: () => 'Faïence' },
   { titre: 'finition', ids: ['peinture'], arme: false, nom: () => 'Peinture' },
 ];

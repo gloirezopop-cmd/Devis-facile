@@ -11,6 +11,7 @@ import { lireDevisDuClasseur } from '../../utils/univerLecture.js';
 import { signatureDevis } from '../../utils/signatureDevis.js';
 import { ErrorBoundary } from '../ui/ErrorBoundary.jsx';
 import { formaterNombre } from '../../utils/format.js';
+import { generateDevisArrete } from '../../utils/nombreEnLettres.js';
 import Icone from '../ui/Icone.jsx';
 import MenuExport from '../ui/MenuExport.jsx';
 import MenuEnregistrer from '../ui/MenuEnregistrer.jsx';
@@ -269,6 +270,14 @@ export default function EtapeDevis() {
               </tr>
             </tbody>
           </table>
+        </div>
+      )}
+      
+      {devisActif?.total > 0 && (
+        <div className="mt-4 rounded-lg border border-black/10 bg-white p-6 shadow-sm">
+          <p className="text-[13.5px] italic leading-relaxed text-brand-text/90">
+            {generateDevisArrete(devisActif.total)}
+          </p>
         </div>
       )}
     </div>

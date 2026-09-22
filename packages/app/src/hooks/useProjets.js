@@ -8,12 +8,12 @@ import useLocalStorageState from './useLocalStorageState.js';
  * ProjetContext expose ; `set` + première lettre en majuscule pour retrouver
  * le setter de chacun (convention déjà suivie partout dans le contexte).
  */
-const CLES_PROJET = [
+export const CLES_PROJET = [
   'niveaux', 'niveauActifId',
   'fouilles', 'betonProprete', 'fouilleFilante', 'nivellement', 'terrassementGrandeSurface',
   'semelles', 'longrines', 'colonnes', 'maconneries', 'escaliers',
   'soubassements', 'moellons', 'chapeEgalisations', 'sousPavements',
-  'carrelages', 'enduits', 'peintures', 'faiences', 'autresOuvrages',
+  'carrelagesC1', 'carrelagesC2', 'plinthes', 'enduits', 'peintures', 'faiences', 'autresOuvrages',
   'dalles', 'plancherHourdis12', 'plancherHourdis16',
   'charpentes', 'couverturesToles', 'terrasses',
   'taux', 'majorations', 'parametresProjet', 'bibliothequePrix', 'labelsPrix',

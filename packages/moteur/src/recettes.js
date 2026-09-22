@@ -251,58 +251,178 @@ export function obtenirDecompositionOuvrage(blocId, bloc, regles = {}) {
   // --- 6. ENDUITS ---
   if (blocId === 'enduits') {
     let sacsCimentEnduit = 0;
+    const globalEpaisseur = PARAMETRES.finitions.epaisseurEnduit || 0.02;
+    const globalDosage = PARAMETRES.finitions.dosageCimentEnduit || 350;
+    const poidsSac = PARAMETRES.beton.poidsSacCiment || 50;
+    const globalPertePct = PARAMETRES.finitions.perteEnduitPct || 5;
+
+    let totalSacsAchat = 0;
+    let totalSableTonnes = 0;
+    let totalEauL = 0;
+    let totalVolumeEnduit = 0;
+
     if (bloc.lignes && bloc.lignes.length > 0) {
       for (const l of bloc.lignes) {
-        if (l.valeur) sacsCimentEnduit += Math.ceil((l.valeur * 8) / 50);
+        if (l.valeur) {
+          const epaisseur = Number(l.epaisseur) || globalEpaisseur;
+          const dosage = Number(l.dosage) || globalDosage;
+          const pertePct = Number(l.pertePct) !== undefined && !isNaN(Number(l.pertePct)) ? Number(l.pertePct) : globalPertePct;
+          const v = l.valeur * epaisseur;
+          totalVolumeEnduit += v;
+          
+          const sacsParM3 = dosage / poidsSac;
+          const sacsTh = v * sacsParM3;
+          const sacsAchat = Math.ceil(sacsTh * (1 + pertePct / 100));
+          totalSacsAchat += sacsAchat;
+
+          const sableSacsKg = Number(l.sableParSac) || PARAMETRES.finitions.sableParSacKg || 180;
+          const coefSable = Number(l.coefSable) || PARAMETRES.finitions.coefficientSable || 1.5;
+          totalSableTonnes += (sacsAchat * sableSacsKg * coefSable) / 1000;
+
+          const eauParSacL = Number(l.eauParSac) || PARAMETRES.finitions.eauParSacL || 30;
+          totalEauL += sacsAchat * eauParSacL;
+        }
       }
-      add('ciment', 'ciment', 'Ciment (Enduit)', 'sac', sacsCimentEnduit, 'Somme(ArrondiSup(Surface ligne × 8 kg / 50))', `Dosage 8 kg/m²`, 'Arrondi par pan', sacsCimentEnduit);
     } else if (volume > 0) {
-      sacsCimentEnduit = Math.ceil((volume * 8) / 50);
-      add('ciment', 'ciment', 'Ciment (Enduit)', 'sac', sacsCimentEnduit, '(Surface × 8 kg) / 50', `(${volume} × 8) / 50`, 'Arrondi supérieur', sacsCimentEnduit);
+      const v = volume * globalEpaisseur;
+      totalVolumeEnduit += v;
+      const sacsTh = v * (globalDosage / poidsSac);
+      totalSacsAchat = Math.ceil(sacsTh * (1 + globalPertePct / 100));
+      
+      const sableSacsKg = PARAMETRES.finitions.sableParSacKg || 180;
+      const coefSable = PARAMETRES.finitions.coefficientSable || 1.5;
+      totalSableTonnes = (totalSacsAchat * sableSacsKg * coefSable) / 1000;
+      
+      const eauParSacL = PARAMETRES.finitions.eauParSacL || 30;
+      totalEauL = totalSacsAchat * eauParSacL;
     }
-    if (sacsCimentEnduit > 0) {
-      const cimentReelKg = sacsCimentEnduit * 50;
-      const volSableEnduit = (cimentReelKg / 300) * 1.0;
-      add('sable', 'sable', 'Sable (Enduit)', 't', volSableEnduit * PARAMETRES.beton.densiteSable, 'Ciment(kg) / 300', `Vol. Sable (m³) = ${cimentReelKg} / 300 = ${net(volSableEnduit, 3)} m³\nVolume Sable (Litres) = ${net(volSableEnduit, 3)} m³ × 1000 = ${net(volSableEnduit * 1000, 2)} L\nMasse (kg) = ${net(volSableEnduit, 3)} m³ × 1500 kg/m³ = ${net(volSableEnduit * 1500, 2)} kg\nMasse (tonnes) = ${net(volSableEnduit * 1500, 2)} ÷ 1000 = ${net(volSableEnduit * 1.50, 3)} t`);
-      add('eau', 'eau', 'Eau (Enduit)', 'L', cimentReelKg * 0.5, 'Ciment(kg) × 0.5', `${cimentReelKg} × 0.5`);
+
+    if (totalSacsAchat > 0) {
+      sacsCimentEnduit = totalSacsAchat;
+      add('ciment', 'ciment', 'Ciment (Enduit)', 'sac', totalSacsAchat, `Calcul détaillé par zone (+ pertes)`, `Vol=${net(totalVolumeEnduit, 3)} m³`, 'Arrondi supérieur', totalSacsAchat);
+      add('sable', 'sable', 'Sable (Enduit)', 't', totalSableTonnes, `Sacs × Sable/Sac × Foisonnement / 1000`, `Sable = ${net(totalSableTonnes, 3)} t`);
+      add('eau', 'eau', 'Eau (Enduit)', 'L', totalEauL, `Sacs × Eau/Sac`, `${totalSacsAchat} sacs = ${totalEauL} L`);
     }
   }
 
   // --- 7. PEINTURE ---
   if (blocId === 'peinture' && bloc.lignes) {
     let qLatex = 0, qClassique = 0, qChaux = 0;
+    const globalCouches = PARAMETRES.finitions.nbCouchesPeinture || 2;
+    const globalPertePct = PARAMETRES.finitions.pertePeinturePct || 5;
+
     for (const p of bloc.lignes) {
       if (!p.valeur) continue;
-      const surface = p.valeur;
-      if (p.typePeinture === 'classique') qClassique += (surface / 10) * 2;
-      else if (p.typePeinture === 'chaux') qChaux += (surface / 6) * 2;
-      else qLatex += surface / 4;
+      const couches = Number(p.couches) || globalCouches;
+      const pertePct = Number(p.pertePct) !== undefined && !isNaN(Number(p.pertePct)) ? Number(p.pertePct) : globalPertePct;
+      const surfaceTotale = p.valeur * couches;
+      let quantite = 0;
+      
+      if (p.typePeinture === 'classique') {
+        const rendement = Number(p.rendement) || PARAMETRES.finitions.rendementPeintureClassique || 10;
+        quantite = surfaceTotale / rendement;
+        qClassique += quantite * (1 + pertePct / 100);
+      } else if (p.typePeinture === 'chaux') {
+        const rendement = Number(p.rendement) || PARAMETRES.finitions.rendementChaux || 6;
+        quantite = surfaceTotale / rendement;
+        qChaux += quantite * (1 + pertePct / 100);
+      } else {
+        const rendement = Number(p.rendement) || PARAMETRES.finitions.rendementLatex || 4;
+        quantite = surfaceTotale / rendement;
+        qLatex += quantite * (1 + pertePct / 100);
+      }
     }
-    add('peinture_latex', 'peinture', 'Peinture Latex', 'kg', qLatex, 'Surface / 4', `${qLatex} kg`);
-    add('peinture_classique', 'peinture', 'Peinture Classique', 'L', qClassique, '(Surface / 10) × 2 couches', `${qClassique} L`);
-    add('peinture_chaux', 'peinture', 'Peinture à la Chaux', 'kg', qChaux, '(Surface / 6) × 2 couches', `${qChaux} kg`);
+
+    if (qLatex > 0) add('peinture_latex', 'peinture', 'Peinture Latex', 'kg', Math.ceil(qLatex), `Détaillé par zone (+ pertes)`, `${net(qLatex, 2)} kg`);
+    if (qClassique > 0) add('peinture_classique', 'peinture', 'Peinture Classique', 'L', Math.ceil(qClassique), `Détaillé par zone (+ pertes)`, `${net(qClassique, 2)} L`);
+    if (qChaux > 0) add('peinture_chaux', 'peinture', 'Peinture à la Chaux', 'kg', Math.ceil(qChaux), `Détaillé par zone (+ pertes)`, `${net(qChaux, 2)} kg`);
   }
 
-  // --- 8. CARRELAGE & FAÏENCE ---
-  if (blocId === 'carrelage' && volume > 0) {
-    const epaisseur = bloc.epaisseurCarrelage || 0.03;
-    const nbCarreaux = Math.ceil(volume / 0.09);
-    add('carreaux', 'carrelage', 'Carreaux', 'u', nbCarreaux, 'Surface / 0.09', `${volume} / 0.09`, 'Arrondi supérieur', nbCarreaux);
-    add('cimentColle', 'cimentColle', 'Ciment-colle', 'kg', volume * 8, 'Surface × 8 kg', `${volume} × 8`);
-    const ep_cm = epaisseur * 100;
-    const volSablePose = volume * epaisseur;
-    add('sable', 'sable', 'Sable de pose', 't', volSablePose * PARAMETRES.beton.densiteSable, 'Surface × Épaisseur', `Vol. Sable (m³) = ${net(volume, 3)} m² × ${epaisseur} m = ${net(volSablePose, 3)} m³\nVolume Sable (Litres) = ${net(volSablePose, 3)} m³ × 1000 = ${net(volSablePose * 1000, 2)} L\nMasse (kg) = ${net(volSablePose, 3)} m³ × 1500 kg/m³ = ${net(volSablePose * 1500, 2)} kg\nMasse (tonnes) = ${net(volSablePose * 1500, 2)} ÷ 1000 = ${net(volSablePose * 1.50, 3)} t`);
-    const cimentPose = Math.ceil((volume * epaisseur * 300) / 50);
-    add('ciment', 'ciment', 'Ciment de pose', 'sac', cimentPose, 'ArrondiSup(Surface × Épaisseur × 300 / 50)', `(${volume} × ${epaisseur} × 300) / 50`, 'Arrondi supérieur', cimentPose);
-    if (bloc.perimetreTotal) {
-      const plinthes = Math.ceil(bloc.perimetreTotal / 0.4);
-      add('plinthe', 'plinthe', 'Plinthes', 'u', bloc.perimetreTotal / 0.4, 'Périmètre / 0.4', `${bloc.perimetreTotal} / 0.4`, 'Arrondi', plinthes);
+  // --- 8. CARRELAGE C1, C2 & PLINTHES ---
+  const traiterCarrelage = (blocObj, idMat, idCarton, libelleMat, libelleCarton) => {
+    let totalCarreaux = 0;
+    let totalCartons = 0;
+    let totalColleKg = 0;
+    let totalJointKg = 0;
+    
+    for (const l of blocObj.lignes) {
+      if (!l.surface) continue;
+      const L = Number(l.longueurCarreau) || PARAMETRES.finitions.longueurCarreau || 0.3;
+      const w = Number(l.largeurCarreau) || PARAMETRES.finitions.largeurCarreau || 0.3;
+      const surfaceCarreau = L * w;
+      const pertePct = Number(l.pertePct) !== undefined && !isNaN(Number(l.pertePct)) ? Number(l.pertePct) : PARAMETRES.finitions.perteCarrelagePct || 5;
+      const carreauxParCarton = Number(l.carreauxParCarton) || PARAMETRES.finitions.carreauxParCarton || 12;
+
+      const nbCarreauxTheorique = l.surface / surfaceCarreau;
+      const nbCarreauxAvecPerte = nbCarreauxTheorique * (1 + pertePct / 100);
+      const nbCarreaux = Math.ceil(nbCarreauxAvecPerte);
+      totalCarreaux += nbCarreaux;
+      totalCartons += Math.ceil(nbCarreaux / carreauxParCarton);
+      
+      const consoColle = Number(l.consoColle) || PARAMETRES.finitions.cimentColleKgM2 || 5;
+      const perteColle = Number(l.perteCollePct) !== undefined && !isNaN(Number(l.perteCollePct)) ? Number(l.perteCollePct) : PARAMETRES.finitions.perteCollePct || 5;
+      totalColleKg += l.surface * consoColle * (1 + perteColle / 100);
+      
+      const consoJoint = Number(l.consoJoint) || PARAMETRES.finitions.jointKgM2 || 0.5;
+      const perteJoint = Number(l.perteJointPct) !== undefined && !isNaN(Number(l.perteJointPct)) ? Number(l.perteJointPct) : PARAMETRES.finitions.perteJointPct || 5;
+      totalJointKg += l.surface * consoJoint * (1 + perteJoint / 100);
+    }
+
+    add(idMat, 'carrelage', libelleMat, 'u', totalCarreaux, `Somme des pièces (+ pertes)`, `${totalCarreaux} u`, 'Arrondi supérieur', totalCarreaux);
+    add(idCarton, 'carrelage', libelleCarton, 'carton', totalCartons, `Carreaux / Cartons`, `${totalCartons} cartons`);
+    add('cimentColle', 'cimentColle', 'Ciment-colle', 'kg', Math.ceil(totalColleKg), `Détaillé par pièce (+ pertes)`, `${net(totalColleKg, 2)} kg`);
+    add('jointCarrelage', 'finition', 'Joint pour carrelage', 'kg', Math.ceil(totalJointKg), `Détaillé par pièce (+ pertes)`, `${net(totalJointKg, 2)} kg`);
+  };
+
+  if (blocId === 'carrelageC1' && bloc.lignes && volume > 0) { // volume = surface
+    traiterCarrelage(bloc, 'carreauxC1', 'carreauxCartonC1', 'Carreaux Cat 1', 'Carreaux (Cartons) Cat 1');
+  }
+
+  if (blocId === 'carrelageC2' && bloc.lignes && volume > 0) {
+    traiterCarrelage(bloc, 'carreauxC2', 'carreauxCartonC2', 'Carreaux Cat 2', 'Carreaux (Cartons) Cat 2');
+  }
+
+  if (blocId === 'plinthes' && bloc.lignes && volume > 0) { // volume = surface
+    let totalPlinthes = 0;
+    for (const l of bloc.lignes) {
+      if (!l.valeur) continue;
+      // Perimetre est dans l.perimetre
+      const L_defaut = PARAMETRES.finitions.longueurCarreau || 0.3;
+      const plinthesPourLigne = Math.ceil(l.perimetre / L_defaut);
+      const pertePct = Number(l.pertePct) !== undefined && !isNaN(Number(l.pertePct)) ? Number(l.pertePct) : 5;
+      totalPlinthes += Math.ceil(plinthesPourLigne * (1 + pertePct / 100));
+    }
+    if (totalPlinthes > 0) {
+      add('plinthe', 'plinthe', 'Plinthes', 'u', totalPlinthes, `Somme des plinthes (+ pertes)`, `${totalPlinthes} u`, 'Arrondi', totalPlinthes);
     }
   }
-  if (blocId === 'faience' && volume > 0) {
-    const nbFaiences = Math.ceil(volume / 0.10);
-    add('faience', 'carrelage', 'Faïences', 'u', nbFaiences, 'Surface / 0.10', `${volume} / 0.10`, 'Arrondi supérieur', nbFaiences);
-    add('cimentColle', 'cimentColle', 'Ciment-colle (Faïence)', 'kg', volume * 8, 'Surface × 8 kg', `${volume} × 8`);
+
+  if (blocId === 'faience' && bloc.lignes && volume > 0) { // volume = surface
+    let totalFaience = 0;
+    let totalCartons = 0;
+    let totalColleKg = 0;
+
+    for (const l of bloc.lignes) {
+      if (!l.valeur) continue;
+      const L = Number(l.longueurCarreau) || PARAMETRES.finitions.longueurFaience || 0.25;
+      const w = Number(l.largeurCarreau) || PARAMETRES.finitions.largeurFaience || 0.40;
+      const surfaceFaience = L * w;
+      const pertePct = Number(l.pertePct) !== undefined && !isNaN(Number(l.pertePct)) ? Number(l.pertePct) : PARAMETRES.finitions.perteFaiencePct || 5;
+      const faiencesParCarton = Number(l.faiencesParCarton) || PARAMETRES.finitions.faienceParCarton || 10;
+
+      const nbFaiencesTheorique = l.valeur / surfaceFaience;
+      const nbFaiences = Math.ceil(nbFaiencesTheorique * (1 + pertePct / 100));
+      totalFaience += nbFaiences;
+      totalCartons += Math.ceil(nbFaiences / faiencesParCarton);
+      
+      const consoColle = Number(l.consoColle) || PARAMETRES.finitions.cimentColleKgM2 || 5;
+      const perteColle = Number(l.perteCollePct) !== undefined && !isNaN(Number(l.perteCollePct)) ? Number(l.perteCollePct) : PARAMETRES.finitions.perteCollePct || 5;
+      totalColleKg += l.valeur * consoColle * (1 + perteColle / 100);
+    }
+
+    add('faience', 'carrelage', 'Faïences', 'u', totalFaience, `Somme des murs (+ pertes)`, `${totalFaience} u`, 'Arrondi supérieur', totalFaience);
+    add('faienceCarton', 'carrelage', 'Faïences (Cartons)', 'carton', totalCartons, `Faïences / Cartons`, `${totalCartons} cartons`);
+    add('cimentColle', 'cimentColle', 'Ciment-colle (Faïence)', 'kg', Math.ceil(totalColleKg), `Détaillé par mur (+ pertes)`, `${net(totalColleKg, 2)} kg`);
   }
 
   // --- 9. CHARPENTE ---

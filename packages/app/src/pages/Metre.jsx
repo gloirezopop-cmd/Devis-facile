@@ -52,7 +52,7 @@ export default function Metre() {
   };
 
   return (
-    <div className="pb-20">
+    <div className="pb-20 mx-auto max-w-6xl">
       <Stepper etapes={ETAPES} etapeActive={etape} onChange={allerA} />
 
       {/* Les deux premières étapes restent ouvertes à tous : c'est là que

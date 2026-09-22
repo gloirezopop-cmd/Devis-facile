@@ -62,7 +62,7 @@ export default function EstimationBudget() {
   const surResultat = etape === DERNIERE_ETAPE;
 
   return (
-    <div className={`pb-20 ${surResultat ? 'max-w-6xl' : 'max-w-3xl'}`}>
+    <div className={`pb-20 mx-auto ${surResultat ? 'max-w-6xl' : 'max-w-3xl'}`}>
       <div className="mb-4 flex items-center gap-2 text-brand-text/50">
         <Icone nom="calculator" size={18} />
         <h1 className="font-sans text-sm font-bold uppercase tracking-wider">Estimer le budget de ma construction</h1>

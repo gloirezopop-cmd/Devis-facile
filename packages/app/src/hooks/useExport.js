@@ -9,6 +9,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { formaterNombre } from '../utils/format.js';
+import { generateDevisArrete } from '../utils/nombreEnLettres.js';
 
 // ─── Utilitaire interne ────────────────────────────────────────────────────────
 
@@ -199,12 +200,12 @@ export function exporterDevisPDF(devis, type = 'particulier', infoProjet = {}) {
       y += isFinal ? 7 : 5;
     }
 
-    // Montant en toutes lettres
-    if (devis.enToutesLettres) {
-      y += 3;
+    // Arrêté du devis
+    if (devis.total > 0) {
+      y += 6;
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(8);
-      doc.text(devis.enToutesLettres, MARGE, y, { maxWidth: LARGEUR });
+      doc.text(generateDevisArrete(devis.total), MARGE, y, { maxWidth: LARGEUR });
     }
   }
 
@@ -251,7 +252,9 @@ export function exporterDevisExcel(devis, type = 'particulier', infoProjet = {})
     for (const [cle, valeur] of Object.entries(devis.cascade)) {
       if (typeof valeur === 'number') rowsSynth.push([libelles[cle] || cle, valeur]);
     }
-    if (devis.enToutesLettres) rowsSynth.push([], [devis.enToutesLettres]);
+    if (devis.total > 0) {
+      rowsSynth.push([], [generateDevisArrete(devis.total)]);
+    }
   }
   const wsSynth = XLSX.utils.aoa_to_sheet(rowsSynth);
   wsSynth['!cols'] = [{ wch: 40 }, { wch: 20 }];

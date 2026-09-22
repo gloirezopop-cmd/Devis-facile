@@ -113,7 +113,7 @@ export default function App() {
                     enregistre l'abonnement après vérification. */}
                 <Route path="/paiement/succes" element={<PaiementSucces />} />
                 <Route path="/paiement/annule" element={<PaiementAnnule />} />
-                <Route path="/devis" element={<Navigate to="/metre?etape=4" replace />} />
+                <Route path="/devis" element={<Navigate to="/metre" replace />} />
                 {/* L'éditeur avancé travaille sur le devis : il relève donc de
                     la même formule que le devis lui-même. */}
                 <Route

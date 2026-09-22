@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import Icone from '../ui/Icone.jsx';
 import { NAVIGATION, sectionAdministration } from './navigation.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useEstAdmin } from '../../hooks/useEstAdmin.js';
 import { useEstFondateur } from '../../hooks/useEstFondateur.js';
-import { effacerEtatLocal } from '../../utils/brouillon.js';
+import { effacerEtatLocal, collecterEtatLocal } from '../../utils/brouillon.js';
+import { useProjets } from '../../hooks/useProjets.js';
 
 /**
  * ContenuNavigation : partagé entre le Ruban (desktop) et MobileDrawer (mobile).
@@ -16,6 +17,7 @@ export function ContenuNavigation({ onNavigate }) {
   const navigate = useNavigate();
   const estAdmin = useEstAdmin();
   const estFondateur = useEstFondateur();
+  const { sauvegarder } = useProjets();
   const sections = estAdmin ? [...NAVIGATION, sectionAdministration(estFondateur)] : NAVIGATION;
 
   const handleAuthAction = async () => {
@@ -44,8 +46,15 @@ export function ContenuNavigation({ onNavigate }) {
                     end={lien.exact}
                     onClick={(e) => {
                       if (lien.label.toLowerCase().includes('nouveau')) {
-                        const ok = window.confirm("Commencer un nouveau projet effacera le travail en cours non sauvegardé. Continuer ?");
+                        const ok = window.confirm("Commencer un nouveau projet ? Le travail en cours sera sauvegardé dans 'Mes Devis'.");
                         if (!ok) { e.preventDefault(); return; }
+                        
+                        // Sauvegarder automatiquement s'il y a du contenu avant d'effacer
+                        const currentDraft = collecterEtatLocal();
+                        if (Object.keys(currentDraft).length > 0) {
+                          sauvegarder();
+                        }
+                        
                         effacerEtatLocal();
                         window.location.href = lien.to;
                         return;
@@ -76,6 +85,93 @@ export function ContenuNavigation({ onNavigate }) {
           {session ? 'Se déconnecter' : 'Se connecter'}
         </button>
       </div>
+    </div>
+  );
+}
+
+function AutocompleteSearch({ sections, navigate }) {
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const extraLinks = [
+    { label: 'Plans et éléments', to: '/metre?etape=1', icone: 'file' },
+    { label: 'Métré (Calculs)', to: '/metre?etape=2', icone: 'ruler' },
+    { label: 'Notes de calcul', to: '/metre?etape=3', icone: 'calculator' },
+    { label: 'Résumé du projet', to: '/metre?etape=4', icone: 'list' },
+    { label: 'Devis final', to: '/metre?etape=5', icone: 'file-text' }
+  ];
+
+  const allLinks = [
+    ...sections.flatMap(s => s.liens),
+    ...extraLinks
+  ];
+
+  const results = q.trim() === '' 
+    ? [] 
+    : allLinks.filter(l => l.label.toLowerCase().includes(q.toLowerCase()));
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelect = (to) => {
+    navigate(to);
+    setQ('');
+    setOpen(false);
+  };
+
+  return (
+    <div ref={containerRef} className="relative hidden lg:block mr-1">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (results.length > 0) {
+            handleSelect(results[0].to);
+          }
+        }}
+      >
+        <Icone nom="search" size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-white/50 z-10" />
+        <input
+          name="q"
+          type="search"
+          autoComplete="off"
+          value={q}
+          onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          placeholder="Rechercher…"
+          className="relative h-7 w-36 lg:w-48 xl:w-56 rounded bg-white/10 border border-white/20 pl-7 pr-3 text-[12px] text-white placeholder:text-white/40 focus:outline-none focus:bg-white/20 transition-all z-0"
+        />
+      </form>
+      {open && results.length > 0 && (
+        <div className="absolute top-full mt-1 right-0 w-64 bg-white rounded-md shadow-xl border border-black/10 overflow-hidden z-[100]">
+          <ul className="max-h-64 overflow-y-auto py-1">
+            {results.map((r, i) => (
+              <li key={i}>
+                <button
+                  type="button"
+                  onClick={() => handleSelect(r.to)}
+                  className="w-full text-left px-3 py-2 text-[12px] text-brand-text hover:bg-brand-primary/5 flex items-center gap-2"
+                >
+                  {r.icone && <Icone nom={r.icone} size={14} className="text-brand-primary/60" />}
+                  <span className="truncate">{r.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {open && q.trim() !== '' && results.length === 0 && (
+         <div className="absolute top-full mt-1 right-0 w-64 bg-white rounded-md shadow-xl border border-black/10 z-[100] p-3 text-[12px] text-brand-text/50 text-center">
+            Aucun résultat pour "{q}"
+         </div>
+      )}
     </div>
   );
 }
@@ -142,25 +238,7 @@ export default function Ruban() {
 
         {/* Recherche + Profil */}
         <div className="ml-auto flex items-center gap-1 pl-2 border-l border-white/20">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const q = e.target.elements.q.value.trim().toLowerCase();
-              if (!q) return;
-              const tous = sections.flatMap(s => s.liens);
-              const trouve = tous.find(l => l.label.toLowerCase().includes(q));
-              if (trouve) { navigate(trouve.to); e.target.reset(); }
-            }}
-            className="relative hidden lg:block mr-1"
-          >
-            <Icone nom="search" size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-white/50" />
-            <input
-              name="q"
-              type="search"
-              placeholder="Rechercher…"
-              className="h-7 w-36 rounded bg-white/10 border border-white/20 pl-7 pr-3 text-[12px] text-white placeholder:text-white/40 focus:outline-none focus:bg-white/20"
-            />
-          </form>
+          <AutocompleteSearch sections={sections} navigate={navigate} />
           <button
             onClick={() => navigate('/profil')}
             className="grid h-7 w-7 place-items-center rounded-full bg-brand-accent text-brand-primary-dark text-[10px] font-bold mx-1"
@@ -180,8 +258,15 @@ export default function Ruban() {
             end={lien.exact}
             onClick={(e) => {
               if (lien.label.toLowerCase().includes('nouveau')) {
-                const ok = window.confirm("Commencer un nouveau projet effacera le travail en cours non sauvegardé. Continuer ?");
+                const ok = window.confirm("Commencer un nouveau projet ? Le travail en cours sera sauvegardé dans 'Mes Devis'.");
                 if (!ok) { e.preventDefault(); return; }
+                
+                // Sauvegarder automatiquement s'il y a du contenu avant d'effacer
+                const currentDraft = collecterEtatLocal();
+                if (Object.keys(currentDraft).length > 0) {
+                  sauvegarder();
+                }
+
                 effacerEtatLocal();
                 window.location.href = lien.to;
               }

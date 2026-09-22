@@ -100,6 +100,34 @@ export default function Elevation() {
           </div>
         </div>
 
+        <div className="bg-amber-50/50 p-3 rounded border border-amber-100 mb-6 flex flex-col md:flex-row gap-4 items-center">
+          <h4 className="text-xs font-bold text-amber-800 uppercase w-full md:w-auto md:mr-auto">Paramètres de coffrage</h4>
+          <div className="flex gap-4 w-full md:w-auto">
+            <SelectSaisie
+              label="Longueur des planches"
+              value={parametresProjet.longueurPlanchesColonnes || 3}
+              onChange={(v) => setParametresProjet({...parametresProjet, longueurPlanchesColonnes: Number(v)})}
+              options={[
+                {label: '3 mètres', value: 3},
+                {label: '4 mètres', value: 4},
+                {label: '5 mètres', value: 5}
+              ]}
+              styleClass="!bg-white"
+            />
+            <SelectSaisie
+              label="Longueur des chevrons"
+              value={parametresProjet.longueurChevronsColonnes || 5}
+              onChange={(v) => setParametresProjet({...parametresProjet, longueurChevronsColonnes: Number(v)})}
+              options={[
+                {label: '3 mètres', value: 3},
+                {label: '4 mètres', value: 4},
+                {label: '5 mètres', value: 5}
+              ]}
+              styleClass="!bg-white"
+            />
+          </div>
+        </div>
+
         {currentColonnes.map((c, index) => {
           const circulaire = c.forme === 'circulaire';
           return (
@@ -264,6 +292,34 @@ export default function Elevation() {
         totalUnite={getBloc('linteaux').unite}
         totalLabel="Volume total linteaux"
       >
+        <div className="bg-amber-50/50 p-3 rounded border border-amber-100 mb-6 flex flex-col md:flex-row gap-4 items-center">
+          <h4 className="text-xs font-bold text-amber-800 uppercase w-full md:w-auto md:mr-auto">Paramètres de coffrage</h4>
+          <div className="flex gap-4 w-full md:w-auto">
+            <SelectSaisie
+              label="Longueur des planches"
+              value={parametresProjet.longueurPlanchesLinteaux || 3}
+              onChange={(v) => setParametresProjet({...parametresProjet, longueurPlanchesLinteaux: Number(v)})}
+              options={[
+                {label: '3 mètres', value: 3},
+                {label: '4 mètres', value: 4},
+                {label: '5 mètres', value: 5}
+              ]}
+              styleClass="!bg-white"
+            />
+            <SelectSaisie
+              label="Longueur des chevrons"
+              value={parametresProjet.longueurChevronsLinteaux || 5}
+              onChange={(v) => setParametresProjet({...parametresProjet, longueurChevronsLinteaux: Number(v)})}
+              options={[
+                {label: '3 mètres', value: 3},
+                {label: '4 mètres', value: 4},
+                {label: '5 mètres', value: 5}
+              ]}
+              styleClass="!bg-white"
+            />
+          </div>
+        </div>
+
         {currentLinteaux.map((l, index) => (
           <LigneOuvrage
             key={l.id} repere={l.repere} titre="Linteau"
@@ -709,6 +765,34 @@ export default function Elevation() {
                 {label: 'Ciment 32.5', value: '32.5'},
                 {label: 'Ciment 42.5', value: '42.5'}
               ]}
+            />
+          </div>
+        </div>
+
+        <div className="bg-amber-50/50 p-3 rounded border border-amber-100 mb-6 flex flex-col md:flex-row gap-4 items-center">
+          <h4 className="text-xs font-bold text-amber-800 uppercase w-full md:w-auto md:mr-auto">Paramètres de coffrage</h4>
+          <div className="flex gap-4 w-full md:w-auto">
+            <SelectSaisie
+              label="Longueur des planches"
+              value={parametresProjet.longueurPlanchesCeintures || 3}
+              onChange={(v) => setParametresProjet({...parametresProjet, longueurPlanchesCeintures: Number(v)})}
+              options={[
+                {label: '3 mètres', value: 3},
+                {label: '4 mètres', value: 4},
+                {label: '5 mètres', value: 5}
+              ]}
+              styleClass="!bg-white"
+            />
+            <SelectSaisie
+              label="Longueur des chevrons"
+              value={parametresProjet.longueurChevronsCeintures || 5}
+              onChange={(v) => setParametresProjet({...parametresProjet, longueurChevronsCeintures: Number(v)})}
+              options={[
+                {label: '3 mètres', value: 3},
+                {label: '4 mètres', value: 4},
+                {label: '5 mètres', value: 5}
+              ]}
+              styleClass="!bg-white"
             />
           </div>
         </div>

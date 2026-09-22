@@ -69,6 +69,34 @@ export default function Plancher() {
               </div>
             </div>
 
+            <div className="bg-amber-50/50 p-3 rounded border border-amber-100 mb-6 flex flex-col md:flex-row gap-4 items-center">
+              <h4 className="text-xs font-bold text-amber-800 uppercase w-full md:w-auto md:mr-auto">Paramètres de coffrage</h4>
+              <div className="flex gap-4 w-full md:w-auto">
+                <SelectSaisie
+                  label="Longueur des planches"
+                  value={parametresProjet.longueurPlanchesDalles || 3}
+                  onChange={(v) => setParametresProjet({...parametresProjet, longueurPlanchesDalles: Number(v)})}
+                  options={[
+                    {label: '3 mètres', value: 3},
+                    {label: '4 mètres', value: 4},
+                    {label: '5 mètres', value: 5}
+                  ]}
+                  styleClass="!bg-white"
+                />
+                <SelectSaisie
+                  label="Longueur des chevrons"
+                  value={parametresProjet.longueurChevronsDalles || 5}
+                  onChange={(v) => setParametresProjet({...parametresProjet, longueurChevronsDalles: Number(v)})}
+                  options={[
+                    {label: '3 mètres', value: 3},
+                    {label: '4 mètres', value: 4},
+                    {label: '5 mètres', value: 5}
+                  ]}
+                  styleClass="!bg-white"
+                />
+              </div>
+            </div>
+
             {dallesNiveau.map((ligne, i) => (
               <LigneOuvrage
                 key={`dalle-${ligne.id}`}

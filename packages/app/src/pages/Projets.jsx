@@ -36,7 +36,7 @@ export default function Projets() {
   }
 
   return (
-    <div>
+    <div className="mx-auto max-w-6xl">
       <h1 className="mb-4 font-sans text-xl font-bold text-brand-text">Mes projets</h1>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {[...projets].reverse().map((p) => (

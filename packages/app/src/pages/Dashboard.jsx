@@ -27,7 +27,7 @@ export default function Dashboard() {
   const isNewUser = ouvragesChiffres === 0 && devisCreation === 0;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="space-y-8 animate-in fade-in duration-300 mx-auto max-w-6xl">
       {/* Header personnalisé */}
       <div>
         <h1 className="font-sans text-2xl font-extrabold text-brand-primary">

@@ -12,7 +12,8 @@ export function calculerCoffrage({
   dalleOptions, // Options spécifiques pour le coffrage de dalle (panneaux)
   majoration = PARAMETRES.majorations.planches || 1.10, 
   planche = PARAMETRES.bois.plancheStandard, 
-  chevronTraverse = PARAMETRES.bois.chevronDeTraverse, 
+  chevronTraverse = PARAMETRES.bois.chevronDeTraverse,
+  longueurChevrons = 5.00,
   traversesPct = PARAMETRES.bois.traversesPct, 
   clousKgM2 = PARAMETRES.clous.coffrage 
 }) {
@@ -54,7 +55,7 @@ export function calculerCoffrage({
   const texteBase = traceSurfaceText ? `${traceSurfaceText}\n` : '';
   const traceTextPlanches = `${texteBase}Surface_une_planche = ${planche.L} × ${planche.l} = ${net(surfaceUnePlanche)} m²\nNombre_planches_theorique = ${net(surface)} ÷ ${net(surfaceUnePlanche)} = ${net(nombrePlanchesTheorique)}\nNombre_planches = ceil(${net(nombrePlanchesTheorique)} × ${majoration}) = ${planches} planches\nVolume_une_planche = ${planche.L} × ${planche.l} × ${planche.e} = ${net(volumeUnePlanche)} m³\nVolume_planches = ${planches} × ${net(volumeUnePlanche)} = ${net(volumePlanches)} m³`;
   
-  const traceTextChevrons = `Volume_traverses = ${net(volumePlanches)} × ${traversesPct} = ${net(volumeTraverses)} m³\nVolume_une_traverse = ${net(volumeUnChevron)} m³\nNombre_traverses = ceil(${net(volumeTraverses)} ÷ ${net(volumeUnChevron)}) = ${chevrons} traverses`;
+  const traceTextChevrons = `Volume_traverses = ${net(volumePlanches)} × ${traversesPct} = ${net(volumeTraverses)} m³\nVolume_une_traverse (${longueurChevrons}m) = ${net(volumeUnChevron)} m³\nNombre_traverses = ceil(${net(volumeTraverses)} ÷ ${net(volumeUnChevron)}) = ${chevrons} traverses`;
 
   const traceTextClous = `Quantité_clous = ${net(surface)} × ${clousKgM2} = ${net(clous)} kg`;
 

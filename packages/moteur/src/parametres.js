@@ -126,17 +126,38 @@ export const PARAMETRES = {
     couverture: 0.10, // kg/m2 par pan
   },
 
-  // I. ENDUIT, PEINTURE, CARRELAGE
+  // I. ENDUIT, PEINTURE, CARRELAGE (Nouveau module paramétrique)
   finitions: {
-    enduitCimentKgM2: 8,
+    // Enduit
+    epaisseurEnduit: 0.02, // m (2 cm)
+    dosageCimentEnduit: 350, // kg/m3
+    sableParSacKg: 180, // kg de sable par sac (ex: 180kg)
+    coefficientSable: 1.5, // foisonnement/perte du sable
+    eauParSacL: 30, // Litres d'eau par sac
+    perteEnduitPct: 5, // % de perte
+
+    // Peinture
     rendementLatex: 4, // m2/kg
     rendementPeintureClassique: 10, // m2/L
     rendementChaux: 6, // m2/kg
     nbCouchesPeinture: 2,
-    cimentColleKgM2: 8,
-    sableMortierPoseLitresM2ParCm: 10,
-    surfaceCarreau: 0.09, // m2 (30x30, 12 par carton)
-    surfaceFaience: 0.10, // m2 (25x40, 10 par carton)
+    pertePeinturePct: 5, // % de perte
+
+    // Carrelage / Faïence
+    longueurCarreau: 0.30, // m
+    largeurCarreau: 0.30, // m
+    carreauxParCarton: 12,
+    perteCarrelagePct: 5, // % de perte
+    longueurFaience: 0.25, // m
+    largeurFaience: 0.40, // m
+    faienceParCarton: 10,
+    perteFaiencePct: 5, // % de perte
+
+    // Colle / Joint
+    cimentColleKgM2: 5, // Option A: conso au m2
+    perteCollePct: 5,
+    jointKgM2: 0.5,
+    perteJointPct: 5,
   },
 
   // J. PRIX UNITAIRES par défaut, en FCFA

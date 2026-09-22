@@ -18,7 +18,7 @@ function resumeBlocs(blocs) {
   let volumeM3 = 0;
   let surfaceM2 = 0;
   const blocsM3 = ['semelles', 'amorces', 'longrines', 'poteaux', 'colonnes', 'ceintures', 'poutres', 'linteaux', 'dalles', 'plancherHourdis', 'escalier', 'acrotere', 'betonProprete', 'sousPavement', 'dallage', 'fouilles', 'fouilleFilante', 'terrassementGrandeSurface', 'remblai', 'moellon', 'murSoubassement'];
-  const blocsM2 = ['maconnerie', 'enduits', 'carrelage', 'faience'];
+  const blocsM2 = ['maconnerie', 'enduits', 'carrelageC1', 'carrelageC2', 'faience'];
 
   for (const [key, val] of Object.entries(blocs)) {
     const t = val && val.total ? val.total : 0;
@@ -53,7 +53,9 @@ export function useMetre() {
     sousPavements,
     nivellement,
     terrassementGrandeSurface,
-    carrelages,
+    carrelagesC1,
+    carrelagesC2,
+    plinthes,
     enduits,
     peintures,
     faiences,
@@ -72,7 +74,7 @@ export function useMetre() {
     const premierPassage = niveaux.map(niveau => {
       const stateNiveau = preparerSaisiePourMoteur(niveau, {
         fouilles, fouilleFilante, betonProprete, semelles, amorces, longrines, colonnes, escaliers, maconneries, linteaux, ceintures, soubassements,
-        moellons, dallages, remblais, sousPavements, nivellement, terrassementGrandeSurface, carrelages, enduits, peintures, faiences, autresOuvrages,
+        moellons, dallages, remblais, sousPavements, nivellement, terrassementGrandeSurface, carrelagesC1, carrelagesC2, plinthes, enduits, peintures, faiences, autresOuvrages,
         dalles, plancherHourdis12, plancherHourdis16, charpentes, couverturesToles, terrasses, toituresPro
       });
       const result = calculerMetre(stateNiveau, reglesPersonnalisees);
@@ -122,7 +124,7 @@ export function useMetre() {
     niveaux,
     fouilles, fouilleFilante, betonProprete, semelles, amorces, longrines, colonnes, escaliers,
     maconneries, linteaux, ceintures, soubassements, moellons, dallages, remblais, sousPavements, nivellement,
-    terrassementGrandeSurface, carrelages, enduits, peintures, faiences, autresOuvrages,
+    terrassementGrandeSurface, carrelagesC1, carrelagesC2, plinthes, enduits, peintures, faiences, autresOuvrages,
     dalles, plancherHourdis12, plancherHourdis16, charpentes, couverturesToles, terrasses, toituresPro,
     reglesPersonnalisees
   ]);

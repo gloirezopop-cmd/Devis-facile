@@ -759,6 +759,28 @@ function calculerLigne(bloc, ligne, regles, saisie) {
       };
     }
     
+    // Déterminer si l'utilisateur a choisi une longueur spécifique de planches ou chevrons pour cette catégorie
+    let customL = null;
+    let customChevronsL = null;
+    const p = saisie?.parametresProjet;
+    if (p) {
+      if (bloc === BLOCS.semelles) { customL = p.longueurPlanchesSemelles; customChevronsL = p.longueurChevronsSemelles; }
+      else if (bloc === BLOCS.amorces) { customL = p.longueurPlanchesAmorces; customChevronsL = p.longueurChevronsAmorces; }
+      else if (bloc === BLOCS.longrines) { customL = p.longueurPlanchesLongrines; customChevronsL = p.longueurChevronsLongrines; }
+      else if (bloc === BLOCS.poteaux || bloc === BLOCS.colonnes) { customL = p.longueurPlanchesColonnes; customChevronsL = p.longueurChevronsColonnes; }
+      else if (bloc === BLOCS.linteaux) { customL = p.longueurPlanchesLinteaux; customChevronsL = p.longueurChevronsLinteaux; }
+      else if (bloc === BLOCS.ceintures) { customL = p.longueurPlanchesCeintures; customChevronsL = p.longueurChevronsCeintures; }
+      else if (bloc === BLOCS.dalles) { customL = p.longueurPlanchesDalles; customChevronsL = p.longueurChevronsDalles; }
+      else if (bloc === BLOCS.poutres) { customL = p.longueurPlanchesPoutres; customChevronsL = p.longueurChevronsPoutres; }
+    }
+    if (customL) {
+      options.planche = { ...PARAMETRES.bois.plancheStandard, L: Number(customL) };
+    }
+    if (customChevronsL) {
+      options.chevronTraverse = Number(customChevronsL) * 0.05 * 0.05;
+      options.longueurChevrons = Number(customChevronsL);
+    }
+    
     res.coffrage = calculerCoffrage(options);
   } else {
     // Repli : Par ratio
@@ -2588,24 +2610,46 @@ export function calculerMetre(saisie = {}, regles = {}) {
 
 
 
-  // Carrelage et plinthes.
-  const locaux = (Array.isArray(saisie.carrelage) ? saisie.carrelage : []).map(
-    calculerLocal,
-  );
-  
-  // Extraire les épaisseurs pondérées ou utiliser la première trouvée.
-  const epaisseurCarrelageMoyenne = locaux.length > 0 ? (locaux[0].epaisseur || 0.03) : 0.03;
-
-  blocs.carrelage = {
-    libelle: 'Carrelage sol et plinthes',
+  // Carrelage Catégorie 1
+  const locauxC1 = (Array.isArray(saisie.carrelagesC1) ? saisie.carrelagesC1 : []).map(calculerLocal);
+  blocs.carrelageC1 = {
+    libelle: 'Carrelage Catégorie 1',
     unite: 'm2',
     formule: 'L x l x N',
-    lignes: locaux,
-    total: totaliser(locaux, 'surface'),
-    perimetreTotal: totaliser(locaux, 'perimetre'),
-    epaisseurCarrelage: epaisseurCarrelageMoyenne
+    lignes: locauxC1,
+    total: totaliser(locauxC1, 'surface')
   };
-  
+
+  // Carrelage Catégorie 2
+  const locauxC2 = (Array.isArray(saisie.carrelagesC2) ? saisie.carrelagesC2 : []).map(calculerLocal);
+  blocs.carrelageC2 = {
+    libelle: 'Carrelage Catégorie 2',
+    unite: 'm2',
+    formule: 'L x l x N',
+    lignes: locauxC2,
+    total: totaliser(locauxC2, 'surface')
+  };
+
+  // Plinthes
+  const plinthesCalc = (Array.isArray(saisie.plinthes) ? saisie.plinthes : []).map((p) => {
+    if (!renseigne(p.perimetre) || !renseigne(p.hauteur)) {
+      return { valeur: null, manquants: ['perimetre', 'hauteur'].filter((c) => !renseigne(p[c])) };
+    }
+    const v = net(p.perimetre * p.hauteur);
+    return {
+      ...p,
+      valeur: v,
+      trace: { calcul: `Surface = ${p.perimetre} ml × ${p.hauteur} m = ${v} m²` }
+    };
+  });
+  blocs.plinthes = {
+    libelle: 'Plinthes',
+    unite: 'm2',
+    formule: 'Périmètre x Hauteur',
+    lignes: plinthesCalc,
+    total: totaliser(plinthesCalc, 'valeur')
+  };
+
   // Faïence
   const faience = (Array.isArray(saisie.faience) ? saisie.faience : []).map((f) => {
      if (!renseigne(f.longueur) || !renseigne(f.hauteur)) {

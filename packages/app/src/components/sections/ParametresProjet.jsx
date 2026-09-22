@@ -76,7 +76,7 @@ export default function ParametresProjet() {
   };
 
   return (
-    <section className="animate-in fade-in duration-300">
+    <section className="animate-in fade-in duration-300 mx-auto max-w-5xl">
       <div className="flex justify-between items-end mb-4 border-b border-devis-border pb-2">
         <h2 className="font-sans text-2xl font-bold text-devis-calcule">Paramètres du Projet</h2>
         <div className="flex gap-4">

@@ -21,7 +21,9 @@ export default function Layout() {
         <Header onOpenMenu={() => setMenuOuvert(true)} />
         <Ruban />
         <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-          <Outlet />
+          <div className="mx-auto max-w-7xl w-full">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
