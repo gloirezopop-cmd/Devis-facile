@@ -16,6 +16,7 @@ import Icone from '../ui/Icone.jsx';
 import MenuExport from '../ui/MenuExport.jsx';
 import MenuEnregistrer from '../ui/MenuEnregistrer.jsx';
 import LogoProjet from '../ui/LogoProjet.jsx';
+import { consommerAbonnementUnique } from '../../lib/estimationApi.js';
 
 /**
  * Étape 5 — le devis final. Permet de basculer entre le modèle Particulier (bordereau matériaux)
@@ -218,7 +219,10 @@ export default function EtapeDevis() {
           {/* L'impression du navigateur est le seul chemin qui conserve les
               couleurs de la feuille : le PDF, lui, refait sa mise en page. */}
           <button
-            onClick={() => window.print()}
+            onClick={() => {
+              consommerAbonnementUnique().catch(console.error);
+              window.print();
+            }}
             className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-brand-primary/15 px-3 text-[13px] font-bold text-brand-text/70 hover:bg-black/[0.03]"
           >
             <Icone nom="file-text" size={15} />
@@ -229,11 +233,13 @@ export default function EtapeDevis() {
             onExporterPDF={() => {
               if (!devisActif?.total) return toast('Aucun ouvrage à exporter pour le moment.', 'erreur');
               exportPDF(devisActif, vue, infoProjet);
+              consommerAbonnementUnique().catch(console.error);
               toast('Fichier PDF généré.');
             }}
             onExporterExcel={() => {
               if (!devisActif?.total) return toast('Aucun ouvrage à exporter pour le moment.', 'erreur');
               exportExcel(devisActif, vue, infoProjet);
+              consommerAbonnementUnique().catch(console.error);
               toast('Fichier Excel généré.');
             }}
           />

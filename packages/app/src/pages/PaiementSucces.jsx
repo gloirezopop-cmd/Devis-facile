@@ -21,12 +21,14 @@ export default function PaiementSucces() {
   const { droits, plans, abonnements, chargement, recharger } = useDroits();
 
   const reference = params.get('transaction_id') || params.get('reference') || params.get('token');
+  const intentId = params.get('intent');
   const statut = statutDuCompte(abonnements, plans);
   const accesOuvert = statut !== 'FREE' && statut !== 'EXPIRED';
+  const [verificationEnCours, setVerificationEnCours] = React.useState(false);
 
   useEffect(() => {
-    tracer('payment_return', { issue: 'succes', reference, statut });
-  }, [reference, statut]);
+    tracer('payment_return', { issue: 'succes', reference, intentId, statut });
+  }, [reference, intentId, statut]);
 
   // Le webhook confirme généralement en quelques secondes, parfois après que
   // ce navigateur soit déjà revenu ici. On resonde donc tout seul un moment
@@ -47,10 +49,28 @@ export default function PaiementSucces() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chargement, accesOuvert]);
 
+  const verifierPaiement = async () => {
+    setVerificationEnCours(true);
+    
+    // Si l'URL contient un intent_id, on peut forcer le backend à interroger Chariow
+    if (intentId && !accesOuvert) {
+      import('../lib/supabaseClient.js').then(async ({ supabase }) => {
+        const { data, error } = await supabase.functions.invoke('chariow-verify', {
+          body: { intent_id: intentId },
+        });
+        recharger(); // On recharge les droits locaux après la tentative
+        setVerificationEnCours(false);
+      });
+    } else {
+      recharger();
+      setTimeout(() => setVerificationEnCours(false), 1000);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-xl py-10">
       <div className="rounded-2xl border border-brand-primary/10 bg-white p-7 sm:p-9 text-center">
-        {chargement ? (
+        {chargement || verificationEnCours ? (
           <p className="py-10 text-[13px] text-brand-text/40">Vérification de votre accès…</p>
         ) : accesOuvert ? (
           <>
@@ -80,17 +100,18 @@ export default function PaiementSucces() {
             </p>
             <button
               type="button"
-              onClick={recharger}
-              className="mt-6 min-h-[48px] rounded-xl border-2 border-brand-primary/20 px-5 text-[13.5px] font-bold text-brand-text hover:border-brand-primary hover:bg-brand-primary/[0.04] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-accent/35"
+              onClick={verifierPaiement}
+              disabled={verificationEnCours}
+              className="mt-6 min-h-[48px] rounded-xl border-2 border-brand-primary/20 px-5 text-[13.5px] font-bold text-brand-text hover:border-brand-primary hover:bg-brand-primary/[0.04] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-accent/35 disabled:opacity-50"
             >
               Vérifier à nouveau
             </button>
           </>
         )}
 
-        {reference && (
+        {(reference || intentId) && (
           <p className="mt-6 text-[12px] text-brand-text/40">
-            Référence de la transaction : <span className="font-mono">{reference}</span>
+            Référence de la transaction : <span className="font-mono">{reference || intentId}</span>
           </p>
         )}
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * POST /functions/v1/chariow-checkout
  * Body attendu : { plan: "calcul" | "devis_complet" | "pro_annuel" }

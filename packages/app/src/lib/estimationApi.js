@@ -143,7 +143,16 @@ export async function fetchMesAbonnements() {
   return data || [];
 }
 
-/** Enregistre un événement du tunnel (§44). N'interrompt jamais le parcours. */
+export async function consommerAbonnementUnique() {
+  const { data, error } = await supabase.rpc('consommer_abonnement_unique');
+  if (error) {
+    console.error("estimationApi: impossible de consommer l'abonnement", error);
+    return null;
+  }
+  return data;
+}
+
+/** Enregistre un événement du tunnel (#44). N'interrompt jamais le parcours. */
 export async function tracer(event, properties = {}) {
   try {
     const { data: { user } } = await supabase.auth.getUser();

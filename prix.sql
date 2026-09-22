@@ -91,9 +91,9 @@ formules (id, name, slug, price, billing_type, duration_days,
           description, tagline, features, entitlements, recommended, display_order) as (
   values
   (
-    'calcul', 'Calcul', 'calcul', 3500::numeric, 'MONTHLY', 30,
+    'calcul', 'Calcul', 'calcul', 3500::numeric, 'ONE_TIME', null,
     'La porte d''entrée : vos calculs et vos résultats.',
-    'De vos dimensions à votre note de calcul.',
+    'Idéal pour chiffrer un projet unique.',
     array[
       'Dimensions du projet',
       'Estimation du budget',
