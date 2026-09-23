@@ -28,7 +28,7 @@ export default function PiedDePageLanding() {
         <div className={styles.pieContenu}>
           <Link to="/" className={styles.marque}>
             <span className={styles.jetonMarque}>
-              <img src="/logo.png" alt="Logo Devis Facile BTP" className={styles.logoImg} />
+              <img src="/logo-icon.png" alt="Logo Devis Facile BTP" className={styles.logoImg} />
             </span>
             Devis Facile BTP
           </Link>

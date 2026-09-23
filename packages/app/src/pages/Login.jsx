@@ -123,7 +123,7 @@ export default function Login() {
       <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 bg-white relative">
         <Link to="/" className="absolute top-8 left-8 flex items-center gap-2.5 text-brand-primary font-bold hover:opacity-80 transition-opacity">
           <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center p-1 shadow-sm border border-brand-primary/10 overflow-hidden">
-            <img src="/logo.png" alt="Logo Devis Facile BTP" className="w-full h-full object-contain" />
+            <img src="/logo-icon.png" alt="Logo Devis Facile BTP" className="w-full h-full object-contain" />
           </div>
           <span className="font-sans text-[15px] tracking-tight">Devis Facile BTP</span>
         </Link>

@@ -31,7 +31,7 @@ export function ContenuNavigation({ onNavigate }) {
       <div className="px-5 py-6">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center p-0.5 shadow-sm border border-white/20 overflow-hidden shrink-0">
-            <img src="/logo.png" alt="Logo Devis Facile BTP" className="w-full h-full object-contain" />
+            <img src="/logo-icon.png" alt="Logo Devis Facile BTP" className="w-full h-full object-contain" />
           </div>
           <span className="font-sans text-[15px] font-bold tracking-tight text-white">DEVIS FACILE</span>
         </div>
@@ -218,7 +218,7 @@ export default function Ruban() {
         {/* Logo */}
         <div className="flex items-center px-3 py-1.5 mr-2 border-r border-white/20 shrink-0 cursor-pointer" onClick={() => navigate('/dashboard')}>
           <div className="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 shadow-sm border border-white/20 overflow-hidden mr-2 shrink-0">
-            <img src="/logo.png" alt="Logo Devis Facile BTP" className="w-full h-full object-contain" />
+            <img src="/logo-icon.png" alt="Logo Devis Facile BTP" className="w-full h-full object-contain" />
           </div>
           <span className="font-sans text-[13px] font-bold tracking-tight text-white uppercase hidden lg:block">Devis Facile</span>
         </div>
