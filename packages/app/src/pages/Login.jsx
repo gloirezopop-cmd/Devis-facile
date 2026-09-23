@@ -121,11 +121,11 @@ export default function Login() {
     <div className="min-h-screen bg-brand-bg flex flex-col md:flex-row">
       {/* Côté gauche : Formulaire */}
       <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 bg-white relative">
-        <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 text-brand-primary font-bold hover:opacity-80 transition-opacity">
-          <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
-            <Icone nom="grid" className="text-brand-accent" size={20} />
+        <Link to="/" className="absolute top-8 left-8 flex items-center gap-2.5 text-brand-primary font-bold hover:opacity-80 transition-opacity">
+          <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center p-1 shadow-sm border border-brand-primary/10 overflow-hidden">
+            <img src="/logo.png" alt="Logo Devis Facile BTP" className="w-full h-full object-contain" />
           </div>
-          DEVIS Facile BTP
+          <span className="font-sans text-[15px] tracking-tight">Devis Facile BTP</span>
         </Link>
         
         <div className="mx-auto w-full max-w-sm mt-12 md:mt-0">

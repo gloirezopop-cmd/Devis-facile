@@ -134,7 +134,7 @@ export default function PaiementSucces() {
       {/* Volontairement visible : la page ne prétend pas décider du paiement. */}
       <p className="mt-4 text-center text-[12px] leading-relaxed text-brand-text/40">
         L'accès est accordé par le serveur après vérification auprès de l'opérateur de paiement, jamais par
-        cette page.{droits.can_view_estimate ? '' : ' Tant que la confirmation n\'est pas arrivée, vos accès restent inchangés.'}
+        cette page.{droits?.can_view_estimate ? '' : ' Tant que la confirmation n\'est pas arrivée, vos accès restent inchangés.'}
       </p>
     </div>
   );

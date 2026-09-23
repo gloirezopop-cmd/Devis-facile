@@ -29,8 +29,10 @@ export function ContenuNavigation({ onNavigate }) {
   return (
     <div className="flex h-full flex-col">
       <div className="px-5 py-6">
-        <div className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-md bg-brand-accent text-brand-primary-dark font-bold text-sm">DF</span>
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center p-0.5 shadow-sm border border-white/20 overflow-hidden shrink-0">
+            <img src="/logo.png" alt="Logo Devis Facile BTP" className="w-full h-full object-contain" />
+          </div>
           <span className="font-sans text-[15px] font-bold tracking-tight text-white">DEVIS FACILE</span>
         </div>
       </div>
@@ -214,8 +216,10 @@ export default function Ruban() {
       {/* Barre des onglets — titre + sections + actions */}
       <div className="flex items-center px-2 bg-brand-primary text-white">
         {/* Logo */}
-        <div className="flex items-center px-3 py-1.5 mr-2 border-r border-white/20 shrink-0">
-          <span className="grid h-6 w-6 place-items-center rounded bg-brand-accent text-brand-primary-dark font-bold text-[11px] mr-2">DF</span>
+        <div className="flex items-center px-3 py-1.5 mr-2 border-r border-white/20 shrink-0 cursor-pointer" onClick={() => navigate('/dashboard')}>
+          <div className="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 shadow-sm border border-white/20 overflow-hidden mr-2 shrink-0">
+            <img src="/logo.png" alt="Logo Devis Facile BTP" className="w-full h-full object-contain" />
+          </div>
           <span className="font-sans text-[13px] font-bold tracking-tight text-white uppercase hidden lg:block">Devis Facile</span>
         </div>
 

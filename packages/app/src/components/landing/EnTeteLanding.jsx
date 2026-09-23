@@ -39,7 +39,7 @@ export default function EnTeteLanding() {
       <div className={styles.barre}>
         <Link to="/" className={styles.logo} onClick={fermer}>
           <span className={styles.marque}>
-            <Icone nom="grid" size={19} />
+            <img src="/logo.png" alt="Logo Devis Facile BTP" className={styles.logoImg} />
           </span>
           <span className={styles.nomMarque}>Devis Facile BTP</span>
         </Link>

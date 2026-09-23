@@ -56,16 +56,25 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: 10px;
-  background-color: var(--lp-encre);
-  color: var(--lp-corail);
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
   transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.logoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 1px;
+}
+
 .logo:hover .marque {
-  transform: rotate(-8deg) scale(1.06);
+  transform: rotate(-4deg) scale(1.06);
 }
 
 .nomMarque {

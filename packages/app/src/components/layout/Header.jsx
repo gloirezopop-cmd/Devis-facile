@@ -46,8 +46,10 @@ export default function Header({ onOpenMenu, titre }) {
       </button>
 
       {/* Logo / Titre de l'app */}
-      <div className="flex items-center gap-2">
-        <span className="grid h-7 w-7 place-items-center rounded bg-brand-primary text-white font-bold text-[11px]">DF</span>
+      <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
+        <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center p-0.5 shadow-sm border border-brand-primary/10 overflow-hidden shrink-0">
+          <img src="/logo.png" alt="Logo Devis Facile BTP" className="w-full h-full object-contain" />
+        </div>
         <span className="hidden sm:block font-bold text-[14px] text-brand-text tracking-tight">DEVIS FACILE</span>
       </div>
 
