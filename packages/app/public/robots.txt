@@ -1,0 +1,17 @@
+# Devis Facile BTP — robots.txt
+# https://devisfacilebtp.com
+
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /metre
+Disallow: /devis
+Disallow: /projets
+Disallow: /parametres
+Disallow: /abonnement
+Disallow: /admin
+Disallow: /paiement
+Disallow: /sujets
+
+# Sitemap
+Sitemap: https://devisfacilebtp.com/sitemap.xml
