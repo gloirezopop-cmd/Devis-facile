@@ -14,6 +14,7 @@ import styles from './EnTeteLanding.module.css';
 const LIENS = [
   { libelle: 'Fonctionnalités', ancre: '#fonctionnalites' },
   { libelle: 'Comment ça marche', ancre: '#etapes' },
+  { libelle: 'Voir un exemple', ancre: '/demo', estRoute: true },
 ];
 
 export default function EnTeteLanding() {
@@ -64,9 +65,15 @@ export default function EnTeteLanding() {
           <ul className={styles.liste}>
             {LIENS.map((lien) => (
               <li key={lien.ancre}>
-                <a href={lien.ancre} className={styles.lien} onClick={fermer}>
-                  {lien.libelle}
-                </a>
+                {lien.estRoute ? (
+                  <Link to={lien.ancre} className={styles.lien} onClick={fermer}>
+                    {lien.libelle}
+                  </Link>
+                ) : (
+                  <a href={lien.ancre} className={styles.lien} onClick={fermer}>
+                    {lien.libelle}
+                  </a>
+                )}
               </li>
             ))}
             <li>

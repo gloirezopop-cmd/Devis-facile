@@ -46,8 +46,8 @@ export default function HerosLanding({ image = '/apercu-devis-facile.jpg' }) {
 
           <div className={styles.actions}>
             <BoutonCTA to="/login?mode=register">Essayer gratuitement</BoutonCTA>
-            <BoutonCTA to="/login" variante="secondaire" avecFleche={false}>
-              Se connecter
+            <BoutonCTA to="/demo" variante="secondaire" avecFleche={false}>
+              Voir un exemple de devis
             </BoutonCTA>
           </div>
 
