@@ -191,6 +191,14 @@ function CascadeRowsEntreprise({ cascade, total, cellule }) {
           {formaterNombre(cascade.totalTravaux || cascade.totalHT, true)}
         </td>
       </tr>
+      {cascade.mainOeuvre ? (
+        <tr className="bg-white">
+          <td colSpan="5" className={`${cellule} text-[12.5px] font-bold uppercase`}>Main d'œuvre 30%</td>
+          <td className={`${cellule} text-[13px] tabular-nums font-bold`}>
+            {formaterNombre(cascade.mainOeuvre, true)}
+          </td>
+        </tr>
+      ) : null}
       {cascade.honorairesArchi ? (
         <tr className="bg-white">
           <td colSpan="5" className={`${cellule} text-[12.5px] font-bold uppercase text-[#7030a0]`}>HONORAIRE Architecte 8%</td>

@@ -159,8 +159,8 @@ const DEVIS_ENTREPRISE = {
       ]
     }
   },
-  cascade: { totalTravaux: 15029852, honorairesArchi: 1202388, honorairesInge: 1202388 },
-  total: 17434628
+  cascade: { totalTravaux: 15029852, mainOeuvre: 4508956, honorairesArchi: 1202388, honorairesInge: 1202388 },
+  total: 21943584
 };
 
 export default function Demo() {
