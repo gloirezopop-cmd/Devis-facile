@@ -255,29 +255,6 @@ export default function EtapeDevis() {
           ? <ApercuFeuilleExcel classeur={devisExcelSnapshot} feuille={vue} />
           : <TableauDevis devis={devisActif} type={vue} />}
       </ErrorBoundary>
-
-      {!excelActif && vue === 'entreprise' && devisEntreprise?.cascade && (
-        <div className="mt-4 flex justify-end">
-          <table className="w-full max-w-xs text-[13.5px]">
-            <tbody>
-              <tr>
-                <td className="py-1 text-brand-text/55">Total HT</td>
-                <td className="py-1 text-right font-mono tabular-nums">{formaterNombre(devisEntreprise.cascade.totalHT, true)}</td>
-              </tr>
-              <tr>
-                <td className="py-1 text-brand-text/55">TVA</td>
-                <td className="py-1 text-right font-mono tabular-nums">{formaterNombre(devisEntreprise.cascade.tva, true)}</td>
-              </tr>
-              <tr className="border-t-2 border-brand-primary/15 text-[15px] font-bold">
-                <td className="pt-2">Total TTC</td>
-                <td className="pt-2 text-right font-mono tabular-nums text-brand-primary">
-                  {formaterNombre(devisEntreprise.cascade.netAPayer, true)} FCFA
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
       
       {devisActif?.total > 0 && (
         <div className="mt-4 rounded-lg border border-black/10 bg-white p-6 shadow-sm">

@@ -4,71 +4,163 @@ import Icone from '../components/ui/Icone.jsx';
 import TableauDevis from '../components/sections/TableauDevis.jsx';
 
 const DEVIS_PARTICULIER = {
-  ordreLots: ['fondation', 'elevation', 'plancher'],
+  ordreLots: ['terrassement', 'fondation', 'elevation', 'dalle', 'finition', 'charpente', 'couverture', 'piedsDroit'],
   lots: {
-    fondation: {
-      nom: 'Fondation',
-      sousTotal: 1502500,
+    terrassement: {
+      nom: 'TERRASSEMENT',
+      sousTotal: 252183,
       lignes: [
-        { designation: 'Fouilles en rigoles', unite: 'm3', quantite: 45, pu: 3500, pt: 157500 },
-        { designation: 'Béton de propreté dosé à 150kg/m3', unite: 'm3', quantite: 5, pu: 65000, pt: 325000 },
-        { designation: 'Semelles isolées dosées à 350kg/m3', unite: 'm3', quantite: 12, pu: 85000, pt: 1020000 }
+        { designation: 'Installation chantier', unite: 'fft', quantite: 1, pu: 0, pt: 0 },
+        { designation: 'Déblais', unite: 'Tonne', quantite: 26.079, pu: 3000, pt: 78237 },
+        { designation: 'Remblais', unite: 'Tonne', quantite: 57.982, pu: 3000, pt: 173946 }
+      ]
+    },
+    fondation: {
+      nom: 'FONDATION',
+      sousTotal: 1569576,
+      lignes: [
+        { designation: 'Ciment', unite: 'sac', quantite: 68, pu: 6000, pt: 408000 },
+        { designation: 'Gravier', unite: 'Tonne', quantite: 20, pu: 24000, pt: 480000 },
+        { designation: 'Sable', unite: 'Tonne', quantite: 15, pu: 7500, pt: 112500 },
+        { designation: 'Eau', unite: 'Litre', quantite: 2592, pu: 18, pt: 46656 },
+        { designation: 'Bois de coffrage', unite: 'm3', quantite: 2.241, pu: 120000, pt: 268920 },
+        { designation: 'Clous', unite: 'Kg', quantite: 7, pu: 2700, pt: 18900 },
+        { designation: 'Armature HA10', unite: 'Pièce', quantite: 10, pu: 6000, pt: 60000 },
+        { designation: 'Armature HA8', unite: 'Pièce', quantite: 3, pu: 4800, pt: 14400 },
+        { designation: 'Fil à ligaturer', unite: 'Kg', quantite: 6, pu: 1200, pt: 7200 },
+        { designation: 'Moellon', unite: 'Tonne', quantite: 15, pu: 10200, pt: 153000 }
       ]
     },
     elevation: {
-      nom: 'Élévation',
-      sousTotal: 2800000,
+      nom: 'ELEVATION',
+      sousTotal: 3130032,
       lignes: [
-        { designation: 'Maçonnerie en agglos de 20', unite: 'm2', quantite: 120, pu: 4500, pt: 540000 },
-        { designation: 'Chaînage et linteaux', unite: 'ml', quantite: 80, pu: 8500, pt: 680000 },
-        { designation: 'Poteaux en béton armé', unite: 'm3', quantite: 8, pu: 197500, pt: 1580000 }
+        { designation: 'Blocs', unite: 'Pièce', quantite: 1971, pu: 450, pt: 886950 },
+        { designation: 'Ciment', unite: 'sac', quantite: 123, pu: 6000, pt: 738000 },
+        { designation: 'Gravier', unite: 'Tonne', quantite: 10, pu: 24000, pt: 240000 },
+        { designation: 'Sable', unite: 'Tonne', quantite: 30, pu: 7500, pt: 225000 },
+        { designation: 'Eau', unite: 'litre', quantite: 3369, pu: 18, pt: 60642 },
+        { designation: 'Bois de coffrage', unite: 'm3', quantite: 3.942, pu: 120000, pt: 473040 },
+        { designation: 'Clous', unite: 'kg', quantite: 12, pu: 2700, pt: 32400 },
+        { designation: 'Armature HA10', unite: 'Pièce', quantite: 44, pu: 6000, pt: 264000 },
+        { designation: 'Armature HA8', unite: 'Pièce', quantite: 37, pu: 4800, pt: 177600 },
+        { designation: 'Fil à ligaturer', unite: 'kg', quantite: 27, pu: 1200, pt: 32400 }
       ]
     },
-    plancher: {
-      nom: 'Plancher Haut',
-      sousTotal: 1450000,
+    dalle: {
+      nom: 'DALLE',
+      sousTotal: 3359604,
       lignes: [
-        { designation: 'Dalle nervurée 16+4', unite: 'm2', quantite: 95, pu: 12500, pt: 1187500 },
-        { designation: 'Poutres en béton armé', unite: 'm3', quantite: 1.5, pu: 175000, pt: 262500 }
+        { designation: 'Ciment', unite: 'sac', quantite: 74, pu: 6000, pt: 444000 },
+        { designation: 'Gravier', unite: 'Tonne', quantite: 20, pu: 24000, pt: 480000 },
+        { designation: 'Sable', unite: 'Tonne', quantite: 10, pu: 7500, pt: 75000 },
+        { designation: 'Eau', unite: 'litre', quantite: 1838, pu: 18, pt: 33084 },
+        { designation: 'Bois de coffrage', unite: 'm3', quantite: 7.236, pu: 120000, pt: 868320 },
+        { designation: 'Clous', unite: 'kg', quantite: 20, pu: 2700, pt: 54000 },
+        { designation: 'Armature HA10', unite: 'Pièce', quantite: 218, pu: 6000, pt: 1308000 },
+        { designation: 'Fil à ligaturer', unite: 'kg', quantite: 81, pu: 1200, pt: 97200 }
+      ]
+    },
+    finition: {
+      nom: 'FINITION',
+      sousTotal: 4017312,
+      lignes: [
+        { designation: 'Carreaux', unite: 'Carton', quantite: 63, pu: 12000, pt: 756000 },
+        { designation: 'Faïence', unite: 'Carton', quantite: 30, pu: 12000, pt: 360000 },
+        { designation: 'Ciment gris', unite: 'sac', quantite: 56, pu: 6000, pt: 336000 },
+        { designation: 'Ciment colle', unite: 'kg', quantite: 634, pu: 1800, pt: 1141200 },
+        { designation: 'Sable', unite: 'Tonne', quantite: 20, pu: 7500, pt: 150000 },
+        { designation: 'Eau', unite: 'litre', quantite: 1784, pu: 18, pt: 32112 },
+        { designation: 'Latex', unite: 'kg', quantite: 72, pu: 7200, pt: 518400 },
+        { designation: 'Peinture classique', unite: 'Litre', quantite: 58, pu: 9000, pt: 522000 },
+        { designation: 'Chaux', unite: 'kg', quantite: 96, pu: 2100, pt: 201600 }
+      ]
+    },
+    charpente: {
+      nom: 'CHARPENTE',
+      sousTotal: 363660,
+      lignes: [
+        { designation: 'Madrier 5/10', unite: 'm3', quantite: 1.128, pu: 120000, pt: 135360 },
+        { designation: 'Panne 5/5', unite: 'm3', quantite: 0.3, pu: 120000, pt: 36000 },
+        { designation: 'Clous', unite: 'kg', quantite: 25, pu: 2700, pt: 67500 },
+        { designation: 'Peinture à bois', unite: 'litre', quantite: 16, pu: 7800, pt: 124800 }
+      ]
+    },
+    couverture: {
+      nom: 'COUVERTURE',
+      sousTotal: 410100,
+      lignes: [
+        { designation: 'Tôles (BG 28)', unite: 'Pièce', quantite: 54, pu: 6600, pt: 356400 },
+        { designation: 'Tôles faîtière', unite: 'pièce', quantite: 5, pu: 4800, pt: 24000 },
+        { designation: 'Clous', unite: 'kg', quantite: 11, pu: 2700, pt: 29700 }
+      ]
+    },
+    piedsDroit: {
+      nom: 'PIEDS DROIT',
+      sousTotal: 813900,
+      lignes: [
+        { designation: 'Chevron 5/5', unite: 'm3', quantite: 1.5, pu: 120000, pt: 180000 },
+        { designation: 'Chevron 7/7', unite: 'm3', quantite: 4.9, pu: 120000, pt: 588000 },
+        { designation: 'Clous', unite: 'kg', quantite: 17, pu: 2700, pt: 45900 }
       ]
     }
   },
-  cascade: { totalMateriaux: 5752500, imprevus: 287625, mainOeuvre: 1725750 },
-  total: 7765875
+  cascade: { totalMateriaux: 10786335, imprevus: 539317, transport: 539317, mainOeuvre: 3235900, honorairesArchi: 862907, honorairesInge: 862907 },
+  total: 16826682
 };
 
 const DEVIS_ENTREPRISE = {
-  ordreLots: ['fondation', 'elevation', 'plancher'],
+  ordreLots: ['preliminaire', 'fondation', 'elevation', 'finition', 'toiture'],
   niveaux: {
-    fondation: {
-      nom: 'Fondation',
-      sousTotal: 2500000,
+    preliminaire: {
+      nom: 'INSTALLATION CHANTIER ET IMPLANTATION',
+      sousTotal: 600000,
       lignes: [
-        { designation: 'Fouilles en rigoles (Fourniture et Pose)', unite: 'm3', quantite: 45, pu: 5500, pt: 247500 },
-        { designation: 'Béton de propreté dosé à 150kg/m3', unite: 'm3', quantite: 5, pu: 95000, pt: 475000 },
-        { designation: 'Semelles isolées (F et P)', unite: 'm3', quantite: 12, pu: 148125, pt: 1777500 }
+        { designation: 'Installation chantier et Implantation', unite: 'fft', quantite: 1, pu: 600000, pt: 600000 }
+      ]
+    },
+    fondation: {
+      nom: 'FONDATION',
+      sousTotal: 6527940,
+      lignes: [
+        { designation: 'Déblaiement', unite: 'm3', quantite: 17.386, pu: 10350, pt: 180000 },
+        { designation: 'Remblaiement', unite: 'm3', quantite: 38.655, pu: 4656, pt: 180000 },
+        { designation: 'Béton de propreté dosé à 150kg/m3', unite: 'm3', quantite: 1.398, pu: 120000, pt: 167760 },
+        { designation: 'Semelles isolées en B.A dosé à 350kg/m3', unite: 'm3', quantite: 0.441, pu: 330000, pt: 145530 },
+        { designation: 'Socle des colonnes en B.A dosé à 350kg/m3', unite: 'm3', quantite: 0.148, pu: 330000, pt: 48840 },
+        { designation: 'Fondation en moellon', unite: 'm3', quantite: 10.953, pu: 330000, pt: 3614490 },
+        { designation: 'Chape d\'égalisation en béton dosé à 250 Kg/m3', unite: 'm3', quantite: 1.217, pu: 270000, pt: 328590 },
+        { designation: 'Béton de sous pavement dosé à 250 Kg/m3', unite: 'm3', quantite: 6.899, pu: 270000, pt: 1862730 }
       ]
     },
     elevation: {
-      nom: 'Élévation',
-      sousTotal: 4600000,
+      nom: 'ELEVATION',
+      sousTotal: 6491460,
       lignes: [
-        { designation: 'Maçonnerie en agglos de 20 (F et P)', unite: 'm2', quantite: 120, pu: 8500, pt: 1020000 },
-        { designation: 'Chaînage et linteaux (F et P)', unite: 'ml', quantite: 80, pu: 12500, pt: 1000000 },
-        { designation: 'Poteaux en béton armé (F et P)', unite: 'm3', quantite: 8, pu: 322500, pt: 2580000 }
+        { designation: 'Colonnes en B.A dosé à 350kg/m3', unite: 'm3', quantite: 0.804, pu: 330000, pt: 265320 },
+        { designation: 'Ceinture en B.A dosé à 350kg/m3', unite: 'm3', quantite: 2.504, pu: 330000, pt: 826320 },
+        { designation: 'Maçonnerie de blocs creux de 15', unite: 'm3', quantite: 21.498, pu: 90000, pt: 1934820 },
+        { designation: 'Dalle en B.A dosé à 350kg/m3', unite: 'm3', quantite: 10.5, pu: 330000, pt: 3465000 }
       ]
     },
-    plancher: {
-      nom: 'Plancher Haut',
-      sousTotal: 2300000,
+    finition: {
+      nom: 'FINITION',
+      sousTotal: 5676840,
       lignes: [
-        { designation: 'Dalle nervurée 16+4 (F et P)', unite: 'm2', quantite: 95, pu: 19500, pt: 1852500 },
-        { designation: 'Poutres en béton armé (F et P)', unite: 'm3', quantite: 1.5, pu: 298333, pt: 447500 }
+        { designation: 'Le revêtement de sol et mur', unite: 'm2', quantite: 630.76, pu: 9000, pt: 5676840 }
+      ]
+    },
+    toiture: {
+      nom: 'CHARPENTE ET TOITURE',
+      sousTotal: 1370130,
+      lignes: [
+        { designation: 'Charpente', unite: 'm3', quantite: 1.428, pu: 420000, pt: 599760 },
+        { designation: 'Toiture', unite: 'm2', quantite: 51.358, pu: 15000, pt: 770370 }
       ]
     }
   },
-  cascade: { totalHT: 9400000, tva: 1809500, netAPayer: 11209500 },
-  total: 11209500
+  cascade: { totalTravaux: 20666340, honorairesArchi: 1653306, honorairesInge: 1653306 },
+  total: 23972940
 };
 
 export default function Demo() {
@@ -94,11 +186,17 @@ export default function Demo() {
             Exemple de devis terminé
           </span>
           <h1 className="font-sans text-3xl font-extrabold text-brand-text md:text-4xl">
-            Projet : Villa R+1 (Standing Moyen)
+            Projet : Maison de plain-pied (Standard)
           </h1>
           <p className="mt-3 text-[14px] text-brand-text/60 max-w-2xl mx-auto">
-            Explorez les deux modèles de devis générés par Devis Facile BTP. Le calcul des quantités et l'application des prix (fournitures / pose) se fait automatiquement à partir de votre métré.
+            Explorez les deux modèles de devis générés par Devis Facile BTP. Le calcul des quantités et des prix se fait automatiquement à partir de votre plan.
           </p>
+          <div className="mt-4 mx-auto max-w-2xl bg-amber-50 border border-amber-200 rounded-lg p-3 text-[13px] text-amber-900 flex items-start text-left gap-3">
+            <Icone nom="info" size={16} className="mt-0.5 shrink-0 text-amber-600" />
+            <p>
+              <strong>Important :</strong> Les prix unitaires affichés ici sont donnés à titre indicatif (Mercuriale du Cameroun). Dans votre espace personnel, <strong>vous pourrez configurer les prix des matériaux propres à votre pays</strong>. Le logiciel générera alors vos devis automatiquement avec vos propres tarifs.
+            </p>
+          </div>
         </div>
 
         {/* CONTROLES TABS */}

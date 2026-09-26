@@ -1,17 +1,14 @@
 import React, { Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TITRES_LOTS_PARTICULIER, TITRES_LOTS_ENTREPRISE } from '@devis-facile/moteur';
-
 import { formaterNombre } from '../../utils/format.js';
+import { numberToFrenchWords } from '../../utils/nombreEnLettres.js';
 
-/**
- * Devis quantitatif et estimatif.
- *
- * L'ordre des lots vient des titres du moteur, pas d'une liste recopiee ici :
- * c'est lui qui porte l'ordre chronologique du classeur (terrassement,
- * fondation, elevation, plancher, charpente, couverture, finition), et une
- * seconde liste finirait par diverger de la premiere.
- */
+const toRoman = (num) => {
+  const roman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];
+  return roman[num - 1] || num;
+};
+
 export default function TableauDevis({ devis, type = 'particulier' }) {
   const navigate = useNavigate();
   const estEntreprise = type === 'entreprise';
@@ -29,9 +26,6 @@ export default function TableauDevis({ devis, type = 'particulier' }) {
     }, 150);
   };
 
-  // Le devis porte l'ordre du Résumé : on le suit tel quel. À défaut (version
-  // Excel relue, projet enregistré avant), on retombe sur les lots connus
-  // d'abord, puis ceux que l'utilisateur a ajoutés, dans leur ordre de création.
   const ordre = Array.isArray(devis?.ordreLots) && devis.ordreLots.length > 0
     ? devis.ordreLots.filter((id) => groupes[id])
     : [
@@ -54,20 +48,23 @@ export default function TableauDevis({ devis, type = 'particulier' }) {
     );
   }
 
-  const cellule = 'p-2 border border-devis-border';
+  const cellule = 'px-2 py-1.5 border border-black text-black';
+  const enteteCellule = 'px-2 py-2 border-2 border-black text-black font-bold uppercase text-center text-[12px] bg-[#ffc000]';
+
+  let globalSousTotalIndex = 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-devis-border overflow-hidden">
+    <div className="bg-white shadow-sm overflow-hidden p-1">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[760px]">
+        <table className="w-full text-left border-collapse border-2 border-black min-w-[760px] bg-white">
           <thead>
-            <tr className="bg-gray-100 text-black border-b-2 border-black">
-              <th className={`${cellule} text-xs font-bold uppercase w-12 text-center`}>N°</th>
-              <th className={`${cellule} text-xs font-bold uppercase`}>Désignation des ouvrages</th>
-              <th className={`${cellule} text-xs font-bold uppercase w-20 text-center`}>U</th>
-              <th className={`${cellule} text-xs font-bold uppercase w-24 text-right`}>Qté</th>
-              <th className={`${cellule} text-xs font-bold uppercase w-32 text-right`}>P.U.</th>
-              <th className={`${cellule} text-xs font-bold uppercase w-36 text-right`}>Montant</th>
+            <tr>
+              <th className={`${enteteCellule} w-12`}>N°</th>
+              <th className={`${enteteCellule}`}>DESIGNATION</th>
+              <th className={`${enteteCellule} w-16`}>Unité</th>
+              <th className={`${enteteCellule} w-24`}>Qtté</th>
+              <th className={`${enteteCellule} w-32`}>P.U (FCFA)</th>
+              <th className={`${enteteCellule} w-36`}>P.T (FCFA)</th>
             </tr>
           </thead>
           <tbody>
@@ -75,95 +72,155 @@ export default function TableauDevis({ devis, type = 'particulier' }) {
               const lot = groupes[lotId];
               if (!lot?.lignes?.length) return null;
               const titre = titres[lotId] || lot.nom || lotId;
+              const lotIndex = index + 1;
+              globalSousTotalIndex++;
 
               return (
                 <Fragment key={lotId}>
-                  <tr className="bg-blue-50 border-y border-black">
-                    <td className={`${cellule} font-bold text-center`}>{index + 1}</td>
-                    <td colSpan="5" className={`${cellule} font-bold uppercase text-blue-900 tracking-wide`}>
+                  <tr className="bg-white">
+                    <td className={`${cellule} text-[12.5px]`}>{lotIndex}</td>
+                    <td colSpan="5" className={`${cellule} text-[12.5px] uppercase`}>
                       {titre}
                     </td>
                   </tr>
 
                   {lot.lignes.map((ligne, i) => {
-                    const sansPrix = !ligne.pu;
-                    const idTarget = ligne.id || lotId;
+                    const lineIndex = `${lotIndex}.${i + 1}`;
                     return (
-                      <tr key={`${lotId}-${i}`} className={sansPrix ? 'bg-amber-50' : 'hover:bg-gray-50'}>
-                        <td className={`${cellule} text-xs text-center text-gray-500`}>{index + 1}.{i + 1}</td>
-                        <td className={`${cellule} text-sm`}>
-                          <span>
-                            {ligne.designation}
-                          </span>
+                      <tr key={`${lotId}-${i}`} className="bg-white">
+                        <td className={`${cellule} text-[12.5px]`}>{lineIndex}</td>
+                        <td className={`${cellule} text-[12.5px]`}>{ligne.designation}</td>
+                        <td className={`${cellule} text-[12.5px]`}>{ligne.unite}</td>
+                        <td className={`${cellule} text-[12.5px] tabular-nums`}>{formaterNombre(ligne.quantite)}</td>
+                        <td className={`${cellule} text-[12.5px] tabular-nums`}>
+                          {ligne.pu ? formaterNombre(ligne.pu, true) : ''}
                         </td>
-                        <td className={`${cellule} text-xs text-center text-gray-600`}>{ligne.unite}</td>
-                        <td className={`${cellule} text-sm text-right tabular-nums`}>{formaterNombre(ligne.quantite)}</td>
-                        <td className={`${cellule} text-sm text-right tabular-nums ${estEntreprise ? 'text-devis-calcule' : 'text-devis-herite'}`}>
-                          {estEntreprise ? '' : formaterNombre(ligne.pu, true)}
-                        </td>
-                        <td className={`${cellule} text-sm text-right font-bold tabular-nums text-devis-calcule`}>
-                          {estEntreprise ? '' : formaterNombre(ligne.pt, true)}
+                        <td className={`${cellule} text-[12.5px] tabular-nums`}>
+                          {ligne.pt ? formaterNombre(ligne.pt, true) : ''}
                         </td>
                       </tr>
                     );
                   })}
 
-                  <tr className="bg-gray-100 border-b-2 border-black">
-                    <td colSpan="5" className={`${cellule} text-xs font-bold text-right uppercase`}>
-                      Sous-total — {titre}
+                  <tr className="bg-[#e2e2e2]">
+                    <td colSpan="5" className={`${cellule} text-[12.5px] font-bold`}>
+                      Sous total {globalSousTotalIndex}
                     </td>
-                    <td className={`${cellule} text-sm text-right font-bold tabular-nums`}>
-                      {estEntreprise ? '' : formaterNombre(lot.sousTotal, true)}
+                    <td className={`${cellule} text-[13px] font-bold tabular-nums`}>
+                      {formaterNombre(lot.sousTotal, true)}
                     </td>
                   </tr>
                 </Fragment>
               );
             })}
+
+            {(!estEntreprise && devis?.cascade) && (
+              <CascadeRows cascade={devis.cascade} total={devis.total} cellule={cellule} startIndex={ordre.length + 1} />
+            )}
+            
+            {(estEntreprise && devis?.cascade) && (
+              <CascadeRowsEntreprise cascade={devis.cascade} total={devis.total} cellule={cellule} />
+            )}
+
+            {devis?.total > 0 && (
+              <tr>
+                <td colSpan="6" className="px-3 py-6 border-2 border-black bg-white">
+                  <p className="text-[13.5px] italic text-gray-800">
+                    Nous disons en toutes lettres : <strong>{numberToFrenchWords(Math.round(devis.total))} francs CFA.</strong>
+                  </p>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-
-      {(!estEntreprise && devis?.cascade) && <Cascade cascade={devis.cascade} total={devis.total} />}
     </div>
   );
 }
 
-/** Le pied de devis : la suite des majorations jusqu'au total a payer. */
-function Cascade({ cascade, total }) {
-  const libelles = {
-    totalMateriaux: 'Total fournitures',
-    imprevus: 'Imprévus',
-    transport: 'Transport',
-    mainOeuvre: "Main d'œuvre",
-    totalTravaux: 'Total travaux',
-    honorairesArchi: 'Honoraires architecte',
-    honorairesInge: 'Honoraires ingénieur',
-    totalGrosOeuvre: 'Total gros œuvre',
-    totalSecondOeuvre: 'Total second œuvre',
-    totalHT: 'Total HT',
-    tva: 'TVA',
-    netAPayer: 'Net à payer',
-  };
-  const intermediaires = ['totalTravaux', 'totalHT', 'totalGrosOeuvre', 'totalSecondOeuvre'];
+function CascadeRows({ cascade, total, cellule, startIndex }) {
+  const lignes = [
+    { cle: 'imprevus', label: 'Imprévue 5%', bg: 'bg-white' },
+    { cle: 'transport', label: 'Transport des matériaux 5%', bg: 'bg-white' },
+    { cle: 'mainOeuvre', label: "Main d'œuvre 30%", bg: 'bg-white' },
+    { cle: 'honorairesArchi', label: "Honoraire de l'Architecte 8%", bg: 'bg-white' },
+    { cle: 'honorairesInge', label: "Honoraire de l'Ingénieur 8%", bg: 'bg-white' },
+  ];
+
+  let currentIndex = startIndex;
 
   return (
-    <div className="border-t-2 border-black bg-gray-50 p-4">
-      <table className="w-full max-w-md ml-auto text-sm">
-        <tbody>
-          {Object.entries(cascade)
-            .filter(([cle]) => cle !== 'totalGeneral' && cle !== 'netAPayer')
-            .map(([cle, valeur]) => (
-              <tr key={cle} className={intermediaires.includes(cle) ? 'font-bold border-t border-devis-border' : ''}>
-                <td className="py-1 pr-4">{libelles[cle] || cle}</td>
-                <td className="py-1 text-right tabular-nums">{formaterNombre(valeur, true)}</td>
-              </tr>
-            ))}
-          <tr className="border-t-2 border-black text-base font-bold">
-            <td className="pt-2 pr-4">TOTAL (FCFA)</td>
-            <td className="pt-2 text-right tabular-nums text-devis-calcule">{formaterNombre(total, true)}</td>
+    <Fragment>
+      <tr className="bg-[#f4b084]">
+        <td colSpan="5" className={`${cellule} text-[12.5px] font-bold uppercase`}>TOTAL</td>
+        <td className={`${cellule} text-[13px] tabular-nums font-bold`}>
+          {formaterNombre(cascade.totalMateriaux || 0, true)}
+        </td>
+      </tr>
+      {lignes.map(({ cle, label, bg }) => {
+        const valeur = cascade[cle];
+        if (valeur === undefined || valeur === 0) return null;
+        const rowNum = currentIndex++;
+        return (
+          <tr key={cle} className={`${bg}`}>
+            <td className={`${cellule} text-[12.5px]`}>{rowNum}</td>
+            <td colSpan="4" className={`${cellule} text-[12.5px]`}>{label}</td>
+            <td className={`${cellule} text-[13px] tabular-nums`}>
+              {formaterNombre(valeur, true)}
+            </td>
           </tr>
-        </tbody>
-      </table>
-    </div>
+        );
+      })}
+      <tr className="bg-[#f4b084]">
+        <td colSpan="5" className={`${cellule} text-[13px] font-bold uppercase`}>TOTAL GENERAL</td>
+        <td className={`${cellule} text-[14px] tabular-nums font-bold`}>
+          {formaterNombre(total, true)}
+        </td>
+      </tr>
+    </Fragment>
+  );
+}
+
+function CascadeRowsEntreprise({ cascade, total, cellule }) {
+  // Adaptation to look like the Image 3
+  return (
+    <Fragment>
+      <tr className="bg-white">
+        <td colSpan="5" className={`${cellule} text-[12.5px] font-bold uppercase text-[#00b050]`}>TOTAL</td>
+        <td className={`${cellule} text-[13px] tabular-nums font-bold`}>
+          {formaterNombre(cascade.totalTravaux || cascade.totalHT, true)}
+        </td>
+      </tr>
+      {cascade.honorairesArchi ? (
+        <tr className="bg-white">
+          <td colSpan="5" className={`${cellule} text-[12.5px] font-bold uppercase text-[#7030a0]`}>HONORAIRE Architecte 8%</td>
+          <td className={`${cellule} text-[13px] tabular-nums font-bold`}>
+            {formaterNombre(cascade.honorairesArchi, true)}
+          </td>
+        </tr>
+      ) : null}
+      {cascade.honorairesInge ? (
+        <tr className="bg-white">
+          <td colSpan="5" className={`${cellule} text-[12.5px] font-bold uppercase text-[#7030a0]`}>HONORAIRE Ingénieur 8%</td>
+          <td className={`${cellule} text-[13px] tabular-nums font-bold`}>
+            {formaterNombre(cascade.honorairesInge, true)}
+          </td>
+        </tr>
+      ) : null}
+      {cascade.tva ? (
+        <tr className="bg-white">
+          <td colSpan="5" className={`${cellule} text-[12.5px] font-bold uppercase`}>T.V.A</td>
+          <td className={`${cellule} text-[13px] tabular-nums font-bold`}>
+            {formaterNombre(cascade.tva, true)}
+          </td>
+        </tr>
+      ) : null}
+      <tr className="bg-[#f4b084]">
+        <td colSpan="5" className={`${cellule} text-[13px] font-bold uppercase text-[#00b050]`}>TOTAL GENERAL</td>
+        <td className={`${cellule} text-[14px] tabular-nums font-bold`}>
+          {formaterNombre(total, true)}
+        </td>
+      </tr>
+    </Fragment>
   );
 }
