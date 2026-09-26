@@ -1,6 +1,6 @@
 # Devis Facile BTP
 
-Logiciel de métré et de devis pour les professionnels du BTP — Cameroun, FCFA.
+Logiciel de métré et de devis pour les professionnels du BTP — Afrique, FCFA.
 
 Plan de construction complet (analyse du classeur, les huit lots, la ligne éditoriale) :
 <https://claude.ai/code/artifact/d6a34315-26f5-485c-af3f-e134307abf66>

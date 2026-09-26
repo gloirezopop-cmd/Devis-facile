@@ -1,7 +1,7 @@
 {
   "name": "Devis Facile BTP",
   "short_name": "Devis Facile",
-  "description": "Logiciel de métré et devis BTP au Cameroun",
+  "description": "Devis Facile BTP est une solution conçue pour vous aider à estimer le coût de votre projet de construction et à générer votre devis quantitatif estimatif de manière simple, rapide et professionnelle. Que vous soyez particulier, étudiant, technicien, ingénieur, architecte ou professionnel du BTP, vous pouvez utiliser les informations de votre plan de construction pour obtenir une estimation détaillée de votre projet, de A à Z. Vous êtes un particulier et vous souhaitez construire votre maison ? Estimez d’abord votre budget avant de contacter un professionnel. Vous êtes un professionnel du BTP ? Gagnez du temps dans la réalisation de vos métrés et de vos devis. Avec Devis Facile BTP, vous pouvez structurer votre projet, calculer les quantités nécessaires et générer votre devis quantitatif estimatif à partir des informations de votre plan. Un plan de construction. Les informations de votre projet. Un devis professionnel. Accessible partout en Afrique",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FDFBF8",

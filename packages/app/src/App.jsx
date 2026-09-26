@@ -17,6 +17,7 @@ import Login from './pages/Login.jsx';
 import Apprendre from './pages/Apprendre.jsx';
 import CoursLecture from './pages/CoursLecture.jsx';
 import Landing from './pages/Landing.jsx';
+import Demo from './pages/Demo.jsx';
 import SujetListe from './pages/SujetListe.jsx';
 import SujetSession from './pages/SujetSession.jsx';
 import EmptyState from './components/ui/EmptyState.jsx';
@@ -81,6 +82,7 @@ export default function App() {
                   comportement pour lui mais empeche de relire la page. */}
               <Route path="/accueil" element={<Landing />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/demo" element={<Demo />} />
               
               <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
                 <Route path="/dashboard" element={<Dashboard />} />

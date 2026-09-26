@@ -1,7 +1,7 @@
 {
   "name": "devis-facile-btp",
   "version": "0.1.0",
-  "description": "Logiciel de metre et de devis BTP — Cameroun.",
+  "description": "Logiciel de metre et de devis BTP — Afrique.",
   "type": "module",
   "private": true,
   "workspaces": [

@@ -3,7 +3,7 @@ import Icone from '../ui/Icone.jsx';
 import { formaterNombre } from '../../utils/format.js';
 import { LIBELLES_DEVISE } from '../../utils/estimation.js';
 import {
-  DROIT_PAR_SOURCE, MESSAGES_PAR_SOURCE, planQuiDebloque, libellePeriode, calculerDroits,
+  DROIT_PAR_SOURCE, MESSAGES_PAR_SOURCE, libellePeriode, calculerDroits, getRecommendedOffer, rangDuPlan
 } from '../../utils/offres.js';
 import { tracer } from '../../lib/estimationApi.js';
 import { supabase } from '../../lib/supabaseClient.js';
@@ -31,15 +31,20 @@ export default function EcranVerrou({
   // et renvoie l'adresse de paiement à laquelle rediriger. Rien n'est
   // accordé ici — seul le webhook, une fois la signature de Chariow
   // vérifiée, accorde l'accès (CHARIOW_INTEGRATION_SPEC.md).
-  const [enCours, setEnCours] = useState(false);
+  const [enCours, setEnCours] = useState(null);
   const [erreur, setErreur] = useState(null);
-  const droitRequis = DROIT_PAR_SOURCE[source] || DROIT_PAR_SOURCE.ESTIMATEUR;
-  const plan = planQuiDebloque(plans, droitRequis);
+  const {
+    available_plans: disponibles,
+    recommended_plan: recommande,
+    upgrade_options: upgrades,
+    current_plan: actuelle,
+  } = getRecommendedOffer({ plans, abonnements, source });
+  
   const droits = calculerDroits({ abonnements, plans });
 
   const choisir = async (p) => {
     setErreur(null);
-    setEnCours(true);
+    setEnCours(p.id);
     tracer('offer_selected', { plan_id: p?.id, price: p?.price, source });
 
     const { data, error } = await supabase.functions.invoke('chariow-checkout', {
@@ -48,7 +53,7 @@ export default function EcranVerrou({
 
     if (error || data?.error) {
       const message = await messageErreurFonction(error, data);
-      setEnCours(false);
+      setEnCours(null);
       setErreur({
         plan: p,
         message: message || "Le paiement est momentanément indisponible. Réessayez dans un instant.",
@@ -66,7 +71,7 @@ export default function EcranVerrou({
       return;
     }
 
-    setEnCours(false);
+    setEnCours(null);
     setErreur({ plan: p, message: 'Réponse de paiement inattendue.' });
   };
 
@@ -93,17 +98,39 @@ export default function EcranVerrou({
         </p>
       </div>
 
-      {plan ? (
-        <div className="mt-8">
-          <CarteFormule
-            plan={plan}
-            plans={plans}
-            misEnAvant
-            badge={null}
-            libelleAction={enCours ? 'Redirection vers le paiement…' : `M'abonner — ${plan.name}`}
-            onChoisir={choisir}
-            disabled={enCours}
-          />
+      <ul className="mt-8 mb-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-[12.5px] text-brand-text/55">
+        <li className="flex items-center gap-1.5">
+          <Icone nom="check-circle" size={14} className="shrink-0 text-devis-herite" /> Rejoignez +50 professionnels du BTP
+        </li>
+        <li className="flex items-center gap-1.5">
+          <Icone nom="check-circle" size={14} className="shrink-0 text-devis-herite" /> Export Excel modifiable et PDF
+        </li>
+        <li className="flex items-center gap-1.5">
+          <Icone nom="check-circle" size={14} className="shrink-0 text-devis-herite" /> Paiement sécurisé
+        </li>
+      </ul>
+
+      {disponibles.length > 0 ? (
+        <div className="mx-auto grid max-w-2xl grid-cols-1 gap-6 xl:max-w-none xl:grid-cols-3 xl:items-stretch xl:gap-7">
+          {disponibles.map((plan) => (
+            <CarteFormule
+              key={plan.id}
+              plan={plan}
+              plans={disponibles}
+              misEnAvant={plan.id === recommande?.id}
+              upgrade={upgrades.find((u) => u.plan.id === plan.id)}
+              badge={null}
+              libelleAction={
+                enCours === plan.id
+                  ? 'Redirection vers le paiement…'
+                  : (!actuelle && rangDuPlan(plan) === Math.min(...disponibles.map(rangDuPlan))
+                    ? `Choisir ${plan.name}`
+                    : `Passer à ${plan.name}`)
+              }
+              onChoisir={choisir}
+              disabled={enCours !== null}
+            />
+          ))}
         </div>
       ) : (
         <p className="mt-6 text-center text-[13px] italic text-brand-text/50">
