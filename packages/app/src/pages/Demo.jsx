@@ -121,7 +121,7 @@ const DEVIS_ENTREPRISE = {
     },
     fondation: {
       nom: 'FONDATION',
-      sousTotal: 4796640,
+      sousTotal: 3822542,
       lignes: [
         { designation: 'Déblaiement', unite: 'm3', quantite: 17.386, pu: 10350, pt: 179845 },
         { designation: 'Remblaiement', unite: 'm3', quantite: 38.655, pu: 4656, pt: 179977 },
@@ -145,9 +145,9 @@ const DEVIS_ENTREPRISE = {
     },
     finition: {
       nom: 'FINITION',
-      sousTotal: 1074900,
+      sousTotal: 5676840,
       lignes: [
-        { designation: 'Le revêtement de sol et mur', unite: 'm2', quantite: 143.32, pu: 7500, pt: 1074900 }
+        { designation: 'Le revêtement de sol et mur', unite: 'm2', quantite: 630.76, pu: 9000, pt: 5676840 }
       ]
     },
     toiture: {
@@ -159,8 +159,8 @@ const DEVIS_ENTREPRISE = {
       ]
     }
   },
-  cascade: { totalTravaux: 11402010, honorairesArchi: 912161, honorairesInge: 912161 },
-  total: 13226332
+  cascade: { totalTravaux: 15029852, honorairesArchi: 1202388, honorairesInge: 1202388 },
+  total: 17434628
 };
 
 export default function Demo() {
