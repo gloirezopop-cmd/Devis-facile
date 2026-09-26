@@ -17,11 +17,11 @@ const DEVIS_PARTICULIER = {
     },
     fondation: {
       nom: 'FONDATION',
-      sousTotal: 1569576,
+      sousTotal: 1340576,
       lignes: [
-        { designation: 'Ciment', unite: 'sac', quantite: 68, pu: 6000, pt: 408000 },
-        { designation: 'Gravier', unite: 'Tonne', quantite: 20, pu: 24000, pt: 480000 },
-        { designation: 'Sable', unite: 'Tonne', quantite: 15, pu: 7500, pt: 112500 },
+        { designation: 'Ciment', unite: 'sac', quantite: 68, pu: 5500, pt: 374000 },
+        { designation: 'Gravier', unite: 'Tonne', quantite: 20, pu: 13500, pt: 270000 },
+        { designation: 'Sable', unite: 'Tonne', quantite: 15, pu: 8500, pt: 127500 },
         { designation: 'Eau', unite: 'Litre', quantite: 2592, pu: 18, pt: 46656 },
         { designation: 'Bois de coffrage', unite: 'm3', quantite: 2.241, pu: 120000, pt: 268920 },
         { designation: 'Clous', unite: 'Kg', quantite: 7, pu: 2700, pt: 18900 },
@@ -33,12 +33,12 @@ const DEVIS_PARTICULIER = {
     },
     elevation: {
       nom: 'ELEVATION',
-      sousTotal: 3130032,
+      sousTotal: 2697882,
       lignes: [
-        { designation: 'Blocs', unite: 'Pièce', quantite: 1971, pu: 450, pt: 886950 },
-        { designation: 'Ciment', unite: 'sac', quantite: 123, pu: 6000, pt: 738000 },
-        { designation: 'Gravier', unite: 'Tonne', quantite: 10, pu: 24000, pt: 240000 },
-        { designation: 'Sable', unite: 'Tonne', quantite: 30, pu: 7500, pt: 225000 },
+        { designation: 'Blocs de 15', unite: 'Pièce', quantite: 1971, pu: 300, pt: 591300 },
+        { designation: 'Ciment', unite: 'sac', quantite: 123, pu: 5500, pt: 676500 },
+        { designation: 'Gravier', unite: 'Tonne', quantite: 10, pu: 13500, pt: 135000 },
+        { designation: 'Sable', unite: 'Tonne', quantite: 30, pu: 8500, pt: 255000 },
         { designation: 'Eau', unite: 'litre', quantite: 3369, pu: 18, pt: 60642 },
         { designation: 'Bois de coffrage', unite: 'm3', quantite: 3.942, pu: 120000, pt: 473040 },
         { designation: 'Clous', unite: 'kg', quantite: 12, pu: 2700, pt: 32400 },
@@ -49,11 +49,11 @@ const DEVIS_PARTICULIER = {
     },
     dalle: {
       nom: 'DALLE',
-      sousTotal: 3359604,
+      sousTotal: 3122604,
       lignes: [
-        { designation: 'Ciment', unite: 'sac', quantite: 74, pu: 6000, pt: 444000 },
-        { designation: 'Gravier', unite: 'Tonne', quantite: 20, pu: 24000, pt: 480000 },
-        { designation: 'Sable', unite: 'Tonne', quantite: 10, pu: 7500, pt: 75000 },
+        { designation: 'Ciment', unite: 'sac', quantite: 74, pu: 5500, pt: 407000 },
+        { designation: 'Gravier', unite: 'Tonne', quantite: 20, pu: 13500, pt: 270000 },
+        { designation: 'Sable', unite: 'Tonne', quantite: 10, pu: 8500, pt: 85000 },
         { designation: 'Eau', unite: 'litre', quantite: 1838, pu: 18, pt: 33084 },
         { designation: 'Bois de coffrage', unite: 'm3', quantite: 7.236, pu: 120000, pt: 868320 },
         { designation: 'Clous', unite: 'kg', quantite: 20, pu: 2700, pt: 54000 },
@@ -63,13 +63,13 @@ const DEVIS_PARTICULIER = {
     },
     finition: {
       nom: 'FINITION',
-      sousTotal: 4017312,
+      sousTotal: 4009312,
       lignes: [
         { designation: 'Carreaux', unite: 'Carton', quantite: 63, pu: 12000, pt: 756000 },
         { designation: 'Faïence', unite: 'Carton', quantite: 30, pu: 12000, pt: 360000 },
-        { designation: 'Ciment gris', unite: 'sac', quantite: 56, pu: 6000, pt: 336000 },
+        { designation: 'Ciment gris', unite: 'sac', quantite: 56, pu: 5500, pt: 308000 },
         { designation: 'Ciment colle', unite: 'kg', quantite: 634, pu: 1800, pt: 1141200 },
-        { designation: 'Sable', unite: 'Tonne', quantite: 20, pu: 7500, pt: 150000 },
+        { designation: 'Sable', unite: 'Tonne', quantite: 20, pu: 8500, pt: 170000 },
         { designation: 'Eau', unite: 'litre', quantite: 1784, pu: 18, pt: 32112 },
         { designation: 'Latex', unite: 'kg', quantite: 72, pu: 7200, pt: 518400 },
         { designation: 'Peinture classique', unite: 'Litre', quantite: 58, pu: 9000, pt: 522000 },
@@ -105,8 +105,8 @@ const DEVIS_PARTICULIER = {
       ]
     }
   },
-  cascade: { totalMateriaux: 10786335, imprevus: 539317, transport: 539317, mainOeuvre: 3235900, honorairesArchi: 862907, honorairesInge: 862907 },
-  total: 16826682
+  cascade: { totalMateriaux: 13010217, imprevus: 650511, transport: 650511, mainOeuvre: 3903065, honorairesArchi: 1040817, honorairesInge: 1040817 },
+  total: 20295938
 };
 
 const DEVIS_ENTREPRISE = {
@@ -121,33 +121,33 @@ const DEVIS_ENTREPRISE = {
     },
     fondation: {
       nom: 'FONDATION',
-      sousTotal: 6527940,
+      sousTotal: 4796640,
       lignes: [
-        { designation: 'Déblaiement', unite: 'm3', quantite: 17.386, pu: 10350, pt: 180000 },
-        { designation: 'Remblaiement', unite: 'm3', quantite: 38.655, pu: 4656, pt: 180000 },
+        { designation: 'Déblaiement', unite: 'm3', quantite: 17.386, pu: 10350, pt: 179845 },
+        { designation: 'Remblaiement', unite: 'm3', quantite: 38.655, pu: 4656, pt: 179977 },
         { designation: 'Béton de propreté dosé à 150kg/m3', unite: 'm3', quantite: 1.398, pu: 120000, pt: 167760 },
-        { designation: 'Semelles isolées en B.A dosé à 350kg/m3', unite: 'm3', quantite: 0.441, pu: 330000, pt: 145530 },
-        { designation: 'Socle des colonnes en B.A dosé à 350kg/m3', unite: 'm3', quantite: 0.148, pu: 330000, pt: 48840 },
-        { designation: 'Fondation en moellon', unite: 'm3', quantite: 10.953, pu: 330000, pt: 3614490 },
-        { designation: 'Chape d\'égalisation en béton dosé à 250 Kg/m3', unite: 'm3', quantite: 1.217, pu: 270000, pt: 328590 },
-        { designation: 'Béton de sous pavement dosé à 250 Kg/m3', unite: 'm3', quantite: 6.899, pu: 270000, pt: 1862730 }
+        { designation: 'Semelles isolées en B.A dosé à 350kg/m3', unite: 'm3', quantite: 0.441, pu: 180000, pt: 79380 },
+        { designation: 'Socle des colonnes en B.A dosé à 350kg/m3', unite: 'm3', quantite: 0.148, pu: 180000, pt: 26640 },
+        { designation: 'Fondation en moellon', unite: 'm3', quantite: 10.953, pu: 180000, pt: 1971540 },
+        { designation: 'Chape d\'égalisation en béton dosé à 250 Kg/m3', unite: 'm3', quantite: 1.217, pu: 150000, pt: 182550 },
+        { designation: 'Béton de sous pavement dosé à 250 Kg/m3', unite: 'm3', quantite: 6.899, pu: 150000, pt: 1034850 }
       ]
     },
     elevation: {
       nom: 'ELEVATION',
-      sousTotal: 6491460,
+      sousTotal: 3560340,
       lignes: [
-        { designation: 'Colonnes en B.A dosé à 350kg/m3', unite: 'm3', quantite: 0.804, pu: 330000, pt: 265320 },
-        { designation: 'Ceinture en B.A dosé à 350kg/m3', unite: 'm3', quantite: 2.504, pu: 330000, pt: 826320 },
-        { designation: 'Maçonnerie de blocs creux de 15', unite: 'm3', quantite: 21.498, pu: 90000, pt: 1934820 },
-        { designation: 'Dalle en B.A dosé à 350kg/m3', unite: 'm3', quantite: 10.5, pu: 330000, pt: 3465000 }
+        { designation: 'Colonnes en B.A dosé à 350kg/m3', unite: 'm3', quantite: 0.804, pu: 180000, pt: 144720 },
+        { designation: 'Ceinture en B.A dosé à 350kg/m3', unite: 'm3', quantite: 2.504, pu: 180000, pt: 450720 },
+        { designation: 'Maçonnerie de blocs creux de 15', unite: 'm2', quantite: 143.32, pu: 7500, pt: 1074900 },
+        { designation: 'Dalle en B.A dosé à 350kg/m3', unite: 'm3', quantite: 10.5, pu: 180000, pt: 1890000 }
       ]
     },
     finition: {
       nom: 'FINITION',
-      sousTotal: 5676840,
+      sousTotal: 1074900,
       lignes: [
-        { designation: 'Le revêtement de sol et mur', unite: 'm2', quantite: 630.76, pu: 9000, pt: 5676840 }
+        { designation: 'Le revêtement de sol et mur', unite: 'm2', quantite: 143.32, pu: 7500, pt: 1074900 }
       ]
     },
     toiture: {
@@ -159,8 +159,8 @@ const DEVIS_ENTREPRISE = {
       ]
     }
   },
-  cascade: { totalTravaux: 20666340, honorairesArchi: 1653306, honorairesInge: 1653306 },
-  total: 23972940
+  cascade: { totalTravaux: 11402010, honorairesArchi: 912161, honorairesInge: 912161 },
+  total: 13226332
 };
 
 export default function Demo() {
