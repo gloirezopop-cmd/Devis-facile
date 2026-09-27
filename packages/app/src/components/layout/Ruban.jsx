@@ -48,17 +48,23 @@ export function ContenuNavigation({ onNavigate }) {
                     end={lien.exact}
                     onClick={(e) => {
                       if (lien.label.toLowerCase().includes('nouveau')) {
+                        e.preventDefault();
                         const ok = window.confirm("Commencer un nouveau projet ? Le travail en cours sera sauvegardé dans 'Mes Devis'.");
-                        if (!ok) { e.preventDefault(); return; }
+                        if (!ok) return;
                         
                         // Sauvegarder automatiquement s'il y a du contenu avant d'effacer
                         const currentDraft = collecterEtatLocal();
                         if (Object.keys(currentDraft).length > 0) {
-                          sauvegarder();
+                          try { sauvegarder(); } catch {}
                         }
                         
                         effacerEtatLocal();
-                        window.location.href = lien.to;
+                        if (window.location.pathname === lien.to) {
+                          window.location.reload();
+                        } else {
+                          window.location.href = lien.to;
+                        }
+                        if (onNavigate) onNavigate();
                         return;
                       }
                       if (onNavigate) onNavigate();
@@ -262,17 +268,22 @@ export default function Ruban() {
             end={lien.exact}
             onClick={(e) => {
               if (lien.label.toLowerCase().includes('nouveau')) {
+                e.preventDefault();
                 const ok = window.confirm("Commencer un nouveau projet ? Le travail en cours sera sauvegardé dans 'Mes Devis'.");
-                if (!ok) { e.preventDefault(); return; }
+                if (!ok) return;
                 
                 // Sauvegarder automatiquement s'il y a du contenu avant d'effacer
                 const currentDraft = collecterEtatLocal();
                 if (Object.keys(currentDraft).length > 0) {
-                  sauvegarder();
+                  try { sauvegarder(); } catch {}
                 }
 
                 effacerEtatLocal();
-                window.location.href = lien.to;
+                if (window.location.pathname === lien.to) {
+                  window.location.reload();
+                } else {
+                  window.location.href = lien.to;
+                }
               }
             }}
             className={({ isActive }) =>

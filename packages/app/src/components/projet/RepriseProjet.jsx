@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Icone from '../ui/Icone.jsx';
 import { useBrouillon } from '../../hooks/useBrouillon.js';
 
@@ -19,6 +20,7 @@ import { useBrouillon } from '../../hooks/useBrouillon.js';
  * fichier de plus.
  */
 export default function RepriseProjet() {
+  const navigate = useNavigate();
   const { brouillon, question, occupe, continuer, recommencer, remettreAPlusTard } = useBrouillon();
 
   if (!question || !brouillon) return null;
@@ -46,7 +48,7 @@ export default function RepriseProjet() {
         </h2>
         <p className="mt-2 text-[13.5px] leading-relaxed text-brand-text/65">
           Votre travail a été conservé dans votre profil. Vous pouvez le reprendre là où vous l'aviez
-          laissé, ou commencer un nouveau projet.
+          laissé, commencer un nouveau projet ou explorer nos devis d'exemples.
         </p>
 
         <div className="mt-5 rounded-xl bg-black/[0.03] p-4">
@@ -73,6 +75,22 @@ export default function RepriseProjet() {
             className="min-h-[50px] flex-1 rounded-xl border-2 border-brand-primary/20 px-5 text-[13.5px] font-extrabold text-brand-text transition-colors hover:border-brand-primary hover:bg-brand-primary/[0.04] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/25 disabled:cursor-wait disabled:opacity-70"
           >
             Commencer un nouveau projet
+          </button>
+        </div>
+
+        {/* Bouton pour voir les exemples de devis directement */}
+        <div className="mt-3 border-t border-black/5 pt-3">
+          <button
+            type="button"
+            onClick={() => {
+              remettreAPlusTard();
+              navigate('/demo');
+            }}
+            disabled={occupe}
+            className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-brand-primary/10 border border-brand-primary/20 px-4 text-[13px] font-extrabold text-brand-primary transition-colors hover:bg-brand-primary/20 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/25 disabled:opacity-50"
+          >
+            <Icone nom="eye" size={17} />
+            Voir les anciens devis effectués (Exemples)
           </button>
         </div>
 

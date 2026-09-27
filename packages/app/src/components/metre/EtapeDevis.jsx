@@ -17,6 +17,8 @@ import MenuExport from '../ui/MenuExport.jsx';
 import MenuEnregistrer from '../ui/MenuEnregistrer.jsx';
 import LogoProjet from '../ui/LogoProjet.jsx';
 import { consommerAbonnementUnique } from '../../lib/estimationApi.js';
+import { useEstAdmin } from '../../hooks/useEstAdmin.js';
+import { ajouterExempleDevis } from '../../utils/demoDevisStore.js';
 
 /**
  * Étape 5 — le devis final. Permet de basculer entre le modèle Particulier (bordereau matériaux)
@@ -32,9 +34,26 @@ export default function EtapeDevis() {
   const { devisEntreprise, devisParticulier } = useDevis();
   const { exportPDF, exportExcel } = useExport();
   const { sauvegarder, sauvegarderSous } = useProjets();
+  const estAdmin = useEstAdmin();
   const toast = useToast();
 
   const dateJour = new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const publierEnDemo = () => {
+    const nomDevis = window.prompt(
+      'Titre de l\'exemple de devis à afficher sur la plateforme :',
+      `${parametresProjet?.reference || 'Projet'} (${parametresProjet?.maitreOuvrage || 'Exemple'})`
+    );
+    if (!nomDevis) return;
+    
+    const description = window.prompt(
+      'Description courte de ce devis :',
+      'Devis réalisé et vérifié par l\'administrateur.'
+    );
+
+    ajouterExempleDevis(nomDevis, description, devisParticulier, devisEntreprise);
+    toast('Ce devis a été ajouté aux exemples de devis effectués sur la plateforme !');
+  };
 
   // La feuille modifiee dans l'editeur est relue vers la meme forme de devis
   // que celle du moteur. L'ecran, le PDF et le XLSX repartent donc tous du
@@ -215,6 +234,19 @@ export default function EtapeDevis() {
           <Icone nom="edit" size={15} />
           {devisExcelSnapshot ? 'Modifier encore dans Excel' : 'Modifier le devis'}
         </Link>
+
+        {/* Bouton administrateur : publier dans la liste des devis démo d'exemple */}
+        {estAdmin && (
+          <button
+            type="button"
+            onClick={publierEnDemo}
+            className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-brand-accent/40 bg-brand-accent/10 px-3 text-[13px] font-extrabold text-brand-accent hover:bg-brand-accent/20 transition-colors"
+            title="Ajouter ce devis aux exemples publics de la plateforme"
+          >
+            <Icone nom="star" size={15} />
+            Ajouter aux devis démo
+          </button>
+        )}
         <div className="ml-auto flex items-center gap-2">
           {/* L'impression du navigateur est le seul chemin qui conserve les
               couleurs de la feuille : le PDF, lui, refait sa mise en page. */}

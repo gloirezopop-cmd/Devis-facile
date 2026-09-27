@@ -14,6 +14,12 @@ export const NAVIGATION = [
     ],
   },
   {
+    titre: 'Exemples',
+    liens: [
+      { to: '/demo', label: 'Exemples de devis', icone: 'eye' },
+    ],
+  },
+  {
     titre: 'Formation',
     liens: [
       { to: '/apprendre', label: 'Cours de métré', icone: 'book-open' },

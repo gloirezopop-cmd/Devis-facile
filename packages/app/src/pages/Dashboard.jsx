@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useMetre } from '../hooks/useMetre.js';
 import { useDevis } from '../hooks/useDevis.js';
 import StatCard from '../components/ui/StatCard.jsx';
 import DashboardCard from '../components/ui/DashboardCard.jsx';
 import Icone from '../components/ui/Icone.jsx';
+import ModalAvis from '../components/ui/ModalAvis.jsx';
 import { Link } from 'react-router-dom';
 
 /**
@@ -14,6 +15,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { metreParNiveau } = useMetre();
   const { devisEntreprise } = useDevis();
+  const [modalAvisOuverte, setModalAvisOuverte] = useState(false);
 
   const userName = user?.user_metadata?.prenom || user?.email?.split('@')[0] || 'Pro';
 
@@ -29,13 +31,24 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 animate-in fade-in duration-300 mx-auto max-w-6xl">
       {/* Header personnalisé */}
-      <div>
-        <h1 className="font-sans text-2xl font-extrabold text-brand-primary">
-          Bonjour {userName},
-        </h1>
-        <p className="mt-1 text-sm text-brand-text/70 font-serif">
-          Que souhaitez-vous faire aujourd'hui ?
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="font-sans text-2xl font-extrabold text-brand-primary">
+            Bonjour {userName},
+          </h1>
+          <p className="mt-1 text-sm text-brand-text/70 font-serif">
+            Que souhaitez-vous faire aujourd'hui ?
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setModalAvisOuverte(true)}
+          className="inline-flex items-center gap-2 rounded-xl border border-brand-primary/20 bg-white px-4 py-2.5 text-xs font-bold text-brand-primary shadow-sm hover:bg-brand-primary/5 transition-all"
+        >
+          <Icone nom="message-square" size={16} />
+          Donner votre avis sur le logiciel
+        </button>
       </div>
 
       {/* Onboarding Empty State */}
@@ -57,13 +70,37 @@ export default function Dashboard() {
               <Link to="/metre" className="px-6 py-3 bg-brand-accent text-white font-bold rounded-xl shadow-md hover:bg-[#e0893a] hover:-translate-y-0.5 transition-all uppercase tracking-wide text-sm flex items-center gap-2">
                 <Icone nom="ruler" size={18} /> Démarrer un nouveau projet
               </Link>
-              <Link to="/apprendre" className="px-6 py-3 bg-white/10 text-white font-bold rounded-xl border border-white/20 hover:bg-white/20 transition-all text-sm flex items-center gap-2">
-                <Icone nom="book-open" size={18} /> Voir comment ça marche
+              <Link to="/demo" className="px-6 py-3 bg-white/10 text-white font-bold rounded-xl border border-white/20 hover:bg-white/20 transition-all text-sm flex items-center gap-2">
+                <Icone nom="eye" size={18} /> Voir les exemples de devis effectués
               </Link>
             </div>
           </div>
         </div>
       )}
+
+      {/* BANDEAU D'ACCÈS RAPIDE AUX EXEMPLES DE DEVIS */}
+      <div className="rounded-2xl border border-brand-interactive/20 bg-brand-interactive/5 p-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 shrink-0 rounded-xl bg-brand-interactive/10 flex items-center justify-center text-brand-interactive">
+            <Icone nom="eye" size={22} />
+          </div>
+          <div>
+            <h3 className="font-bold text-[15px] text-brand-text">
+              Découvrez les exemples de devis effectués sur la plateforme
+            </h3>
+            <p className="text-xs text-brand-text/65">
+              Consultez des exemples de chantiers réels avec décomposition complète des matériaux et prix tout compris.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          to="/demo"
+          className="inline-flex min-h-[42px] items-center gap-2 rounded-xl bg-brand-interactive px-5 text-xs font-bold text-white shadow hover:bg-brand-interactive/90 transition-all shrink-0"
+        >
+          <Icone nom="eye" size={16} /> Voir les exemples →
+        </Link>
+      </div>
 
       {/* Statistiques (seulement si l'utilisateur a commencé à utiliser l'app) */}
       {!isNewUser && (
@@ -80,9 +117,7 @@ export default function Dashboard() {
         <h2 className="mb-4 font-sans text-sm font-bold text-brand-text/50 uppercase tracking-widest">
           Actions rapides
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {/* L'estimation vient avant le métré : c'est la porte d'entrée pour
-              quelqu'un qui cherche d'abord un ordre de grandeur de budget. */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <DashboardCard
             to="/estimation"
             icone="calculator"
@@ -99,6 +134,13 @@ export default function Dashboard() {
             cta="Nouveau métré"
           />
           <DashboardCard
+            to="/demo"
+            icone="eye"
+            titre="Exemples de devis"
+            texte="Consultez les exemples de devis effectués pour voir le niveau de détail du logiciel."
+            cta="Voir les devis"
+          />
+          <DashboardCard
             to="/apprendre"
             icone="book-open"
             titre="Apprendre le devis"
@@ -107,6 +149,12 @@ export default function Dashboard() {
           />
         </div>
       </div>
+
+      {/* Modale d'avis utilisateur */}
+      <ModalAvis
+        isOpen={modalAvisOuverte}
+        onClose={() => setModalAvisOuverte(false)}
+      />
     </div>
   );
 }
