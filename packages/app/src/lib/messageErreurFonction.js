@@ -14,12 +14,16 @@ export async function messageErreurFonction(error, data) {
   const contexte = error?.context;
   if (contexte && typeof contexte.json === 'function') {
     try {
-      const corps = await contexte.clone().json();
+      const corps = await (contexte.bodyUsed ? contexte : contexte.clone()).json();
       if (corps?.error) return corps.error;
     } catch {
-      // Corps illisible (HTML d'une passerelle, réponse vide) : on retombe
-      // sur le message générique de l'appelant.
+      // Corps illisible (HTML d'une passerelle, réponse vide)
     }
+  }
+
+  // Fallback si l'erreur provient du client ou d'un rejet non géré, on essaie d'extraire le message
+  if (error?.message && error.message !== 'Edge Function returned a non-2xx status code' && error.message !== 'Failed to fetch') {
+    return error.message;
   }
 
   return null;

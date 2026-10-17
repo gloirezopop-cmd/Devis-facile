@@ -79,9 +79,10 @@ export async function enregistrerProjet(session, projectId = null) {
       .update(corpsDuProjet(session))
       .eq('id', projectId)
       .select('id')
-      .single();
-    if (error) throw error;
-    return data.id;
+      .maybeSingle();
+    if (!error && data?.id) {
+      return data.id;
+    }
   }
 
   const { data, error } = await supabase

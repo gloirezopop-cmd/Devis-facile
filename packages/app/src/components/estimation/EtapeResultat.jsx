@@ -6,7 +6,85 @@ import { formaterNombre } from '../../utils/format.js';
 import { LIBELLES_DEVISE, tarifEstUnique } from '../../utils/estimation.js';
 import {
   enregistrerProjet, estimerProjet, marquerProjetCalcule, fetchOffres, fetchMesAbonnements, tracer,
+  estAdministrateur, fetchTousLesTarifs,
 } from '../../lib/estimationApi.js';
+
+/**
+ * Les administrateurs ne doivent jamais payer pour obtenir le résultat.
+ * Si le serveur a renvoyé l'estimation sans les montants calculés,
+ * l'administrateur charge les tarifs autorisés par sa politique RLS et
+ * reconstitue le budget sans jamais bloquer sur le paywall.
+ */
+async function completerBudgetAdminSiBesoin(reponse, session) {
+  if (!reponse) return reponse;
+
+  if (!reponse.niveaux?.length && session?.levels?.length) {
+    reponse.niveaux = session.levels.map((n) => ({
+      id: n.id,
+      label: n.label,
+      surface: Number(n.surface || 0),
+    }));
+  }
+  if (!reponse.surface_totale && session?.surfaceTotale) {
+    reponse.surface_totale = session.surfaceTotale;
+  }
+  if (!reponse.nombre_surfaces && session?.nombreEtages !== undefined) {
+    reponse.nombre_surfaces = (session.nombreEtages || 0) + 3;
+  }
+
+  reponse.verrouille = false;
+
+  if (reponse.budget) {
+    return reponse;
+  }
+
+  try {
+    const tousLesTarifs = await fetchTousLesTarifs();
+    const countryId = reponse.projet?.country_id || session.country;
+    const standingId = reponse.projet?.standing_id || session.standing;
+    const buildingTypeId = reponse.projet?.building_type_id || session.buildingType;
+    const locationId = reponse.projet?.location_id || session.location;
+    const nombreEtages = reponse.projet?.nombre_etages ?? session.nombreEtages ?? 0;
+    const config = 'R' + nombreEtages;
+
+    const candidats = tousLesTarifs.filter(
+      (t) => t.active && t.country_id === countryId && t.standing_id === standingId
+    );
+
+    let tarifChoisi = null;
+    let meilleurRang = 99;
+
+    for (const t of candidats) {
+      let rang = null;
+      if (t.location_id === locationId && t.building_type_id === buildingTypeId && t.level_category === config) rang = 1;
+      else if (t.location_id === locationId && t.building_type_id === buildingTypeId && !t.level_category) rang = 2;
+      else if (t.location_id === locationId && !t.building_type_id) rang = 3;
+      else if (!t.location_id && t.building_type_id === buildingTypeId) rang = 4;
+      else if (!t.location_id && !t.building_type_id) rang = 5;
+
+      if (rang !== null && rang < meilleurRang) {
+        meilleurRang = rang;
+        tarifChoisi = t;
+      }
+    }
+
+    if (tarifChoisi) {
+      const surfaceTotale = Number(reponse.surface_totale || session.surfaceTotale || 0);
+      reponse.tarif_disponible = true;
+      reponse.budget = {
+        min: Math.round(surfaceTotale * Number(tarifChoisi.price_min)),
+        reference: Math.round(surfaceTotale * Number(tarifChoisi.price_reference)),
+        max: Math.round(surfaceTotale * Number(tarifChoisi.price_max)),
+        prix_m2: Number(tarifChoisi.price_reference),
+        devise: tarifChoisi.currency_code || 'XAF',
+      };
+    }
+  } catch (err) {
+    console.error('Erreur lors du calcul administrateur de référence:', err);
+  }
+
+  return reponse;
+}
 
 /**
  * Écran final.
@@ -16,9 +94,8 @@ import {
  * au m² ne transite jamais par cet écran, et il n'y a rien à « déverrouiller »
  * côté client — le chiffre n'y est pas.
  *
- * La séquence d'analyse affichée pendant l'attente ne simule rien : chaque
- * ligne cochée correspond à une information que le serveur a effectivement
- * prise en compte et renvoyée dans sa réponse.
+ * Exception légitime : les administrateurs ne doivent jamais payer pour
+ * tester ou vérifier une estimation.
  */
 export default function EtapeResultat({ session, setProjectId, countries, locations, buildingTypes, standings }) {
   const [etat, setEtat] = useState('analyse'); // analyse | pret | erreur
@@ -26,23 +103,36 @@ export default function EtapeResultat({ session, setProjectId, countries, locati
   const [message, setMessage] = useState(null);
   const [offres, setOffres] = useState([]);
   const [abonnements, setAbonnements] = useState([]);
+  const [tentative, setTentative] = useState(0);
+
+  const relancerCalcul = () => {
+    setEtat('analyse');
+    setMessage(null);
+    setTentative((t) => t + 1);
+  };
 
   useEffect(() => {
     let annule = false;
 
-    (async () => {
+    const executer = async (autoRetry = false) => {
       try {
         tracer('estimate_started', { country: session.country, standing: session.standing });
         const projectId = await enregistrerProjet(session, session.projectId);
         if (annule) return;
         setProjectId(projectId);
 
-        const [reponse, plans, abos] = await Promise.all([
+        const [reponseBrute, plans, abos, estAdmin] = await Promise.all([
           estimerProjet(projectId),
           fetchOffres(),
           fetchMesAbonnements(),
+          estAdministrateur(),
         ]);
         if (annule) return;
+
+        let reponse = reponseBrute;
+        if (estAdmin) {
+          reponse = await completerBudgetAdminSiBesoin({ ...reponseBrute }, session);
+        }
 
         await marquerProjetCalcule(projectId);
         setResultat(reponse);
@@ -53,25 +143,54 @@ export default function EtapeResultat({ session, setProjectId, countries, locati
         if (reponse?.verrouille) tracer('paywall_viewed', { source: 'ESTIMATEUR', project_id: projectId });
       } catch (err) {
         if (annule) return;
-        setMessage(err.message || 'Le calcul n\'a pas pu aboutir.');
+
+        // En cas de micro-coupure réseau (ex: Failed to fetch, timeout), tenter une relance automatique
+        const estErreurReseau = /fetch|network|timeout|connexion|offline|connect/i.test(err?.message || '');
+        if (estErreurReseau && !autoRetry) {
+          await new Promise((r) => setTimeout(r, 1200));
+          if (!annule) {
+            return executer(true);
+          }
+        }
+
+        let texteErreur = err.message || 'Le calcul n\'a pas pu aboutir.';
+        if (estErreurReseau) {
+          texteErreur = 'La liaison avec le serveur a été ralentie ou interrompue par le réseau. Vos informations saisies sont intactes.';
+        }
+
+        setMessage(texteErreur);
         setEtat('erreur');
       }
-    })();
+    };
+
+    executer();
 
     return () => { annule = true; };
-    // Le calcul se lance une fois, à l'arrivée sur l'écran.
+    // Le calcul se lance à l'arrivée sur l'écran ou lors d'une relance explicite.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tentative]);
 
   if (etat === 'analyse') return <SequenceAnalyse />;
 
   if (etat === 'erreur') {
     return (
-      <div className="flex max-w-3xl items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-5">
-        <Icone nom="alert-circle" size={20} className="mt-0.5 shrink-0 text-red-500" />
-        <div>
-          <p className="font-bold text-brand-text">Le calcul n'a pas pu aboutir.</p>
-          <p className="mt-1 text-[13px] text-brand-text/70">{message}</p>
+      <div className="max-w-3xl rounded-xl border border-amber-200 bg-amber-50/70 p-6 sm:p-8">
+        <div className="flex items-start gap-3.5">
+          <Icone nom="alert-circle" size={22} className="mt-0.5 shrink-0 text-devis-averifier" />
+          <div className="flex-1">
+            <h2 className="font-bold text-base text-brand-text">Le calcul n'a pas pu aboutir</h2>
+            <p className="mt-1 text-[13.5px] leading-relaxed text-brand-text/80">{message}</p>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={relancerCalcul}
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-[13.5px] font-bold text-white shadow-sm hover:bg-brand-primary-dark active:scale-[0.99] transition-all cursor-pointer"
+              >
+                <Icone nom="refresh" size={16} />
+                <span>Relancer le calcul</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
