@@ -3,6 +3,7 @@ import Icone from '../components/ui/Icone.jsx';
 import HistogrammeInscriptions from '../components/admin/HistogrammeInscriptions.jsx';
 import ListeComptes from '../components/admin/ListeComptes.jsx';
 import GestionInvestisseurs from '../components/admin/GestionInvestisseurs.jsx';
+import SectionAvisAdmin from '../components/admin/SectionAvisAdmin.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { fetchStatistiquesAdmin, fetchComptesAdmin, fetchMesRevenus } from '../lib/estimationApi.js';
 
@@ -249,6 +250,9 @@ export default function Admin() {
           </p>
         </div>
       )}
+
+      {/* Retours et suggestions utilisateurs pour piloter les améliorations */}
+      <SectionAvisAdmin />
 
       {estFondateur && (
         <div className="mb-8">

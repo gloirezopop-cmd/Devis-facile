@@ -21,14 +21,14 @@ export default function SectionAvis() {
       id="avis"
       fond="sombre"
       surtitre="Témoignages & Avis"
-      titre="Ce qu me disent nos utilisateurs"
+      titre="Ce que disent nos utilisateurs"
       chapeau="Découvrez pourquoi les professionnels et particuliers font confiance à Devis Facile BTP au quotidien."
     >
       <div className="mb-8 flex justify-center">
         <button
           type="button"
           onClick={() => setModalOuverte(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-brand-accent px-6 py-3 text-sm font-extrabold text-white shadow-lg hover:scale-105 transition-all"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-brand-accent px-6 py-3 text-sm font-extrabold text-white shadow-lg hover:scale-105 transition-all"
         >
           <Icone nom="message-square" size={18} />
           Donner votre avis sur le logiciel

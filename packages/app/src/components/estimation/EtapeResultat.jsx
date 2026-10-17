@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icone from '../ui/Icone.jsx';
+import ModalAvis from '../ui/ModalAvis.jsx';
 import Paywall from '../offres/Paywall.jsx';
 import { formaterNombre } from '../../utils/format.js';
 import { LIBELLES_DEVISE, tarifEstUnique } from '../../utils/estimation.js';
@@ -104,6 +105,7 @@ export default function EtapeResultat({ session, setProjectId, countries, locati
   const [offres, setOffres] = useState([]);
   const [abonnements, setAbonnements] = useState([]);
   const [tentative, setTentative] = useState(0);
+  const [modalAvisOuverte, setModalAvisOuverte] = useState(false);
 
   const relancerCalcul = () => {
     setEtat('analyse');
@@ -348,7 +350,39 @@ function ResultatComplet({ resultat, recap }) {
         détaillé.
       </p>
 
+      {/* Bloc pour recueillir les avis utilisateurs */}
+      <div className="mt-6 rounded-xl border border-brand-primary/10 bg-brand-primary/[0.03] p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary">
+              <Icone nom="message-square" size={20} />
+            </div>
+            <div>
+              <p className="font-bold text-[14px] text-brand-text">
+                Votre avis nous aide à améliorer la plateforme
+              </p>
+              <p className="mt-0.5 text-[12.5px] text-brand-text/65">
+                Que pensez-vous de cette estimation ? Vos remarques permettent d'affiner le logiciel.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setModalAvisOuverte(true)}
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border-2 border-brand-primary/20 bg-white px-4 py-2 text-[13px] font-bold text-brand-primary hover:bg-brand-primary/5 transition-colors shrink-0"
+          >
+            <Icone nom="message-square" size={16} />
+            Donner mon avis
+          </button>
+        </div>
+      </div>
+
       <BoutonMetre />
+
+      <ModalAvis
+        isOpen={modalAvisOuverte}
+        onClose={() => setModalAvisOuverte(false)}
+      />
     </section>
   );
 }

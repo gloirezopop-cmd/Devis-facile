@@ -20,21 +20,22 @@ export default function ModalAvis({ isOpen, onClose, onAvisAjoute }) {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!texte.trim()) {
       toast('Veuillez saisir votre avis ou commentaire.', 'erreur');
       return;
     }
 
-    ajouterAvis({
+    await ajouterAvis({
       nom: nom.trim() || 'Utilisateur Devis Facile',
       profession: profession.trim() || 'Professionnel du BTP',
       texte: texte.trim(),
       etoiles,
+      email: user?.email || '',
     });
 
-    toast('Merci pour votre avis ! Votre retour nous aide à améliorer le logiciel.');
+    toast('Merci pour votre avis. Votre retour nous aide à améliorer le logiciel.');
     if (onAvisAjoute) onAvisAjoute();
     setTexte('');
     onClose();
@@ -66,7 +67,7 @@ export default function ModalAvis({ isOpen, onClose, onAvisAjoute }) {
           <button
             type="button"
             onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-full text-brand-text/50 hover:bg-black/5 hover:text-brand-text transition-colors"
+            className="grid h-11 w-11 place-items-center rounded-full text-brand-text/50 hover:bg-black/5 hover:text-brand-text transition-colors"
             aria-label="Fermer"
           >
             <Icone nom="x" size={18} />
@@ -87,7 +88,8 @@ export default function ModalAvis({ isOpen, onClose, onAvisAjoute }) {
                   onClick={() => setEtoiles(valeur)}
                   onMouseEnter={() => setSurvolEtoiles(valeur)}
                   onMouseLeave={() => setSurvolEtoiles(0)}
-                  className="p-1 transition-transform hover:scale-110 focus:outline-none"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg transition-transform hover:scale-110 focus:outline-none"
+                  aria-label={`Donner une note de ${valeur} sur 5`}
                 >
                   <Icone
                     nom="star"
@@ -96,7 +98,7 @@ export default function ModalAvis({ isOpen, onClose, onAvisAjoute }) {
                   />
                 </button>
               ))}
-              <span className="ml-2 text-xs font-bold text-brand-text/70">
+              <span className="ml-2 font-mono text-sm font-bold text-brand-text/75 tabular-nums">
                 {etoiles} / 5
               </span>
             </div>
@@ -114,7 +116,7 @@ export default function ModalAvis({ isOpen, onClose, onAvisAjoute }) {
                 value={nom}
                 onChange={(e) => setNom(e.target.value)}
                 placeholder="Ex: Raphaël Z."
-                className="w-full h-10 rounded-lg border border-brand-primary/20 bg-brand-bg px-3 text-[13px] font-bold text-brand-text focus:border-brand-primary focus:outline-none"
+                className="w-full h-11 rounded-lg border border-brand-primary/20 bg-brand-bg px-3 text-[13px] font-bold text-brand-text focus:border-brand-primary focus:outline-none"
               />
             </div>
             <div>
@@ -127,7 +129,7 @@ export default function ModalAvis({ isOpen, onClose, onAvisAjoute }) {
                 value={profession}
                 onChange={(e) => setProfession(e.target.value)}
                 placeholder="Ex: Entrepreneur, Architecte…"
-                className="w-full h-10 rounded-lg border border-brand-primary/20 bg-brand-bg px-3 text-[13px] text-brand-text focus:border-brand-primary focus:outline-none"
+                className="w-full h-11 rounded-lg border border-brand-primary/20 bg-brand-bg px-3 text-[13px] text-brand-text focus:border-brand-primary focus:outline-none"
               />
             </div>
           </div>
@@ -152,13 +154,13 @@ export default function ModalAvis({ isOpen, onClose, onAvisAjoute }) {
             <button
               type="button"
               onClick={onClose}
-              className="h-10 rounded-lg border border-brand-primary/20 px-4 text-[13px] font-bold text-brand-text hover:bg-black/5 transition-colors"
+              className="min-h-[44px] rounded-lg border border-brand-primary/20 px-4 text-[13px] font-bold text-brand-text hover:bg-black/5 transition-colors"
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="h-10 rounded-lg bg-brand-primary px-5 text-[13px] font-extrabold text-white hover:bg-brand-primary-dark transition-colors flex items-center gap-2"
+              className="min-h-[44px] rounded-lg bg-brand-primary px-5 text-[13px] font-extrabold text-white hover:bg-brand-primary-dark transition-colors flex items-center gap-2"
             >
               <Icone nom="send" size={15} />
               Envoyer mon avis
