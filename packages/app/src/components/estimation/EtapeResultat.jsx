@@ -339,12 +339,13 @@ function ResultatComplet({ resultat, recap }) {
         </div>
       )}
 
-      <p className="mt-6 text-[12px] leading-relaxed text-brand-text/50">
-        Cette estimation est indicative et ne constitue pas un devis définitif. Le coût réel dépend des
-        caractéristiques techniques du projet, des plans, du terrain, de la nature du sol, du type de fondation,
-        de la structure, des menuiseries, des installations électriques et sanitaires, des finitions, de la
-        main-d'œuvre et du prix local des matériaux. Le terrain, les études techniques, les frais administratifs,
-        les raccordements, les clôtures et les aménagements extérieurs ne sont pas compris.
+      <p className="mt-6 text-[12.5px] leading-relaxed text-brand-text/65">
+        <strong className="font-semibold text-brand-text">Important : </strong>
+        cette estimation vous donne une idée du budget à prévoir pour votre projet. Le montant du devis détaillé
+        pourra varier en fonction des caractéristiques techniques du bâtiment, des matériaux choisis et des prix
+        pratiqués sur le marché. Toutefois, le devis final devrait rester proche de cette estimation si les
+        caractéristiques du projet restent inchangées. Pour obtenir un chiffrage plus précis, créez votre devis
+        détaillé.
       </p>
 
       <BoutonMetre />
