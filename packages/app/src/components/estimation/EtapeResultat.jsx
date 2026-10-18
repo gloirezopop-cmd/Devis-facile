@@ -105,7 +105,6 @@ export default function EtapeResultat({ session, setProjectId, countries, locati
   const [offres, setOffres] = useState([]);
   const [abonnements, setAbonnements] = useState([]);
   const [tentative, setTentative] = useState(0);
-  const [modalAvisOuverte, setModalAvisOuverte] = useState(false);
 
   const relancerCalcul = () => {
     setEtat('analyse');
@@ -207,7 +206,7 @@ export default function EtapeResultat({ session, setProjectId, countries, locati
     configuration: resultat?.projet?.configuration,
   };
 
-  if (!resultat?.tarif_disponible) {
+  if (!resultat?.tarif_disponible || !resultat?.budget) {
     return <SansTarif recap={recap} />;
   }
 
@@ -289,8 +288,10 @@ function SansTarif({ recap }) {
 }
 
 function ResultatComplet({ resultat, recap }) {
-  const devise = LIBELLES_DEVISE[resultat.budget.devise] || resultat.budget.devise;
-  const prixUnique = tarifEstUnique({ price_min: resultat.budget.min, price_max: resultat.budget.max });
+  const [modalAvisOuverte, setModalAvisOuverte] = useState(false);
+  const budget = resultat?.budget || {};
+  const devise = LIBELLES_DEVISE[budget.devise] || budget.devise || 'FCFA';
+  const prixUnique = tarifEstUnique({ price_min: budget.min, price_max: budget.max });
 
   return (
     <section className="max-w-3xl rounded-xl border border-brand-primary/10 bg-white p-6 sm:p-8">
@@ -329,15 +330,15 @@ function ResultatComplet({ resultat, recap }) {
         <div className="mt-6 rounded-2xl border-2 border-brand-accent bg-brand-accent/5 p-6 text-center">
           <div className="text-[11.5px] font-bold uppercase tracking-wider text-brand-text/50">Coût estimatif</div>
           <div className="mt-2 font-mono text-3xl font-extrabold text-brand-accent">
-            {formaterNombre(resultat.budget.reference, true)}
+            {formaterNombre(budget.reference, true)}
           </div>
           <div className="mt-0.5 text-[13px] font-bold text-brand-text/50">{devise}</div>
         </div>
       ) : (
         <div className="mt-6 grid sm:grid-cols-3 gap-4">
-          <BlocBudget label="Budget minimum" montant={resultat.budget.min} devise={devise} />
-          <BlocBudget label="Budget estimatif" montant={resultat.budget.reference} devise={devise} accent />
-          <BlocBudget label="Budget maximum" montant={resultat.budget.max} devise={devise} />
+          <BlocBudget label="Budget minimum" montant={budget.min} devise={devise} />
+          <BlocBudget label="Budget estimatif" montant={budget.reference} devise={devise} accent />
+          <BlocBudget label="Budget maximum" montant={budget.max} devise={devise} />
         </div>
       )}
 
